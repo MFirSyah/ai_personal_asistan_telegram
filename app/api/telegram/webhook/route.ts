@@ -2,10 +2,14 @@ import { NextRequest, NextResponse, after } from 'next/server';
 import { verifyTelegramWebhook } from '@/lib/telegram/verify-webhook';
 import { getUserByTelegramId, touchOrStartSession } from '@/lib/supabase/queries/sessions';
 import { checkAndUpdateRateLimit } from '@/lib/gemini/rate-limiter';
-import { sendTelegramMessage, sendTelegramChatAction } from '@/lib/telegram/send-message';
+import { sendTelegramMessage, sendTelegramChatAction, setTelegramBotCommands } from '@/lib/telegram/send-message';
 import { buildConfirmationInlineKeyboard, buildDashboardInlineKeyboard } from '@/lib/telegram/inline-keyboard';
 import { scheduleBatchJob } from '@/lib/jobs/create-job';
 import { processChatRespondDirect } from '@/lib/telegram/chat-processor';
+import { processReceiptDirect } from '@/lib/telegram/receipt-processor';
+import { calculate20Analytics } from '@/lib/analytics/calculators';
+import { getUserPreferences } from '@/lib/supabase/queries/preferences';
+import { supabaseAdmin } from '@/lib/supabase/client';
 
 export async function POST(req: NextRequest) {
   if (!verifyTelegramWebhook(req)) {
@@ -27,7 +31,7 @@ export async function POST(req: NextRequest) {
 
     const user = await getUserByTelegramId(fromId);
     if (!user) {
-      await sendTelegramMessage(fromId, 'Akun kamu belum terhubung. Silakan gunakan link login.');
+      await sendTelegramMessage(fromId, '🚫 Akses ditolak. Akun Telegram kamu belum terhubung dengan akun Supabase resmi.');
       return NextResponse.json({ ok: true });
     }
 
@@ -51,20 +55,20 @@ export async function POST(req: NextRequest) {
 
   const chatId = message.chat.id;
   const telegramId = message.from.id;
-  const text = message.text || '';
+  const text = (message.text || '').trim();
   const photo = message.photo;
 
-  // 1. Identify User
+  // 1. Identify User — STRICT SECURITY CHECK
   const user = await getUserByTelegramId(telegramId);
   if (!user) {
-    const appBaseUrl = process.env.NEXT_PUBLIC_APP_URL || 'https://your-domain.vercel.app';
+    const appBaseUrl = process.env.NEXT_PUBLIC_APP_URL || 'https://ai-personal-asistan-telegram.vercel.app';
     const loginUrl = `${appBaseUrl}/dashboard/login?telegram_id=${telegramId}`;
 
     await sendTelegramMessage(
       chatId,
-      `Halo ${message.from.first_name || 'Teman'}! 👋\nAkun Telegram kamu belum terhubung dengan sistem.\nSilakan klik tombol di bawah untuk login / mendaftar:`,
+      `🔒 **AKSES DITOLAK (AKUN BELUM TERHUBUNG)**\n\nHalo ${message.from.first_name || 'Teman'}!\nBot Asisten ini bersifat **privat**. Akun Telegram kamu (${telegramId}) belum terdaftar di sistem.\n\nJika kamu adalah pengguna resmi, silakan login dengan Email & Password Supabase kamu melalui tombol di bawah untuk menghubungkan akun Telegram ini:`,
       {
-        inline_keyboard: [[{ text: '🔑 Login / Hubungkan Akun', url: loginUrl }]],
+        inline_keyboard: [[{ text: '🔑 Login & Hubungkan Akun', url: loginUrl }]],
       }
     );
     return NextResponse.json({ ok: true });
@@ -78,24 +82,168 @@ export async function POST(req: NextRequest) {
     return NextResponse.json({ ok: true });
   }
 
-  // 3. Handle Special Commands
+  // 3. Command Handlers
   if (text.startsWith('/start')) {
-    const appBaseUrl = process.env.NEXT_PUBLIC_APP_URL || 'https://your-domain.vercel.app';
+    // Register commands menu in Telegram autocomplete list asynchronously
+    setTelegramBotCommands().catch(console.error);
+
+    const appBaseUrl = process.env.NEXT_PUBLIC_APP_URL || 'https://ai-personal-asistan-telegram.vercel.app';
     await sendTelegramMessage(
       chatId,
-      `Selamat datang kembali, ${user.name || 'Teman'}! 👋\nSaya adalah Asisten Keuangan & Aktivitas Personal kamu.\n\nKamu bisa langsung mencatat pengeluaran, aktivitas, atau tanya rekomendasi keuangan!`,
-      buildDashboardInlineKeyboard(`${appBaseUrl}/dashboard`)
+      `Selamat datang kembali, ${user.name || 'Teman'}! 👋\nSaya adalah Asisten Keuangan & Aktivitas Personal kamu.\n\nKamu bisa langsung mencatat pengeluaran, foto struk, kirim cerita/agenda, atau gunakan perintah berikut:\n- /ringkasan : Rekap keuangan cepat\n- /dashboard : Mini App interaktif\n- /progress : Status pekerjaan background\n- /preferensi : Gaya bahasa & pola AI\n- /briefing : Pengaturan jam pengingat\n- /bantuan : Panduan penggunaan`,
+      buildDashboardInlineKeyboard(`${appBaseUrl}/dashboard?telegram_id=${telegramId}`)
     );
     return NextResponse.json({ ok: true });
   }
 
   if (text.startsWith('/dashboard')) {
-    const appBaseUrl = process.env.NEXT_PUBLIC_APP_URL || 'https://your-domain.vercel.app';
+    const appBaseUrl = process.env.NEXT_PUBLIC_APP_URL || 'https://ai-personal-asistan-telegram.vercel.app';
     await sendTelegramMessage(
       chatId,
-      'Klik tombol di bawah untuk membuka Web Dashboard interaktif kamu:',
-      buildDashboardInlineKeyboard(`${appBaseUrl}/dashboard`)
+      'Klik tombol di bawah untuk membuka Telegram Mini App Dashboard kamu:',
+      buildDashboardInlineKeyboard(`${appBaseUrl}/dashboard?telegram_id=${telegramId}`)
     );
+    return NextResponse.json({ ok: true });
+  }
+
+  if (text.startsWith('/ringkasan') || text.startsWith('/laporan')) {
+    sendTelegramChatAction(chatId, 'typing').catch(console.error);
+
+    const appBaseUrl = process.env.NEXT_PUBLIC_APP_URL || 'https://ai-personal-asistan-telegram.vercel.app';
+    const insights = await calculate20Analytics(user.id);
+
+    const expenseItem = insights.find((i) => i.id === 1);
+    const incomeItem = insights.find((i) => i.id === 2);
+    const netItem = insights.find((i) => i.id === 3);
+    const projectionItem = insights.find((i) => i.id === 15);
+    const scoreItem = insights.find((i) => i.id === 20);
+
+    const totalExpense = expenseItem?.data?.amount || 0;
+    const totalIncome = incomeItem?.data?.amount || 0;
+    const netSavings = netItem?.data?.amount || 0;
+    const projectedExpense = projectionItem?.data?.projectedExpense || 0;
+    const healthScore = scoreItem?.data?.score || 'N/A';
+
+    let summaryMsg = `📊 **LAPORAN & RINGKASAN KEUANGAN** 📊\n\n`;
+    summaryMsg += `👤 **User**: ${user.name || 'Teman'}\n`;
+    summaryMsg += `💸 **Total Pengeluaran**: Rp ${Number(totalExpense).toLocaleString('id-ID')}\n`;
+    summaryMsg += `💰 **Total Pemasukan**: Rp ${Number(totalIncome).toLocaleString('id-ID')}\n`;
+    summaryMsg += `📈 **Net Tabungan**: Rp ${Number(netSavings).toLocaleString('id-ID')}\n\n`;
+    summaryMsg += `🔮 **Proyeksi Akhir Bulan**: Rp ${Number(projectedExpense).toLocaleString('id-ID')}\n`;
+    summaryMsg += `🛡️ **Skor Kesehatan**: ${healthScore}\n\n`;
+    summaryMsg += `💡 *Untuk melihat visualisasi grafik 20 analisis lengkap, klik tombol di bawah ini:*`;
+
+    await sendTelegramMessage(
+      chatId,
+      summaryMsg,
+      buildDashboardInlineKeyboard(`${appBaseUrl}/dashboard?telegram_id=${telegramId}`)
+    );
+    return NextResponse.json({ ok: true });
+  }
+
+  if (text.startsWith('/progress')) {
+    const { data: latestJob } = await supabaseAdmin
+      .from('batch_jobs')
+      .select('*')
+      .eq('user_id', user.id)
+      .order('created_at', { ascending: false })
+      .limit(1)
+      .maybeSingle();
+
+    if (!latestJob) {
+      await sendTelegramMessage(chatId, 'ℹ️ Tidak ada tugas background yang pernah berjalan.');
+      return NextResponse.json({ ok: true });
+    }
+
+    let jobMsg = `🔄 **STATUS PROGRESS TUGAS BACKGROUND**\n\n`;
+    jobMsg += `📌 **Tipe**: ${latestJob.type}\n`;
+    jobMsg += `STATUS: ${latestJob.status.toUpperCase()}\n`;
+    jobMsg += `📊 **Progress**: ${latestJob.processed_items} / ${latestJob.total_items} item\n`;
+
+    if (latestJob.error_message) {
+      jobMsg += `⚠️ **Error**: ${latestJob.error_message}\n`;
+    }
+
+    await sendTelegramMessage(chatId, jobMsg);
+    return NextResponse.json({ ok: true });
+  }
+
+  if (text.startsWith('/preferensi')) {
+    const prefs = await getUserPreferences(user.id);
+    if (prefs.length === 0) {
+      await sendTelegramMessage(chatId, 'ℹ️ Belum ada preferensi personal yang dipelajari AI dari percakapan kamu.');
+      return NextResponse.json({ ok: true });
+    }
+
+    let prefMsg = `⚙️ **PREFERENSI & POLA YANG DIPELAJARI AI**\n\n`;
+    prefs.forEach((p, idx) => {
+      prefMsg += `${idx + 1}. **${p.key}**: ${p.value}\n`;
+      if (p.learned_from) {
+        prefMsg += `   _(Konteks: ${p.learned_from})_\n`;
+      }
+    });
+
+    await sendTelegramMessage(chatId, prefMsg);
+    return NextResponse.json({ ok: true });
+  }
+
+  if (text.startsWith('/briefing')) {
+    const args = text.replace('/briefing', '').trim();
+
+    if (args) {
+      // Set briefing time (e.g. /briefing 07:00)
+      const timeRegex = /^([0-1]?[0-9]|2[0-3]):[0-5][0-9]$/;
+      if (!timeRegex.test(args)) {
+        await sendTelegramMessage(chatId, '⚠️ Format jam salah. Gunakan format HH:MM (contoh: `/briefing 07:00`).');
+        return NextResponse.json({ ok: true });
+      }
+
+      await supabaseAdmin.from('user_settings').upsert({
+        user_id: user.id,
+        briefing_enabled: true,
+        briefing_time: `${args}:00`,
+        timezone: 'Asia/Jakarta',
+        updated_at: new Date().toISOString(),
+      });
+
+      await sendTelegramMessage(chatId, `✅ **Morning Briefing Diatur!**\nKamu akan menerima ringkasan pagi setiap hari jam **${args} WIB**.`);
+      return NextResponse.json({ ok: true });
+    }
+
+    // Show current settings
+    const { data: settings } = await supabaseAdmin
+      .from('user_settings')
+      .select('*')
+      .eq('user_id', user.id)
+      .maybeSingle();
+
+    const isEnabled = settings?.briefing_enabled ? 'Aktif ✅' : 'Non-Aktif ❌';
+    const bTime = settings?.briefing_time ? settings.briefing_time.substring(0, 5) : 'Belum diatur';
+
+    let briefingMsg = `⏰ **PENGATURAN MORNING BRIEFING**\n\n`;
+    briefingMsg += `Status: ${isEnabled}\n`;
+    briefingMsg += `Jam Kirim: ${bTime} WIB\n\n`;
+    briefingMsg += `Untuk mengaktifkan/mengubah jam, ketik:\n\`/briefing 07:00\` *(isi dengan jam yang diinginkan)*`;
+
+    await sendTelegramMessage(chatId, briefingMsg);
+    return NextResponse.json({ ok: true });
+  }
+
+  if (text.startsWith('/bantuan')) {
+    let helpMsg = `📖 **PANDUAN PENGGUNAAN BOT ASISTEN** 📖\n\n`;
+    helpMsg += `1️⃣ **Catat Keuangan**: Kirim pesan biasa (contoh: *"beli makan siang 25rb"* atau *"terima gaji 5jt"*).\n`;
+    helpMsg += `2️⃣ **Scan Struk**: Cukup kirim foto struk belanja kamu, AI akan membaca total & daftar barang otomatis!\n`;
+    helpMsg += `3️⃣ **Agenda & Aktivitas**: Kirim jadwal (contoh: *"ingatkan sidang skripsi besok jam 10 pagi"*).\n`;
+    helpMsg += `4️⃣ **Tanya Jawab AI**: Bebas bertukar pikiran atau tanya saran keuangan (*"gimana cara hemat bulan ini?"*).\n\n`;
+    helpMsg += `Daftar Perintah Ringkas:\n`;
+    helpMsg += `- /ringkasan : Rekap cepat keuangan\n`;
+    helpMsg += `- /dashboard : Mini App interaktif\n`;
+    helpMsg += `- /progress : Cek proses hapus/job\n`;
+    helpMsg += `- /preferensi : Pola yang dipelajari AI\n`;
+    helpMsg += `- /briefing : Atur pengingat pagi\n`;
+    helpMsg += `- /hapus_semua : Hapus data kamu`;
+
+    await sendTelegramMessage(chatId, helpMsg);
     return NextResponse.json({ ok: true });
   }
 
@@ -128,20 +276,11 @@ export async function POST(req: NextRequest) {
   // 5. Send typing indicator immediately (<30ms)
   sendTelegramChatAction(chatId, photo ? 'upload_photo' : 'typing').catch(console.error);
 
-  // 6. Use Next.js after() to safely execute processing background task in Vercel serverless without termination/freezing
+  // 6. Use Next.js after() to execute background task in Vercel serverless without termination
   after(async () => {
     if (photo && photo.length > 0) {
-      const appBaseUrl = process.env.NEXT_PUBLIC_APP_URL || 'http://localhost:3000';
       const largestPhoto = photo[photo.length - 1];
-      await fetch(`${appBaseUrl}/api/receipts/process`, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          userId: user.id,
-          chatId,
-          fileId: largestPhoto.file_id,
-        }),
-      }).catch((err) => console.error('Background receipt process error:', err));
+      await processReceiptDirect(user.id, chatId, largestPhoto.file_id);
     } else {
       await processChatRespondDirect(
         user.id,

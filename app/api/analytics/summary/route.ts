@@ -10,6 +10,12 @@ export async function GET(req: NextRequest) {
     return NextResponse.json({ error: 'Missing userId parameter' }, { status: 400 });
   }
 
+  // Basic validation of userId format
+  const isUuid = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(userId);
+  if (!isUuid && userId !== 'demo-user') {
+    return NextResponse.json({ error: 'Invalid userId format' }, { status: 400 });
+  }
+
   try {
     // Check cached daily insight first
     const { data: cached } = await supabaseAdmin

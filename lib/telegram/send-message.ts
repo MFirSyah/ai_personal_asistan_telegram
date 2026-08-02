@@ -21,11 +21,52 @@ export async function sendTelegramChatAction(
   }
 }
 
+/**
+ * Registers bot command autocomplete menu with Telegram API
+ */
+export async function setTelegramBotCommands(): Promise<any> {
+  if (!TELEGRAM_BOT_TOKEN) return { ok: true };
+
+  const url = `${TELEGRAM_API_BASE}/setMyCommands`;
+  const commands = [
+    { command: 'start', description: 'Mulai & status akun kamu' },
+    { command: 'ringkasan', description: 'Laporan ringkas pengeluaran & kesehatan finansial' },
+    { command: 'dashboard', description: 'Buka Mini App Dashboard interaktif' },
+    { command: 'progress', description: 'Cek progress tugas background / hapus data' },
+    { command: 'preferensi', description: 'Lihat preferensi & gaya bahasa yang dipelajari AI' },
+    { command: 'briefing', description: 'Atur jam morning briefing harian' },
+    { command: 'bantuan', description: 'Lihat panduan penggunaan bot' },
+    { command: 'hapus_semua', description: 'Hapus semua data (perlu konfirmasi)' },
+  ];
+
+  try {
+    const res = await fetch(url, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ commands }),
+    });
+    return await res.json();
+  } catch (err) {
+    console.error('Failed to set Telegram commands:', err);
+    return null;
+  }
+}
+
+function sanitizeMarkdown(text: string): string {
+  const openAsterisks = (text.match(/\*/g) || []).length % 2 !== 0;
+  const openUnderscores = (text.match(/_/g) || []).length % 2 !== 0;
+  
+  if (openAsterisks || openUnderscores) {
+    return text.replace(/[*_`]/g, '');
+  }
+  return text;
+}
+
 export async function sendTelegramMessage(
   chatId: number | string,
   text: string,
   replyMarkup?: any,
-  parseMode: 'Markdown' | 'HTML' = 'Markdown'
+  parseMode: 'Markdown' | 'HTML' | null = 'Markdown'
 ): Promise<any> {
   if (!TELEGRAM_BOT_TOKEN) {
     console.warn(`[TELEGRAM MOCK] sendTo ${chatId}: ${text}`);
@@ -33,11 +74,16 @@ export async function sendTelegramMessage(
   }
 
   const url = `${TELEGRAM_API_BASE}/sendMessage`;
+  const sanitizedText = parseMode === 'Markdown' ? sanitizeMarkdown(text) : text;
+
   const body: any = {
     chat_id: chatId,
-    text,
-    parse_mode: parseMode,
+    text: sanitizedText,
   };
+
+  if (parseMode) {
+    body.parse_mode = parseMode;
+  }
 
   if (replyMarkup) {
     body.reply_markup = replyMarkup;
@@ -51,6 +97,18 @@ export async function sendTelegramMessage(
     });
 
     const data = await res.json();
+
+    if (!data.ok && data.description && data.description.includes('can\'t parse entities')) {
+      console.warn('Telegram Markdown parse error, retrying as plain text...');
+      const fallbackBody = { ...body, text, parse_mode: undefined };
+      const retryRes = await fetch(url, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(fallbackBody),
+      });
+      return await retryRes.json();
+    }
+
     return data;
   } catch (error) {
     console.error('Failed to send Telegram message:', error);
@@ -61,7 +119,7 @@ export async function sendTelegramMessage(
 export async function sendTelegramMessageBubbles(
   chatId: number | string,
   messages: string[],
-  delayMs = 1200,
+  delayMs = 150,
   replyMarkupLastMessage?: any
 ): Promise<void> {
   for (let i = 0; i < messages.length; i++) {

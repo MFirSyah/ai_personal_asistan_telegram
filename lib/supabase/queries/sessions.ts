@@ -21,7 +21,7 @@ export async function getUserByTelegramId(telegramId: number): Promise<User | nu
     .from('users')
     .select('*')
     .eq('telegram_id', telegramId)
-    .single();
+    .maybeSingle();
 
   if (error || !data) return null;
   return data as User;
@@ -35,7 +35,7 @@ export async function getActiveSession(userId: string): Promise<UserSession | nu
     .gt('expires_at', new Date().toISOString())
     .order('expires_at', { ascending: false })
     .limit(1)
-    .single();
+    .maybeSingle();
 
   if (error || !data) return null;
   return data as UserSession;
@@ -45,24 +45,25 @@ export async function touchOrStartSession(userId: string): Promise<UserSession> 
   const now = new Date();
   const expiresAt = new Date(now.getTime() + 3 * 24 * 60 * 60 * 1000); // +3 days
 
-  const existingSession = await getActiveSession(userId);
+  // Fix #9: Fast single update first, fallback to insert if none found
+  const { data: updated } = await supabaseAdmin
+    .from('user_sessions')
+    .update({
+      last_active: now.toISOString(),
+      expires_at: expiresAt.toISOString(),
+    })
+    .eq('user_id', userId)
+    .gt('expires_at', now.toISOString())
+    .select()
+    .limit(1)
+    .maybeSingle();
 
-  if (existingSession) {
-    const { data, error } = await supabaseAdmin
-      .from('user_sessions')
-      .update({
-        last_active: now.toISOString(),
-        expires_at: expiresAt.toISOString(),
-      })
-      .eq('id', existingSession.id)
-      .select()
-      .single();
-
-    if (!error && data) return data as UserSession;
+  if (updated) {
+    return updated as UserSession;
   }
 
-  // Create new session
-  const { data, error } = await supabaseAdmin
+  // Create new session if no active session existed
+  const { data: newSession, error } = await supabaseAdmin
     .from('user_sessions')
     .insert({
       user_id: userId,
@@ -72,9 +73,9 @@ export async function touchOrStartSession(userId: string): Promise<UserSession> 
     .select()
     .single();
 
-  if (error || !data) {
+  if (error || !newSession) {
     throw new Error(`Failed to create user session: ${error?.message}`);
   }
 
-  return data as UserSession;
+  return newSession as UserSession;
 }

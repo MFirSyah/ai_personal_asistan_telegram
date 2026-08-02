@@ -47,39 +47,41 @@ export async function getOrCreateCategory(
   categoryName: string,
   embedding?: number[]
 ): Promise<Category> {
-  // Check exact name match first
+  const cleanName = categoryName.trim();
+
+  // Fix #12: Direct upsert using PostgreSQL ON CONFLICT (user_id, name)
+  const { data, error } = await supabaseAdmin
+    .from('categories')
+    .upsert(
+      {
+        user_id: userId,
+        name: cleanName,
+        embedding: embedding || null,
+        usage_count: 1,
+      },
+      {
+        onConflict: 'user_id,name',
+        ignoreDuplicates: false,
+      }
+    )
+    .select()
+    .single();
+
+  if (!error && data) {
+    return data as Category;
+  }
+
+  // Fallback to fetch if conflict occurred without return
   const { data: existing } = await supabaseAdmin
     .from('categories')
     .select('*')
     .eq('user_id', userId)
-    .ilike('name', categoryName.trim())
-    .maybeSingle();
+    .ilike('name', cleanName)
+    .single();
 
   if (existing) {
-    // Increment usage_count
-    await supabaseAdmin
-      .from('categories')
-      .update({ usage_count: (existing.usage_count || 0) + 1 })
-      .eq('id', existing.id);
-
     return existing as Category;
   }
 
-  // Insert new category
-  const { data: newCat, error } = await supabaseAdmin
-    .from('categories')
-    .insert({
-      user_id: userId,
-      name: categoryName.trim(),
-      embedding: embedding || null,
-      usage_count: 1,
-    })
-    .select()
-    .single();
-
-  if (error || !newCat) {
-    throw new Error(`Failed to create category: ${error?.message}`);
-  }
-
-  return newCat as Category;
+  throw new Error(`Failed to get or create category: ${error?.message}`);
 }

@@ -11,20 +11,22 @@ export interface InsightItem {
 }
 
 export async function calculate20Analytics(userId: string): Promise<InsightItem[]> {
-  // Fetch transactions and activities for user
+  // Fix #8: Select ONLY essential columns (avoiding raw_ai_response JSON payloads) and limit to last 500
   const { data: txs } = await supabaseAdmin
     .from('transactions')
-    .select('*')
+    .select('id, amount, type, merchant, description, source, occurred_at, category_id')
     .eq('user_id', userId)
     .is('deleted_at', null)
-    .order('occurred_at', { ascending: false });
+    .order('occurred_at', { ascending: false })
+    .limit(500);
 
   const { data: acts } = await supabaseAdmin
     .from('activities')
-    .select('*')
+    .select('id, title, description, occurred_at')
     .eq('user_id', userId)
     .is('deleted_at', null)
-    .order('occurred_at', { ascending: false });
+    .order('occurred_at', { ascending: false })
+    .limit(200);
 
   const transactions = txs || [];
   const activities = acts || [];
@@ -63,6 +65,51 @@ export async function calculate20Analytics(userId: string): Promise<InsightItem[
   const topMerchants = Object.entries(merchantTotals)
     .sort((a, b) => b[1] - a[1])
     .slice(0, 5);
+
+  // Fix #16: Real monthly projection math based on current day of month
+  const now = new Date();
+  const currentDayOfMonth = Math.max(1, now.getDate());
+  const totalDaysInMonth = new Date(now.getFullYear(), now.getMonth() + 1, 0).getDate();
+  const remainingDaysInMonth = Math.max(0, totalDaysInMonth - currentDayOfMonth);
+
+  // Current month transactions only
+  const currentMonthStart = new Date(now.getFullYear(), now.getMonth(), 1).toISOString();
+  const currentMonthExpenses = transactions
+    .filter((t) => t.type === 'expense' && t.occurred_at >= currentMonthStart)
+    .reduce((sum, t) => sum + Number(t.amount || 0), 0);
+
+  const dailyBurnRate = currentMonthExpenses / currentDayOfMonth;
+  const projectedMonthEndExpense = Math.round(currentMonthExpenses + dailyBurnRate * remainingDaysInMonth);
+
+  // Fix #17: Real financial health score calculation based on Savings Ratio
+  let healthScore = 70;
+  let healthStatus = 'Cukup Sehat';
+  let healthInsight = 'Kondisi keuangan kamu cukup stabil.';
+
+  if (totalIncome > 0) {
+    const savingsRatio = (netSavings / totalIncome) * 100;
+    if (savingsRatio >= 30) {
+      healthScore = 95;
+      healthStatus = 'Sangat Sehat (Surplus >30%)';
+      healthInsight = 'Luar biasa! Kamu berhasil menabung lebih dari 30% dari total pemasukan.';
+    } else if (savingsRatio >= 15) {
+      healthScore = 80;
+      healthStatus = 'Sehat (Surplus 15-30%)';
+      healthInsight = 'Kondisi keuangan kamu dalam kategori baik dengan rasio tabungan yang sehat.';
+    } else if (savingsRatio >= 0) {
+      healthScore = 65;
+      healthStatus = 'Waspada (Surplus <15%)';
+      healthInsight = 'Kamu masih surplus, namun alokasi tabungan masih di bawah rekomendasi ideal 15%.';
+    } else {
+      healthScore = 40;
+      healthStatus = 'Defisit (Pengeluaran > Pemasukan)';
+      healthInsight = 'Pengeluaran kamu melebihi pemasukan bulan ini. Disarankan melakukan efisiensi pos opsional.';
+    }
+  } else if (totalExpense > 0) {
+    healthScore = 50;
+    healthStatus = 'Perlu Pemasukan';
+    healthInsight = 'Belum ada data pemasukan yang dicatat untuk menghitung rasio kesehatan secara akurat.';
+  }
 
   // 20 Analytics List Construction
   const insights: InsightItem[] = [
@@ -218,8 +265,8 @@ export async function calculate20Analytics(userId: string): Promise<InsightItem[
       type: 'stat',
       title: 'Proyeksi Pengeluaran Akhir Bulan',
       category: 'projection',
-      data: { projectedExpense: Math.round(totalExpense * 1.25) },
-      insight_text: `Berdasarkan ritme saat ini, estimasi pengeluaran akhir bulan diproyeksikan sekitar Rp ${Math.round(totalExpense * 1.25).toLocaleString('id-ID')}.`,
+      data: { projectedExpense: projectedMonthEndExpense },
+      insight_text: `Berdasarkan rata-rata harian Rp ${Math.round(dailyBurnRate).toLocaleString('id-ID')}/hari (hari ke-${currentDayOfMonth}), estimasi total pengeluaran bulan ini mencapai Rp ${projectedMonthEndExpense.toLocaleString('id-ID')}.`,
     },
     {
       id: 16,
@@ -258,10 +305,8 @@ export async function calculate20Analytics(userId: string): Promise<InsightItem[
       type: 'text',
       title: 'Skor Kesehatan Keuangan Personal',
       category: 'projection',
-      data: { score: netSavings >= 0 ? '85/100 (Sehat)' : '55/100 (Perlu Penyesuaian)' },
-      insight_text: netSavings >= 0
-        ? 'Kondisi keuangan kamu dalam status sehat dengan surplus positif.'
-        : 'Pengeluaran melebihi pemasukan, disarankan melakukan efisiensi.',
+      data: { score: `${healthScore}/100 (${healthStatus})` },
+      insight_text: healthInsight,
     },
   ];
 

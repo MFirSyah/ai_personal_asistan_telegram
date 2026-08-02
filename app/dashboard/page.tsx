@@ -5,15 +5,10 @@ import { useSearchParams } from 'next/navigation';
 import { supabase } from '@/lib/supabase/client';
 import {
   TrendingUp,
-  Wallet,
-  PieChart as PieIcon,
-  Activity,
-  Award,
   Sparkles,
   Calendar,
   Layers,
-  ArrowUpRight,
-  ShieldCheck,
+  Activity,
   RefreshCw,
   CheckCircle,
 } from 'lucide-react';
@@ -49,7 +44,7 @@ function DashboardContent() {
       let effectiveTelegramId = urlTelegramId;
       let effectiveName = 'User';
 
-      // 1. Check Telegram WebApp environment
+      // 1. Check Telegram WebApp environment (inside Telegram client)
       if (typeof window !== 'undefined' && (window as any).Telegram?.WebApp) {
         const webApp = (window as any).Telegram.WebApp;
         webApp.ready();
@@ -63,39 +58,64 @@ function DashboardContent() {
         }
       }
 
-      // 2. Check Supabase Authenticated User
-      const { data: { user: authUser } } = await supabase.auth.getUser();
-
       let targetUserId = 'demo-user';
 
-      if (authUser && authUser.email) {
-        setUserEmail(authUser.email);
+      // 2. Resolve User by Telegram ID (Direct Telegram Mini App Auto-Login)
+      if (effectiveTelegramId) {
+        try {
+          const tgRes = await fetch('/api/auth/telegram-user', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({
+              telegramId: effectiveTelegramId,
+              name: effectiveName,
+            }),
+          });
+          const tgData = await tgRes.json();
 
-        // Link Telegram ID to Public Users table if present
-        if (effectiveTelegramId) {
-          try {
-            const linkRes = await fetch('/api/auth/link-telegram', {
-              method: 'POST',
-              headers: { 'Content-Type': 'application/json' },
-              body: JSON.stringify({
-                email: authUser.email,
-                telegramId: effectiveTelegramId,
-                name: effectiveName !== 'User' ? effectiveName : authUser.email.split('@')[0],
-              }),
-            });
-            const linkData = await linkRes.json();
-            if (linkData.ok && linkData.user) {
-              setTelegramLinked(true);
-              targetUserId = linkData.user.id;
-              setUserName(linkData.user.name || effectiveName);
+          if (tgData.ok && tgData.user) {
+            setTelegramLinked(true);
+            targetUserId = tgData.user.id;
+            setUserName(tgData.user.name || effectiveName);
+            setUserEmail(tgData.user.email);
+          }
+        } catch (err) {
+          console.error('Failed to resolve Telegram user:', err);
+        }
+      }
+
+      // 3. Fallback to Supabase Authenticated Web Session if no Telegram ID
+      if (targetUserId === 'demo-user') {
+        const { data: { user: authUser } } = await supabase.auth.getUser();
+
+        if (authUser && authUser.email) {
+          setUserEmail(authUser.email);
+
+          if (effectiveTelegramId) {
+            try {
+              const linkRes = await fetch('/api/auth/link-telegram', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({
+                  email: authUser.email,
+                  telegramId: effectiveTelegramId,
+                  name: effectiveName !== 'User' ? effectiveName : authUser.email.split('@')[0],
+                }),
+              });
+              const linkData = await linkRes.json();
+              if (linkData.ok && linkData.user) {
+                setTelegramLinked(true);
+                targetUserId = linkData.user.id;
+                setUserName(linkData.user.name || effectiveName);
+              }
+            } catch (err) {
+              console.error('Failed to link Telegram account:', err);
             }
-          } catch (err) {
-            console.error('Failed to link Telegram account:', err);
           }
         }
       }
 
-      // 3. Fetch Analytics Summary
+      // 4. Fetch Analytics Summary
       try {
         const res = await fetch(`/api/analytics/summary?userId=${targetUserId}`);
         const data = await res.json();
@@ -202,7 +222,7 @@ function DashboardContent() {
       {loading ? (
         <div className="flex flex-col items-center justify-center py-20">
           <RefreshCw className="w-8 h-8 text-indigo-500 animate-spin mb-3" />
-          <p className="text-slate-400 text-sm">Menghubungkan akun & memuat data analisis...</p>
+          <p className="text-slate-400 text-sm">Menghubungkan akun Telegram & memuat data analisis...</p>
         </div>
       ) : (
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">

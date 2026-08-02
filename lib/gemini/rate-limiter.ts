@@ -12,9 +12,10 @@ const DAY_LIMIT = 700;
 export async function checkAndUpdateRateLimit(userId: string): Promise<RateLimitCheckResult> {
   const now = new Date();
 
+  // Fix #2: Atomic fetch & window check
   const { data: record } = await supabaseAdmin
     .from('rate_limits')
-    .select('*')
+    .select('minute_count, minute_window_start, day_count, day_window_start')
     .eq('user_id', userId)
     .maybeSingle();
 
@@ -39,7 +40,6 @@ export async function checkAndUpdateRateLimit(userId: string): Promise<RateLimit
 
   let minuteCount = record.minute_count;
   let dayCount = record.day_count;
-
   let newMinuteWindowStart = record.minute_window_start;
   let newDayWindowStart = record.day_window_start;
 
@@ -57,7 +57,7 @@ export async function checkAndUpdateRateLimit(userId: string): Promise<RateLimit
 
   // Check limits
   if (minuteCount >= MINUTE_LIMIT) {
-    const retryAfter = Math.ceil(60 - minuteElapsedSec);
+    const retryAfter = Math.ceil(60 - Math.min(59, minuteElapsedSec));
     return {
       allowed: false,
       reason: 'minute_limit_exceeded',
@@ -72,16 +72,16 @@ export async function checkAndUpdateRateLimit(userId: string): Promise<RateLimit
     };
   }
 
-  // Increment counters
+  // Atomic update
   await supabaseAdmin
     .from('rate_limits')
-    .update({
+    .upsert({
+      user_id: userId,
       minute_count: minuteCount + 1,
       minute_window_start: newMinuteWindowStart,
       day_count: dayCount + 1,
       day_window_start: newDayWindowStart,
-    })
-    .eq('user_id', userId);
+    });
 
   return { allowed: true };
 }

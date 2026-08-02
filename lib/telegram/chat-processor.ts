@@ -8,9 +8,7 @@ import {
   insertActivity,
 } from '@/lib/supabase/queries/transactions';
 import { getUserPreferences, saveUserPreference } from '@/lib/supabase/queries/preferences';
-import { getUserCategories, getOrCreateCategory, matchCategoryByEmbedding } from '@/lib/supabase/queries/categories';
-import { categorizeItem } from '@/lib/gemini/prompts/categorize';
-import { generateCategoryEmbedding } from '@/lib/gemini/client';
+import { getUserCategories, getOrCreateCategory } from '@/lib/supabase/queries/categories';
 import { sendTelegramMessageBubbles, sendTelegramMessage, sendTelegramChatAction } from '@/lib/telegram/send-message';
 import { sendTelegramChart } from '@/lib/telegram/send-chart';
 import { sendTelegramLocation } from '@/lib/telegram/send-location';
@@ -23,26 +21,26 @@ export async function processChatRespondDirect(
   userName?: string
 ) {
   try {
-    // Send typing action
-    await sendTelegramChatAction(chatId, 'typing');
+    // Send typing action immediately
+    if (chatId) {
+      sendTelegramChatAction(chatId, 'typing').catch(console.error);
+    }
 
-    // 1. Fetch context in parallel
+    // 1. Fetch context in parallel (only fetch essential categories for context)
     const [transactions, activities, plans, preferences, history, categories] = await Promise.all([
-      getRecentTransactions(userId, 15),
-      getRecentActivities(userId, 15),
+      getRecentTransactions(userId, 10),
+      getRecentActivities(userId, 5),
       getActivePlans(userId),
-      getUserPreferences(userId, 15),
-      getRecentChatHistory(userId, 10),
+      getUserPreferences(userId, 5),
+      getRecentChatHistory(userId, 5),
       getUserCategories(userId),
     ]);
 
-    // Save user message to history
-    await saveChatMessage(userId, 'user', userMessage);
+    // Save user message to history asynchronously
+    saveChatMessage(userId, 'user', userMessage).catch(console.error);
 
-    // Keep typing indicator active
-    await sendTelegramChatAction(chatId, 'typing');
-
-    // 2. Run Gemini AI Orchestration
+    // 2. Run Gemini AI Orchestration with existing category list
+    const catNames = categories.map((c) => c.name);
     const result = await runChatOrchestration({
       userMessage,
       recentTransactions: transactions,
@@ -51,52 +49,24 @@ export async function processChatRespondDirect(
       preferences,
       chatHistory: history,
       userName,
+      existingCategories: catNames,
     });
 
-    // 3. Process Extracted Data
+    // 3. Process Extracted Data (single API pass result)
     if (result.extracted_data) {
       const ext = result.extracted_data;
 
-      // Transactions
-      if (ext.transaction) {
+      // Transactions — direct categorization without extra Gemini call (Fix #5)
+      if (ext.transaction && ext.transaction.amount > 0) {
         const tx = ext.transaction;
-        const catNames = categories.map((c) => c.name);
+        const categoryName = tx.category || tx.merchant || 'Lain-lain';
 
-        const catResult = await categorizeItem({
-          transactionOrActivityName: tx.description || tx.merchant || 'Transaksi',
-          merchant: tx.merchant,
-          existingCategories: catNames,
-        });
-
-        let catId: string | undefined = undefined;
-
-        if (catResult.isNewCategory) {
-          const embedding = await generateCategoryEmbedding(catResult.categoryName);
-          const matched = embedding.length
-            ? await matchCategoryByEmbedding(userId, embedding, 0.85)
-            : null;
-
-          if (matched) {
-            catId = matched.id;
-          } else {
-            const newCat = await getOrCreateCategory(userId, catResult.categoryName, embedding);
-            catId = newCat.id;
-          }
-        } else {
-          const existingCat = categories.find(
-            (c) => c.name.toLowerCase() === catResult.categoryName.toLowerCase()
-          );
-          if (existingCat) {
-            catId = existingCat.id;
-          } else {
-            const newCat = await getOrCreateCategory(userId, catResult.categoryName);
-            catId = newCat.id;
-          }
-        }
+        // Get or create category in single pass
+        const category = await getOrCreateCategory(userId, categoryName);
 
         await insertTransaction({
           user_id: userId,
-          category_id: catId,
+          category_id: category.id,
           amount: tx.amount,
           type: tx.type || 'expense',
           merchant: tx.merchant,
@@ -107,7 +77,7 @@ export async function processChatRespondDirect(
       }
 
       // Activities
-      if (ext.activity) {
+      if (ext.activity && ext.activity.title) {
         const act = ext.activity;
         await insertActivity({
           user_id: userId,
@@ -118,7 +88,7 @@ export async function processChatRespondDirect(
       }
 
       // Preferences
-      if (ext.preference) {
+      if (ext.preference && ext.preference.key) {
         const pref = ext.preference;
         await saveUserPreference(userId, pref.key, pref.value, pref.learned_from);
       }
@@ -126,12 +96,12 @@ export async function processChatRespondDirect(
 
     // 4. Save Assistant Response to Chat History
     const fullAssistantText = [...(result.messages || []), result.follow_up_question].filter(Boolean).join('\n');
-    await saveChatMessage(userId, 'assistant', fullAssistantText);
+    saveChatMessage(userId, 'assistant', fullAssistantText).catch(console.error);
 
-    // 5. Send Rich Responses to Telegram
+    // 5. Send Rich Responses to Telegram (Fix #6: 150ms bubble delay)
     if (chatId) {
       if (result.messages && result.messages.length > 0) {
-        await sendTelegramMessageBubbles(chatId, result.messages, 800);
+        await sendTelegramMessageBubbles(chatId, result.messages, 150);
       }
       if (result.chart) {
         await sendTelegramChart(chatId, result.chart, result.chart.title || 'Visualisasi Grafik');
