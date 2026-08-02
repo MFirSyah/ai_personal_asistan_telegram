@@ -1,4 +1,4 @@
-import { ai, PRIMARY_MODEL, FALLBACK_MODEL, TERTIARY_MODEL } from '../client';
+import { ai, PRIMARY_MODEL } from '../client';
 
 export interface ChatOrchestrationContext {
   userMessage: string;
@@ -205,33 +205,37 @@ async function withTimeout<T>(promise: Promise<T>, timeoutMs: number, fallbackMe
 
 const GEMINI_TIMEOUT_MS = 15_000;
 
-// Helper to attempt content generation with automatic model fallback on 429 / rate limit
-async function generateContentWithFallback(prompt: string): Promise<any> {
-  const models = [PRIMARY_MODEL, FALLBACK_MODEL, TERTIARY_MODEL];
+// Automatic exponential backoff retry for gemini-3.6-flash (up to 3 retries: 1s, 2s, 3s)
+async function generateContentWithRetry(prompt: string): Promise<any> {
+  const maxRetries = 3;
   let lastError: any = null;
 
-  for (const modelName of models) {
+  for (let attempt = 1; attempt <= maxRetries; attempt++) {
     try {
       const apiCall = ai.models.generateContent({
-        model: modelName,
+        model: PRIMARY_MODEL,
         contents: prompt,
         config: {
           responseMimeType: 'application/json',
         },
       });
 
-      return await withTimeout(apiCall, GEMINI_TIMEOUT_MS, `Gemini API (${modelName}) timeout`);
+      return await withTimeout(apiCall, GEMINI_TIMEOUT_MS, `Gemini API (${PRIMARY_MODEL}) timeout`);
     } catch (err: any) {
       lastError = err;
       const errStr = String(err?.message || err || '');
-      
-      // If error is 429 / Rate Limit / Quota, log warning and try next fallback model
-      if (errStr.includes('429') || errStr.includes('RESOURCE_EXHAUSTED') || errStr.includes('Quota exceeded')) {
-        console.warn(`Rate limit hit for ${modelName}, retrying with fallback model...`);
+
+      // Retry on 503 (High Demand / Spike) or 429 (Rate Limit)
+      if (
+        (errStr.includes('503') || errStr.includes('UNAVAILABLE') || errStr.includes('429') || errStr.includes('RESOURCE_EXHAUSTED')) &&
+        attempt < maxRetries
+      ) {
+        const delayMs = attempt * 1200; // 1.2s, 2.4s backoff
+        console.warn(`Gemini 3.6 Flash busy/limited (attempt ${attempt}/${maxRetries}), retrying in ${delayMs}ms...`);
+        await new Promise((resolve) => setTimeout(resolve, delayMs));
         continue;
       }
 
-      // If non-rate limit error, throw immediately
       throw err;
     }
   }
@@ -249,7 +253,7 @@ export async function runChatOrchestration(
     : buildFullPrompt(context);
 
   try {
-    const response = await generateContentWithFallback(prompt);
+    const response = await generateContentWithRetry(prompt);
     const text = response.text || '';
     const parsed = cleanAndParseJSON(text);
 
@@ -279,11 +283,11 @@ export async function runChatOrchestration(
       };
     }
 
-    if (errStr.includes('429') || errStr.includes('RESOURCE_EXHAUSTED') || errStr.includes('Quota exceeded')) {
+    if (errStr.includes('429') || errStr.includes('RESOURCE_EXHAUSTED') || errStr.includes('Quota exceeded') || errStr.includes('503') || errStr.includes('UNAVAILABLE')) {
       return {
         messages: [
-          '⏳ Maaf, kuota/rate-limit AI Gemini sedang mencapai batas per menitnya.',
-          'Mohon tunggu sekitar 30 detik sebelum mencoba kembali ya! 🙏',
+          '⏳ Server AI Google Gemini sedang mengalami lonjakan trafik singkat.',
+          'Sistem otomatis mencoba ulang. Silakan kirim ulang pesan kamu dalam beberapa detik ya! 🙏',
         ],
         follow_up_question: '',
         extracted_data: null,
