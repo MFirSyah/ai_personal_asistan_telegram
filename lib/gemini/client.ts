@@ -3,7 +3,7 @@ import { GoogleGenAI } from '@google/genai';
 const apiKey = process.env.GEMINI_API_KEY || '';
 
 export const ai = new GoogleGenAI({ apiKey });
-export const DEFAULT_MODEL = 'gemini-2.5-flash';
+export const DEFAULT_MODEL = 'gemini-2.0-flash';
 export const EMBEDDING_MODEL = 'text-embedding-004';
 
 export async function generateCategoryEmbedding(text: string): Promise<number[]> {

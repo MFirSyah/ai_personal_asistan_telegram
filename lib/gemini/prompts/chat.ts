@@ -123,8 +123,21 @@ Jawab HANYA dengan JSON valid tanpa markdown formatting tambahan atau pembungkus
       location: parsed.location || null,
       sources: parsed.sources || [],
     };
-  } catch (error) {
+  } catch (error: any) {
     console.error('Chat orchestration error:', error);
+    const errStr = String(error?.message || error || '');
+
+    if (errStr.includes('429') || errStr.includes('RESOURCE_EXHAUSTED') || errStr.includes('Quota exceeded')) {
+      return {
+        messages: [
+          '⏳ Maaf, kuota/rate-limit AI Gemini dari Google sedang mencapai batas gratis per menitnya.',
+          'Mohon tunggu sekitar 30 detik sebelum mencoba mengirim pesan kembali ya! 🙏',
+        ],
+        follow_up_question: '',
+        extracted_data: null,
+      };
+    }
+
     return {
       messages: ['Maaf, terjadi kesalahan saat memproses pesan kamu.'],
       follow_up_question: 'Bisa tolong diulangi lagi?',
