@@ -124,14 +124,15 @@ export async function POST(req: NextRequest) {
     return NextResponse.json({ ok: true });
   }
 
-  // 5. Handle Photo (Receipt OCR)
+  const appBaseUrl = process.env.NEXT_PUBLIC_APP_URL || 'http://localhost:3000';
+
+  // 5. Handle Photo (Receipt OCR) asynchronously
   if (photo && photo.length > 0) {
     const largestPhoto = photo[photo.length - 1]; // get highest resolution
     const fileId = largestPhoto.file_id;
 
-    // Call OCR receipt endpoint internally
-    const appBaseUrl = process.env.NEXT_PUBLIC_APP_URL || 'http://localhost:3000';
-    await fetch(`${appBaseUrl}/api/receipts/process`, {
+    // Trigger OCR processing asynchronously to prevent Telegram timeout
+    fetch(`${appBaseUrl}/api/receipts/process`, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({
@@ -139,14 +140,13 @@ export async function POST(req: NextRequest) {
         chatId,
         fileId,
       }),
-    });
+    }).catch((err) => console.error('Background receipt process error:', err));
 
     return NextResponse.json({ ok: true });
   }
 
-  // 6. Handle Regular Text Message (Chat Orchestration)
-  const appBaseUrl = process.env.NEXT_PUBLIC_APP_URL || 'http://localhost:3000';
-  await fetch(`${appBaseUrl}/api/chat/respond`, {
+  // 6. Handle Regular Text Message (Chat Orchestration) asynchronously
+  fetch(`${appBaseUrl}/api/chat/respond`, {
     method: 'POST',
     headers: { 'Content-Type': 'application/json' },
     body: JSON.stringify({
@@ -155,7 +155,8 @@ export async function POST(req: NextRequest) {
       userMessage: text,
       userName: user.name || message.from.first_name,
     }),
-  });
+  }).catch((err) => console.error('Background chat respond error:', err));
 
+  // Return HTTP 200 OK immediately to Telegram (<50ms)
   return NextResponse.json({ ok: true });
 }
