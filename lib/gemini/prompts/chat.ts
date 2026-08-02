@@ -123,7 +123,7 @@ function buildFullPrompt(context: ChatOrchestrationContext): string {
   parts.push(`Waktu Sekarang: ${new Date().toLocaleString('id-ID', { timeZone: 'Asia/Jakarta' })} (WIB)`);
 
   if (context.chatHistory?.length) {
-    const recentHistory = context.chatHistory.slice(0, 5).map(h => `${h.role}: ${h.content?.substring(0, 150)}`);
+    const recentHistory = context.chatHistory.slice(0, 10).map(h => `${h.role}: ${h.content?.substring(0, 150)}`);
     parts.push(`Riwayat Percakapan Terakhir:\n${recentHistory.join('\n')}`);
   }
 
@@ -147,8 +147,8 @@ function buildFullPrompt(context: ChatOrchestrationContext): string {
   }
 
   if (context.preferences?.length) {
-    const slimPrefs = context.preferences.slice(0, 5).map(p => `${p.key}: ${p.value}`);
-    parts.push(`Preferensi: ${slimPrefs.join(', ')}`);
+    const slimPrefs = context.preferences.slice(0, 20).map(p => `${p.key}: ${p.value}`);
+    parts.push(`Preferensi & Catatan Memori Pengguna:\n${slimPrefs.join('\n')}`);
   }
 
   const existingCats = context.existingCategories?.length
