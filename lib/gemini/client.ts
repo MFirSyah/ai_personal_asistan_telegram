@@ -4,10 +4,10 @@ const apiKey = process.env.GEMINI_API_KEY || '';
 
 export const ai = new GoogleGenAI({ apiKey });
 
-// Official Google Gemini model identifiers
-export const PRIMARY_MODEL = 'gemini-2.5-flash';
-export const FALLBACK_MODEL = 'gemini-2.0-flash';
-export const TERTIARY_MODEL = 'gemini-1.5-flash';
+// User requested model: gemini-3.6-flash as primary
+export const PRIMARY_MODEL = 'gemini-3.6-flash';
+export const FALLBACK_MODEL = 'gemini-2.5-flash';
+export const TERTIARY_MODEL = 'gemini-2.0-flash';
 export const DEFAULT_MODEL = PRIMARY_MODEL;
 export const EMBEDDING_MODEL = 'text-embedding-004';
 
