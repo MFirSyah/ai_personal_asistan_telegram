@@ -1,10 +1,11 @@
-import { NextRequest, NextResponse } from 'next/server';
+import { NextRequest, NextResponse, after } from 'next/server';
 import { verifyTelegramWebhook } from '@/lib/telegram/verify-webhook';
 import { getUserByTelegramId, touchOrStartSession } from '@/lib/supabase/queries/sessions';
 import { checkAndUpdateRateLimit } from '@/lib/gemini/rate-limiter';
 import { sendTelegramMessage, sendTelegramChatAction } from '@/lib/telegram/send-message';
 import { buildConfirmationInlineKeyboard, buildDashboardInlineKeyboard } from '@/lib/telegram/inline-keyboard';
 import { scheduleBatchJob } from '@/lib/jobs/create-job';
+import { processChatRespondDirect } from '@/lib/telegram/chat-processor';
 
 export async function POST(req: NextRequest) {
   if (!verifyTelegramWebhook(req)) {
@@ -124,40 +125,33 @@ export async function POST(req: NextRequest) {
     return NextResponse.json({ ok: true });
   }
 
-  // Send typing animation status immediately to user's Telegram screen
+  // 5. Send typing indicator immediately (<30ms)
   sendTelegramChatAction(chatId, photo ? 'upload_photo' : 'typing').catch(console.error);
 
-  const appBaseUrl = process.env.NEXT_PUBLIC_APP_URL || 'http://localhost:3000';
-
-  // 5. Handle Photo (Receipt OCR) asynchronously
-  if (photo && photo.length > 0) {
-    const largestPhoto = photo[photo.length - 1]; // get highest resolution
-    const fileId = largestPhoto.file_id;
-
-    fetch(`${appBaseUrl}/api/receipts/process`, {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({
-        userId: user.id,
+  // 6. Use Next.js after() to safely execute processing background task in Vercel serverless without termination/freezing
+  after(async () => {
+    if (photo && photo.length > 0) {
+      const appBaseUrl = process.env.NEXT_PUBLIC_APP_URL || 'http://localhost:3000';
+      const largestPhoto = photo[photo.length - 1];
+      await fetch(`${appBaseUrl}/api/receipts/process`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          userId: user.id,
+          chatId,
+          fileId: largestPhoto.file_id,
+        }),
+      }).catch((err) => console.error('Background receipt process error:', err));
+    } else {
+      await processChatRespondDirect(
+        user.id,
         chatId,
-        fileId,
-      }),
-    }).catch((err) => console.error('Background receipt process error:', err));
+        text,
+        user.name || message.from.first_name
+      );
+    }
+  });
 
-    return NextResponse.json({ ok: true });
-  }
-
-  // 6. Handle Regular Text Message (Chat Orchestration) asynchronously
-  fetch(`${appBaseUrl}/api/chat/respond`, {
-    method: 'POST',
-    headers: { 'Content-Type': 'application/json' },
-    body: JSON.stringify({
-      userId: user.id,
-      chatId,
-      userMessage: text,
-      userName: user.name || message.from.first_name,
-    }),
-  }).catch((err) => console.error('Background chat respond error:', err));
-
+  // Return HTTP 200 OK immediately to Telegram (<30ms)
   return NextResponse.json({ ok: true });
 }
