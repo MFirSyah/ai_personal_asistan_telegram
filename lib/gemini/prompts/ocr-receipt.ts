@@ -1,4 +1,4 @@
-import { ai, DEFAULT_MODEL } from '../client';
+import { generateContentWithFallback } from '../client';
 
 export interface ReceiptItem {
   name: string;
@@ -41,9 +41,8 @@ Format JSON:
 `;
 
   try {
-    const response = await ai.models.generateContent({
-      model: DEFAULT_MODEL,
-      contents: [
+    const { response, usedModel } = await generateContentWithFallback(
+      [
         {
           inlineData: {
             data: base64Data,
@@ -54,10 +53,12 @@ Format JSON:
           text: prompt,
         },
       ],
-      config: {
+      {
         responseMimeType: 'application/json',
       },
-    });
+      20_000
+    );
+    console.log(`[OCR Receipt] Processed successfully using model: ${usedModel}`);
 
     const parsed = JSON.parse(response.text || '{}');
 

@@ -205,43 +205,7 @@ async function withTimeout<T>(promise: Promise<T>, timeoutMs: number, fallbackMe
 
 const GEMINI_TIMEOUT_MS = 15_000;
 
-// Automatic exponential backoff retry for gemini-3.6-flash (up to 3 retries: 1s, 2s, 3s)
-async function generateContentWithRetry(prompt: string): Promise<any> {
-  const maxRetries = 3;
-  let lastError: any = null;
-
-  for (let attempt = 1; attempt <= maxRetries; attempt++) {
-    try {
-      const apiCall = ai.models.generateContent({
-        model: PRIMARY_MODEL,
-        contents: prompt,
-        config: {
-          responseMimeType: 'application/json',
-        },
-      });
-
-      return await withTimeout(apiCall, GEMINI_TIMEOUT_MS, `Gemini API (${PRIMARY_MODEL}) timeout`);
-    } catch (err: any) {
-      lastError = err;
-      const errStr = String(err?.message || err || '');
-
-      // Retry on 503 (High Demand / Spike) or 429 (Rate Limit)
-      if (
-        (errStr.includes('503') || errStr.includes('UNAVAILABLE') || errStr.includes('429') || errStr.includes('RESOURCE_EXHAUSTED')) &&
-        attempt < maxRetries
-      ) {
-        const delayMs = attempt * 1200; // 1.2s, 2.4s backoff
-        console.warn(`Gemini 3.6 Flash busy/limited (attempt ${attempt}/${maxRetries}), retrying in ${delayMs}ms...`);
-        await new Promise((resolve) => setTimeout(resolve, delayMs));
-        continue;
-      }
-
-      throw err;
-    }
-  }
-
-  throw lastError;
-}
+import { generateContentWithFallback } from '../client';
 
 export async function runChatOrchestration(
   context: ChatOrchestrationContext
@@ -253,7 +217,12 @@ export async function runChatOrchestration(
     : buildFullPrompt(context);
 
   try {
-    const response = await generateContentWithRetry(prompt);
+    const { response, usedModel } = await generateContentWithFallback(
+      prompt,
+      { responseMimeType: 'application/json' },
+      15_000
+    );
+    console.log(`[Chat Orchestration] Handled successfully using model: ${usedModel}`);
     const text = response.text || '';
     const parsed = cleanAndParseJSON(text);
 
