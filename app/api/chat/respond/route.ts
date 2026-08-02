@@ -13,7 +13,7 @@ import { getUserPreferences, saveUserPreference } from '@/lib/supabase/queries/p
 import { getUserCategories, getOrCreateCategory, matchCategoryByEmbedding } from '@/lib/supabase/queries/categories';
 import { categorizeItem } from '@/lib/gemini/prompts/categorize';
 import { generateCategoryEmbedding } from '@/lib/gemini/client';
-import { sendTelegramMessageBubbles, sendTelegramMessage } from '@/lib/telegram/send-message';
+import { sendTelegramMessageBubbles, sendTelegramMessage, sendTelegramChatAction } from '@/lib/telegram/send-message';
 import { sendTelegramChart } from '@/lib/telegram/send-chart';
 import { sendTelegramLocation } from '@/lib/telegram/send-location';
 
@@ -23,6 +23,10 @@ export async function POST(req: NextRequest) {
 
     if (!userId || !userMessage) {
       return NextResponse.json({ error: 'Missing required fields' }, { status: 400 });
+    }
+
+    if (chatId) {
+      sendTelegramChatAction(chatId, 'typing').catch(console.error);
     }
 
     // 1. Fetch context
@@ -37,6 +41,10 @@ export async function POST(req: NextRequest) {
 
     // Save user message to history
     await saveChatMessage(userId, 'user', userMessage);
+
+    if (chatId) {
+      sendTelegramChatAction(chatId, 'typing').catch(console.error);
+    }
 
     // 2. Run Gemini AI Orchestration
     const result = await runChatOrchestration({

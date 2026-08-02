@@ -2,7 +2,7 @@ import { NextRequest, NextResponse } from 'next/server';
 import { verifyTelegramWebhook } from '@/lib/telegram/verify-webhook';
 import { getUserByTelegramId, touchOrStartSession } from '@/lib/supabase/queries/sessions';
 import { checkAndUpdateRateLimit } from '@/lib/gemini/rate-limiter';
-import { sendTelegramMessage } from '@/lib/telegram/send-message';
+import { sendTelegramMessage, sendTelegramChatAction } from '@/lib/telegram/send-message';
 import { buildConfirmationInlineKeyboard, buildDashboardInlineKeyboard } from '@/lib/telegram/inline-keyboard';
 import { scheduleBatchJob } from '@/lib/jobs/create-job';
 
@@ -124,6 +124,9 @@ export async function POST(req: NextRequest) {
     return NextResponse.json({ ok: true });
   }
 
+  // Send typing animation status immediately to user's Telegram screen
+  sendTelegramChatAction(chatId, photo ? 'upload_photo' : 'typing').catch(console.error);
+
   const appBaseUrl = process.env.NEXT_PUBLIC_APP_URL || 'http://localhost:3000';
 
   // 5. Handle Photo (Receipt OCR) asynchronously
@@ -131,7 +134,6 @@ export async function POST(req: NextRequest) {
     const largestPhoto = photo[photo.length - 1]; // get highest resolution
     const fileId = largestPhoto.file_id;
 
-    // Trigger OCR processing asynchronously to prevent Telegram timeout
     fetch(`${appBaseUrl}/api/receipts/process`, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
@@ -157,6 +159,5 @@ export async function POST(req: NextRequest) {
     }),
   }).catch((err) => console.error('Background chat respond error:', err));
 
-  // Return HTTP 200 OK immediately to Telegram (<50ms)
   return NextResponse.json({ ok: true });
 }

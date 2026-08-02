@@ -1,6 +1,26 @@
 const TELEGRAM_BOT_TOKEN = process.env.TELEGRAM_BOT_TOKEN;
 const TELEGRAM_API_BASE = `https://api.telegram.org/bot${TELEGRAM_BOT_TOKEN}`;
 
+export async function sendTelegramChatAction(
+  chatId: number | string,
+  action: 'typing' | 'upload_photo' | 'find_location' = 'typing'
+): Promise<any> {
+  if (!TELEGRAM_BOT_TOKEN) return { ok: true };
+
+  const url = `${TELEGRAM_API_BASE}/sendChatAction`;
+  try {
+    const res = await fetch(url, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ chat_id: chatId, action }),
+    });
+    return await res.json();
+  } catch (error) {
+    console.error('Failed to send Telegram chat action:', error);
+    return null;
+  }
+}
+
 export async function sendTelegramMessage(
   chatId: number | string,
   text: string,
