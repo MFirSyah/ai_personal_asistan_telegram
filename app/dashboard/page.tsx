@@ -1,6 +1,8 @@
 'use client';
 
-import { useEffect, useState } from 'react';
+import { useEffect, useState, Suspense } from 'react';
+import { useSearchParams } from 'next/navigation';
+import { supabase } from '@/lib/supabase/client';
 import {
   TrendingUp,
   Wallet,
@@ -13,6 +15,7 @@ import {
   ArrowUpRight,
   ShieldCheck,
   RefreshCw,
+  CheckCircle,
 } from 'lucide-react';
 import {
   ResponsiveContainer,
@@ -28,31 +31,73 @@ import {
 
 const COLORS = ['#6366f1', '#10b981', '#f59e0b', '#ef4444', '#8b5cf6', '#ec4899', '#14b8a6'];
 
-export default function DashboardPage() {
+function DashboardContent() {
+  const searchParams = useSearchParams();
+  const urlTelegramId = searchParams.get('telegram_id');
+
   const [loading, setLoading] = useState(true);
   const [analytics, setAnalytics] = useState<any[]>([]);
   const [activeTab, setActiveTab] = useState<'all' | 'reflection' | 'current' | 'projection'>('all');
   const [userName, setUserName] = useState<string>('User');
-  const [telegramValid, setTelegramValid] = useState<boolean>(false);
+  const [telegramLinked, setTelegramLinked] = useState<boolean>(false);
+  const [userEmail, setUserEmail] = useState<string | null>(null);
 
   useEffect(() => {
-    // Check Telegram WebApp environment
-    if (typeof window !== 'undefined' && (window as any).Telegram?.WebApp) {
-      const webApp = (window as any).Telegram.WebApp;
-      webApp.ready();
-      webApp.expand();
+    const initAuthAndData = async () => {
+      setLoading(true);
 
-      const user = webApp.initDataUnsafe?.user;
-      if (user?.first_name) {
-        setUserName(user.first_name);
-        setTelegramValid(true);
+      let effectiveTelegramId = urlTelegramId;
+      let effectiveName = 'User';
+
+      // 1. Check Telegram WebApp environment
+      if (typeof window !== 'undefined' && (window as any).Telegram?.WebApp) {
+        const webApp = (window as any).Telegram.WebApp;
+        webApp.ready();
+        webApp.expand();
+
+        const tgUser = webApp.initDataUnsafe?.user;
+        if (tgUser?.id) {
+          effectiveTelegramId = String(tgUser.id);
+          effectiveName = tgUser.first_name || 'User';
+          setUserName(effectiveName);
+        }
       }
-    }
 
-    // Fetch Analytics Data
-    const fetchAnalytics = async () => {
+      // 2. Check Supabase Authenticated User
+      const { data: { user: authUser } } = await supabase.auth.getUser();
+
+      let targetUserId = 'demo-user';
+
+      if (authUser && authUser.email) {
+        setUserEmail(authUser.email);
+
+        // Link Telegram ID to Public Users table if present
+        if (effectiveTelegramId) {
+          try {
+            const linkRes = await fetch('/api/auth/link-telegram', {
+              method: 'POST',
+              headers: { 'Content-Type': 'application/json' },
+              body: JSON.stringify({
+                email: authUser.email,
+                telegramId: effectiveTelegramId,
+                name: effectiveName !== 'User' ? effectiveName : authUser.email.split('@')[0],
+              }),
+            });
+            const linkData = await linkRes.json();
+            if (linkData.ok && linkData.user) {
+              setTelegramLinked(true);
+              targetUserId = linkData.user.id;
+              setUserName(linkData.user.name || effectiveName);
+            }
+          } catch (err) {
+            console.error('Failed to link Telegram account:', err);
+          }
+        }
+      }
+
+      // 3. Fetch Analytics Summary
       try {
-        const res = await fetch('/api/analytics/summary?userId=demo-user');
+        const res = await fetch(`/api/analytics/summary?userId=${targetUserId}`);
         const data = await res.json();
 
         if (data.insights && Array.isArray(data.insights)) {
@@ -65,8 +110,8 @@ export default function DashboardPage() {
       }
     };
 
-    fetchAnalytics();
-  }, []);
+    initAuthAndData();
+  }, [urlTelegramId]);
 
   const filteredAnalytics = analytics.filter((item) => {
     if (activeTab === 'all') return true;
@@ -86,13 +131,14 @@ export default function DashboardPage() {
           </div>
           <p className="text-sm text-slate-400">
             Ringkasan 20 Analisis Keuangan & Aktivitas untuk <span className="text-indigo-300 font-semibold">{userName}</span>
+            {userEmail && <span className="text-xs text-slate-500 block font-mono mt-0.5">{userEmail}</span>}
           </p>
         </div>
 
-        <div className="flex items-center gap-3">
-          {telegramValid && (
-            <span className="flex items-center gap-1.5 text-xs bg-emerald-500/10 text-emerald-400 border border-emerald-500/20 px-3 py-1.5 rounded-full">
-              <ShieldCheck className="w-3.5 h-3.5" /> Telegram Verified
+        <div className="flex flex-wrap items-center gap-3">
+          {telegramLinked && (
+            <span className="flex items-center gap-1.5 text-xs bg-emerald-500/10 text-emerald-400 border border-emerald-500/20 px-3 py-1.5 rounded-full font-medium">
+              <CheckCircle className="w-3.5 h-3.5" /> Telegram Linked & Active
             </span>
           )}
 
@@ -156,7 +202,7 @@ export default function DashboardPage() {
       {loading ? (
         <div className="flex flex-col items-center justify-center py-20">
           <RefreshCw className="w-8 h-8 text-indigo-500 animate-spin mb-3" />
-          <p className="text-slate-400 text-sm">Memuat data analisis harian...</p>
+          <p className="text-slate-400 text-sm">Menghubungkan akun & memuat data analisis...</p>
         </div>
       ) : (
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
@@ -246,5 +292,13 @@ export default function DashboardPage() {
         </div>
       )}
     </div>
+  );
+}
+
+export default function DashboardPage() {
+  return (
+    <Suspense fallback={<div className="p-8 text-center text-slate-400 text-sm">Memuat dashboard...</div>}>
+      <DashboardContent />
+    </Suspense>
   );
 }
