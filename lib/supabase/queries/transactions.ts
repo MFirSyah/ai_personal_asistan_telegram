@@ -55,6 +55,46 @@ export async function insertTransaction(tx: Partial<Transaction>): Promise<Trans
   return data as Transaction;
 }
 
+export async function softDeleteTransactionByCriteria(
+  userId: string,
+  criteria?: { amount?: number; type?: 'expense' | 'income' }
+): Promise<boolean> {
+  let query = supabaseAdmin
+    .from('transactions')
+    .select('id')
+    .eq('user_id', userId)
+    .is('deleted_at', null)
+    .order('created_at', { ascending: false });
+
+  if (criteria?.amount) {
+    query = query.eq('amount', criteria.amount);
+  }
+  if (criteria?.type) {
+    query = query.eq('type', criteria.type);
+  }
+
+  const { data: matches, error: findError } = await query.limit(1);
+
+  if (findError || !matches || matches.length === 0) {
+    console.warn('No matching transaction found to soft delete:', findError);
+    return false;
+  }
+
+  const targetId = matches[0].id;
+
+  const { error: updateError } = await supabaseAdmin
+    .from('transactions')
+    .update({ deleted_at: new Date().toISOString() })
+    .eq('id', targetId);
+
+  if (updateError) {
+    console.error('Failed to soft delete transaction:', updateError);
+    return false;
+  }
+
+  return true;
+}
+
 export async function insertActivity(activity: Partial<Activity>): Promise<Activity> {
   const { data, error } = await supabaseAdmin
     .from('activities')

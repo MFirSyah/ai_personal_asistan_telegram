@@ -34,6 +34,10 @@ export interface ChatOrchestrationResult {
       value: string;
       learned_from?: string;
     } | null;
+    cancel_transaction?: {
+      amount?: number;
+      type?: 'expense' | 'income';
+    } | null;
   } | null;
   reasoning?: string;
   chart?: {
@@ -167,9 +171,10 @@ PESAN BARU DARI USER:
 
 TUGAS KAMU:
 1. Analisis pesan user. Jika mengandung pencatatan keuangan, aktivitas/agenda, atau preferensi baru, ekstraksi datanya ke \`extracted_data\`.
-2. Untuk pencatatan aktivitas/agenda (seperti jadwal rapat, ingatkan print, dll), ekstraksi ke \`extracted_data.activity\`.
-3. Hasilkan 1-2 pesan bubble (\`messages\`) balasan yang alami, hangat, dan solutif.
-4. Sediakan 1 pertanyaan lanjutan (\`follow_up_question\`) singkat.
+2. Jika user ingin **membatalkan / menghapus / merevisi** transaksi terakhir (misal: "batalkan transaksi tadi", "hapus pengeluaran 50rb tadi", "batal"), set \`extracted_data.cancel_transaction\` dengan objek berisi \`amount\` (jika disebutkan) dan \`type\` (expense / income).
+3. Untuk pencatatan aktivitas/agenda (seperti jadwal rapat, ingatkan print, dll), ekstraksi ke \`extracted_data.activity\`.
+4. Hasilkan 1-2 pesan bubble (\`messages\`) balasan yang alami, hangat, dan solutif.
+5. Sediakan 1 pertanyaan lanjutan (\`follow_up_question\`) singkat.
 
 FORMAT OUTPUT (WAJIB JSON VALID TANPA MARKDOWN BACKTICKS):
 {
@@ -178,7 +183,8 @@ FORMAT OUTPUT (WAJIB JSON VALID TANPA MARKDOWN BACKTICKS):
   "extracted_data": {
     "transaction": null,
     "activity": null,
-    "preference": null
+    "preference": null,
+    "cancel_transaction": null
   },
   "reasoning": "Alasan singkat",
   "chart": null,

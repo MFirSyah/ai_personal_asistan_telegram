@@ -6,6 +6,7 @@ import {
   saveChatMessage,
   insertTransaction,
   insertActivity,
+  softDeleteTransactionByCriteria,
 } from '@/lib/supabase/queries/transactions';
 import { getUserPreferences, saveUserPreference } from '@/lib/supabase/queries/preferences';
 import { getUserCategories, getOrCreateCategory } from '@/lib/supabase/queries/categories';
@@ -91,6 +92,15 @@ export async function processChatRespondDirect(
       if (ext.preference && ext.preference.key) {
         const pref = ext.preference;
         await saveUserPreference(userId, pref.key, pref.value, pref.learned_from);
+      }
+
+      // Cancel/Delete Transaction (New feature to cancel transaction on user command)
+      if (ext.cancel_transaction) {
+        const cancel = ext.cancel_transaction;
+        await softDeleteTransactionByCriteria(userId, {
+          amount: cancel.amount || undefined,
+          type: cancel.type || undefined,
+        });
       }
     }
 
