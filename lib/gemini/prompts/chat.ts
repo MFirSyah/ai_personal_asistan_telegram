@@ -1,4 +1,4 @@
-import { ai, PRIMARY_MODEL } from '../client';
+import { ai } from '../client';
 
 export interface ChatOrchestrationContext {
   userMessage: string;
