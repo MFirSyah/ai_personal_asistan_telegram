@@ -35,21 +35,26 @@ export async function sendTelegramChart(
   config: ChartConfig,
   caption?: string
 ): Promise<any> {
-  const photoUrl = generateQuickChartUrl(config);
-
-  if (!TELEGRAM_BOT_TOKEN) {
-    console.warn(`[TELEGRAM MOCK CHART] sendTo ${chatId}: ${photoUrl}`);
-    return { ok: true, mock: true };
-  }
-
-  const url = `${TELEGRAM_API_BASE}/sendPhoto`;
-  const body = {
-    chat_id: chatId,
-    photo: photoUrl,
-    caption: caption || '',
-  };
-
   try {
+    if (!config || !Array.isArray(config.labels) || !Array.isArray(config.datasets)) {
+      console.warn('Invalid chart config skipped:', config);
+      return null;
+    }
+
+    const photoUrl = generateQuickChartUrl(config);
+
+    if (!TELEGRAM_BOT_TOKEN) {
+      console.warn(`[TELEGRAM MOCK CHART] sendTo ${chatId}: ${photoUrl}`);
+      return { ok: true, mock: true };
+    }
+
+    const url = `${TELEGRAM_API_BASE}/sendPhoto`;
+    const body = {
+      chat_id: chatId,
+      photo: photoUrl,
+      caption: caption || '',
+    };
+
     const res = await fetch(url, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
