@@ -4,13 +4,12 @@ const apiKey = process.env.GEMINI_API_KEY || '';
 
 export const ai = new GoogleGenAI({ apiKey });
 
-// Model chain yang terbukti 100% aktif (200 OK) pada API Key user berdasarkan pengujian langsung:
+// Model ber-kuota tinggi (500 RPD & 15 RPM) sesuai instruksi user
 export const MODEL_FALLBACK_CHAIN = [
-  'gemini-3.5-flash',       // Model Utama (Terbukti 200 OK & Responsif)
-  'gemini-3.5-flash-lite',  // Cadangan 1 (Terbukti 200 OK & Ultra Cepat)
-  'gemini-3.1-flash-lite',  // Cadangan 2 (Terbukti 200 OK)
-  'gemini-3-flash-preview', // Cadangan 3 (Terbukti 200 OK)
-  'gemini-3.6-flash',       // Cadangan 4 (Aktif saat kuota 3.6 reset)
+  'gemini-3.5-flash-lite', // Model Utama (Kuota 500 RPD & 15 RPM - 25x lebih besar!)
+  'gemini-3.1-flash-lite', // Cadangan Utama (Kuota 500 RPD & 15 RPM)
+  'gemini-3.5-flash',      // Cadangan 2 (Kuota 20 RPD)
+  'gemini-3.6-flash',      // Cadangan 3 (Kuota 20 RPD)
 ];
 
 export const PRIMARY_MODEL = MODEL_FALLBACK_CHAIN[0];
