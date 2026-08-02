@@ -1,4 +1,4 @@
-import { ai, DEFAULT_MODEL } from '../client';
+import { generateContentWithFallback } from '../client';
 
 export interface DailyBriefingContext {
   userName?: string;
@@ -39,12 +39,8 @@ FORMAT JSON OUTPUT:
 `;
 
   try {
-    const response = await ai.models.generateContent({
-      model: DEFAULT_MODEL,
-      contents: prompt,
-      config: {
-        responseMimeType: 'application/json',
-      },
+    const { response } = await generateContentWithFallback(prompt, {
+      responseMimeType: 'application/json',
     });
 
     const parsed = JSON.parse(response.text || '{}');
