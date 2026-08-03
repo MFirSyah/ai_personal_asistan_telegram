@@ -57,6 +57,11 @@ export interface ChatOrchestrationResult {
       tags?: string[];
       occurred_at?: string;
     } | null;
+    preferences?: Array<{
+      key: string;
+      value: string;
+      learned_from?: string;
+    }> | null;
     preference?: {
       key: string;
       value: string;
