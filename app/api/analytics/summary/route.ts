@@ -23,19 +23,19 @@ export async function GET(req: NextRequest) {
     const liveAnalytics = await calculate20Analytics(userId);
     const today = new Date().toISOString().split('T')[0];
 
-    // Async cache update to daily_insights
-    supabaseAdmin
-      .from('daily_insights')
-      .upsert(
+    // Sync cache to daily_insights
+    try {
+      await supabaseAdmin.from('daily_insights').upsert(
         {
           user_id: userId,
           insight_date: today,
           payload: liveAnalytics,
         },
         { onConflict: 'user_id,insight_date' }
-      )
-      .then(() => {})
-      .catch((err) => console.error('Cache update error:', err));
+      );
+    } catch (cacheErr) {
+      console.error('Cache update error:', cacheErr);
+    }
 
     return NextResponse.json({
       cached: false,
