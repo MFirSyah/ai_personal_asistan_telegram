@@ -259,6 +259,7 @@ export async function POST(req: NextRequest) {
     helpMsg += `Daftar Perintah Ringkas:\n`;
     helpMsg += `- /ringkasan : Rekap cepat keuangan\n`;
     helpMsg += `- /dashboard : Mini App interaktif\n`;
+    helpMsg += `- /nama : Lihat & ubah nama panggilan AI\n`;
     helpMsg += `- /progress : Cek proses hapus/job\n`;
     helpMsg += `- /preferensi : Pola yang dipelajari AI\n`;
     helpMsg += `- /briefing : Atur pengingat pagi\n`;
