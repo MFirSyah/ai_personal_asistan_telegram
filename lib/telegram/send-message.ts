@@ -40,6 +40,7 @@ export async function setTelegramBotCommands(): Promise<any> {
     { command: 'utang', description: 'Daftar catatan utang & piutang' },
     { command: 'lunas_semua_utang', description: 'Batch update: Tandai semua utang lunas' },
     { command: 'selesaikan_semua_aktivitas', description: 'Batch update: Tandai semua aktivitas selesai' },
+    { command: 'acak_jam', description: 'Batch update: Set tanggal ke hari ini & acak jam' },
     { command: 'habit', description: 'Statistik habit tracker & streak' },
     { command: 'nama', description: 'Lihat & ubah nama panggilan AI kamu' },
     { command: 'briefing', description: 'Atur jam morning briefing harian' },
