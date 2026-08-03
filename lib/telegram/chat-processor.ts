@@ -9,6 +9,7 @@ import {
   softDeleteTransactionByCriteria,
 } from '@/lib/supabase/queries/transactions';
 import { getUserPreferences, saveUserPreference } from '@/lib/supabase/queries/preferences';
+import { updateUserName } from '@/lib/supabase/queries/sessions';
 import { getUserCategories, getOrCreateCategory } from '@/lib/supabase/queries/categories';
 import { sendTelegramMessageBubbles, sendTelegramMessage, sendTelegramChatAction } from '@/lib/telegram/send-message';
 import { sendTelegramChart } from '@/lib/telegram/send-chart';
@@ -94,6 +95,12 @@ export async function processChatRespondDirect(
       if (ext.preference && ext.preference.key) {
         const pref = ext.preference;
         await saveUserPreference(userId, pref.key, pref.value, pref.learned_from);
+
+        // Sync name preference directly to users.name column in database
+        const keyLower = pref.key.toLowerCase();
+        if (keyLower.includes('nama') || keyLower.includes('name') || keyLower.includes('panggilan')) {
+          await updateUserName(userId, pref.value);
+        }
       }
 
       // Cancel/Delete Transaction (New feature to cancel transaction on user command)

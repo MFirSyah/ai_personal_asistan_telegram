@@ -34,6 +34,7 @@ export async function setTelegramBotCommands(): Promise<any> {
     { command: 'dashboard', description: 'Buka Mini App Dashboard interaktif' },
     { command: 'progress', description: 'Cek progress tugas background / hapus data' },
     { command: 'preferensi', description: 'Lihat preferensi & gaya bahasa yang dipelajari AI' },
+    { command: 'nama', description: 'Lihat & ubah nama panggilan kamu untuk AI' },
     { command: 'briefing', description: 'Atur jam morning briefing harian' },
     { command: 'bantuan', description: 'Lihat panduan penggunaan bot' },
     { command: 'hapus_semua', description: 'Hapus semua data (perlu konfirmasi)' },

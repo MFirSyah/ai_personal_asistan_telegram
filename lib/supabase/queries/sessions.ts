@@ -27,6 +27,19 @@ export async function getUserByTelegramId(telegramId: number): Promise<User | nu
   return data as User;
 }
 
+export async function updateUserName(userId: string, name: string): Promise<boolean> {
+  const { error } = await supabaseAdmin
+    .from('users')
+    .update({ name })
+    .eq('id', userId);
+
+  if (error) {
+    console.error('Failed to update user name:', error);
+    return false;
+  }
+  return true;
+}
+
 export async function getActiveSession(userId: string): Promise<UserSession | null> {
   const { data, error } = await supabaseAdmin
     .from('user_sessions')

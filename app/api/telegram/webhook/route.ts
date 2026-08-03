@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse, after } from 'next/server';
 import { verifyTelegramWebhook } from '@/lib/telegram/verify-webhook';
-import { getUserByTelegramId, touchOrStartSession } from '@/lib/supabase/queries/sessions';
+import { getUserByTelegramId, touchOrStartSession, updateUserName } from '@/lib/supabase/queries/sessions';
 import { checkAndUpdateRateLimit } from '@/lib/gemini/rate-limiter';
 import { sendTelegramMessage, sendTelegramChatAction, setTelegramBotCommands } from '@/lib/telegram/send-message';
 import { buildConfirmationInlineKeyboard, buildDashboardInlineKeyboard } from '@/lib/telegram/inline-keyboard';
@@ -184,6 +184,27 @@ export async function POST(req: NextRequest) {
     });
 
     await sendTelegramMessage(chatId, prefMsg);
+    return NextResponse.json({ ok: true });
+  }
+
+  if (text.startsWith('/nama')) {
+    const newName = text.replace('/nama', '').trim();
+    if (!newName) {
+      const currentName = user.name || 'Belum diatur';
+      await sendTelegramMessage(
+        chatId,
+        `👤 **PENGATURAN NAMA PANGGILAN AI**\n\nNama kamu yang terdaftar saat ini: **${currentName}**\n\nUntuk mengubah nama panggilannya, ketik:\n\`/nama NamaKamu\` *(contoh: \`/nama Firman\` atau \`/nama Mas Firman\`)*`
+      );
+      return NextResponse.json({ ok: true });
+    }
+
+    await updateUserName(user.id, newName);
+    await saveUserPreference(user.id, 'nama_panggilan', newName, 'Pengaturan Perintah /nama');
+
+    await sendTelegramMessage(
+      chatId,
+      `✅ **Nama Panggilan Berhasil Diubah!**\nMulai sekarang AI akan selalu memanggil kamu dengan nama: **${newName}**.`
+    );
     return NextResponse.json({ ok: true });
   }
 
