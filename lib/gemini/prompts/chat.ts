@@ -21,6 +21,10 @@ export interface ChatOrchestrationResult {
       category: string;
       merchant?: string;
       description?: string;
+      payment_method?: string;
+      location?: string;
+      items?: any[];
+      tags?: string[];
       occurred_at?: string;
     }> | null;
     transaction?: {
@@ -29,18 +33,28 @@ export interface ChatOrchestrationResult {
       category: string;
       merchant?: string;
       description?: string;
+      payment_method?: string;
+      location?: string;
+      items?: any[];
+      tags?: string[];
       occurred_at?: string;
     } | null;
     activities?: Array<{
       title: string;
       category?: string;
       description?: string;
+      status?: 'scheduled' | 'in_progress' | 'completed' | 'cancelled';
+      priority?: 'low' | 'medium' | 'high' | 'urgent';
+      tags?: string[];
       occurred_at?: string;
     }> | null;
     activity?: {
       title: string;
       category?: string;
       description?: string;
+      status?: 'scheduled' | 'in_progress' | 'completed' | 'cancelled';
+      priority?: 'low' | 'medium' | 'high' | 'urgent';
+      tags?: string[];
       occurred_at?: string;
     } | null;
     preference?: {
