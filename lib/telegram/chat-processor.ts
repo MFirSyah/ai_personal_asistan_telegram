@@ -19,6 +19,32 @@ import { runChatOrchestration } from '@/lib/gemini/prompts/chat';
 import { generateExportFile } from '@/lib/export/export-data';
 import { supabaseAdmin } from '@/lib/supabase/client';
 
+function parseSafeIsoDate(dateStr?: string): string {
+  if (!dateStr) return new Date().toISOString();
+  try {
+    const cleanStr = dateStr.split(/[-–—]/)[0].trim();
+    let d = new Date(cleanStr);
+    if (!isNaN(d.getTime())) {
+      return d.toISOString();
+    }
+    const parts = cleanStr.split(/[\/\s:]/);
+    if (parts.length >= 3) {
+      const day = parseInt(parts[0], 10);
+      const month = parseInt(parts[1], 10) - 1;
+      const year = parseInt(parts[2], 10);
+      const hour = parts[3] ? parseInt(parts[3], 10) : 0;
+      const min = parts[4] ? parseInt(parts[4], 10) : 0;
+      d = new Date(Date.UTC(year < 100 ? 2000 + year : year, month, day, hour, min));
+      if (!isNaN(d.getTime())) {
+        return d.toISOString();
+      }
+    }
+  } catch (e) {
+    // Fallback to current time
+  }
+  return new Date().toISOString();
+}
+
 export async function processChatRespondDirect(
   userId: string,
   chatId: number | string,
@@ -65,23 +91,27 @@ export async function processChatRespondDirect(
       const txList = ext.transactions || (ext.transaction ? [ext.transaction] : []);
       for (const tx of txList) {
         if (tx && tx.amount > 0) {
-          const categoryName = tx.category || tx.merchant || 'Lain-lain';
-          const category = await getOrCreateCategory(userId, categoryName);
+          try {
+            const categoryName = tx.category || tx.merchant || 'Lain-lain';
+            const category = await getOrCreateCategory(userId, categoryName);
 
-          await insertTransaction({
-            user_id: userId,
-            category_id: category.id,
-            amount: tx.amount,
-            type: tx.type || 'expense',
-            merchant: tx.merchant,
-            description: tx.description,
-            source: 'chat_manual',
-            payment_method: tx.payment_method,
-            location: tx.location,
-            items: tx.items || [],
-            tags: tx.tags || [],
-            occurred_at: tx.occurred_at || new Date().toISOString(),
-          });
+            await insertTransaction({
+              user_id: userId,
+              category_id: category.id,
+              amount: tx.amount,
+              type: tx.type || 'expense',
+              merchant: tx.merchant,
+              description: tx.description,
+              source: 'chat_manual',
+              payment_method: tx.payment_method,
+              location: tx.location,
+              items: tx.items || [],
+              tags: tx.tags || [],
+              occurred_at: parseSafeIsoDate(tx.occurred_at),
+            });
+          } catch (txErr) {
+            console.error('Error inserting individual transaction:', txErr);
+          }
         }
       }
 
@@ -89,15 +119,19 @@ export async function processChatRespondDirect(
       const actList = ext.activities || (ext.activity ? [ext.activity] : []);
       for (const act of actList) {
         if (act && act.title) {
-          await insertActivity({
-            user_id: userId,
-            title: act.title,
-            description: act.description,
-            status: act.status || 'scheduled',
-            priority: act.priority || 'medium',
-            tags: act.tags || [],
-            occurred_at: act.occurred_at || new Date().toISOString(),
-          });
+          try {
+            await insertActivity({
+              user_id: userId,
+              title: act.title,
+              description: act.description,
+              status: act.status || 'scheduled',
+              priority: act.priority || 'medium',
+              tags: act.tags || [],
+              occurred_at: parseSafeIsoDate(act.occurred_at),
+            });
+          } catch (actErr) {
+            console.error('Error inserting individual activity:', actErr);
+          }
         }
       }
 
