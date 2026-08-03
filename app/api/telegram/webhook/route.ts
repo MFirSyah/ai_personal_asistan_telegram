@@ -9,6 +9,7 @@ import { processChatRespondDirect } from '@/lib/telegram/chat-processor';
 import { processReceiptDirect } from '@/lib/telegram/receipt-processor';
 import { calculate20Analytics } from '@/lib/analytics/calculators';
 import { getUserPreferences, saveUserPreference } from '@/lib/supabase/queries/preferences';
+import { getRecentTransactions } from '@/lib/supabase/queries/transactions';
 import { supabaseAdmin } from '@/lib/supabase/client';
 
 export async function POST(req: NextRequest) {
