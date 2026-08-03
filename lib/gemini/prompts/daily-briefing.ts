@@ -4,7 +4,9 @@ export interface DailyBriefingContext {
   userName?: string;
   insightPayload?: any[];
   yesterdayTransactions?: any[];
-  todayPlans?: any[];
+  activities?: any[];
+  plans?: any[];
+  preferences?: any[];
 }
 
 export interface DailyBriefingResult {
@@ -16,25 +18,34 @@ export async function generateDailyBriefing(
   context: DailyBriefingContext
 ): Promise<DailyBriefingResult> {
   const prompt = `
-Kamu adalah Asisten Keuangan & Aktivitas Personal yang menyapa user di pagi hari dengan santai, energik, dan memberikan briefing ringkas.
+Kamu adalah Asisten Keuangan & Aktivitas Personal yang memberikan Morning Briefing harian secara terstruktur, ramah, dan sangat rapi.
 
-DATA CONTEXT:
+KONTEKS USER:
 Nama User: ${context.userName || 'Teman'}
-Wawasan Harian Terakhir (Insight): ${JSON.stringify(context.insightPayload || [])}
-Transaksi Kemarin: ${JSON.stringify(context.yesterdayTransactions || [])}
-Rencana Hari Ini: ${JSON.stringify(context.todayPlans || [])}
+Preferensi User: ${JSON.stringify(context.preferences || [])}
+Daftar Aktivitas & Catatan: ${JSON.stringify(context.activities || [])}
+Daftar Rencana (Plans): ${JSON.stringify(context.plans || [])}
+Transaksi Terakhir: ${JSON.stringify(context.yesterdayTransactions || [])}
 
-TUGAS:
-1. Buat 1-3 bubble pesan ringkas (\`messages\`) menyapa di pagi hari, merangkum pencapaian/pengeluaran kemarin, dan memberi penyemangat untuk hari ini.
-2. Buat 1 pertanyaan penutup (\`follow_up_question\`) untuk memancing komunikasi pagi.
+TUGAS KAMU:
+Analisis seluruh agenda, rencana (plans), dan aktivitas pengguna. Susun Morning Briefing menjadi 1-3 pesan bubble (\`messages\`) yang mencakup 6 poin analisis berikut (Gunakan format bullet point dan emoji yang rapi):
 
-FORMAT JSON OUTPUT:
+1. 🚨 **Yang Perlu Dilakukan Hari Ini**: Agenda/rencana yang jatuh pada hari ini.
+2. 📅 **Yang Perlu Disiapkan Untuk Besok (1 Hari Ke Depan)**: Persiapan untuk besok.
+3. ⏳ **Yang Perlu Disiapkan Beberapa Hari Ke Depan (< 1 Minggu)**: Persiapan 2-6 hari ke depan (seperti persiapan liburan, sidang, tugas).
+4. 🗓️ **Yang Perlu Dilakukan Untuk Plan Seminggu Ke Depan**: Target/rencana 7 hari ke depan.
+5. 📌 **Yang Perlu Dilakukan Untuk Plan Sebulan Ke Depan**: Target/rencana bulan ini.
+6. ⚠️ **Yang Perlu Dilakukan Urgent / Mendesak**: Hal yang paling mendesak/penting yang membutuhkan perhatian khusus.
+
+Jika pada kategori tertentu belum ada data yang tercatat, berikan keterangan singkat yang ramah (misal: "Belum ada agenda khusus").
+
+FORMAT OUTPUT (WAJIB JSON VALID TANPA MARKDOWN BACKTICKS):
 {
   "messages": [
-    "Selamat pagi! ☀️ Kemarin kamu mencatat total pengeluaran sebesar Rp 150.000.",
-    "Untuk hari ini, ada 2 agenda terencana: ..."
+    "Selamat Pagi! ☀️ Berikut Morning Briefing kamu hari ini:",
+    "🚨 **Hari Ini**:\n• Sidang Skripsi (Jam 09:00 WIB)\n\n📅 **Persiapan Besok**:\n• Print berkas\n\n⏳ **Beberapa Hari Ke Depan (<1 Minggu)**:\n• Persiapan Liburan ke Dieng\n\n🗓️ **Seminggu Ke Depan**:\n• Evaluasi anggaran mingguan\n\n📌 **Sebulan Ke Depan**:\n• Target tabungan bulan ini\n\n⚠️ **Urgent / Mendesak**:\n• Finalisasi dokumen penting"
   ],
-  "follow_up_question": "Ada rencana transaksi atau kegiatan lain yang ingin kamu catat pagi ini?"
+  "follow_up_question": "Ada agenda atau catatan tambahan yang ingin kamu masukkan ke jadwal hari ini?"
 }
 `;
 

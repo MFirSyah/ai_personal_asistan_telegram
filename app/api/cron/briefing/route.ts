@@ -2,7 +2,8 @@ import { NextRequest, NextResponse } from 'next/server';
 import { supabaseAdmin } from '@/lib/supabase/client';
 import { generateDailyBriefing } from '@/lib/gemini/prompts/daily-briefing';
 import { sendTelegramMessageBubbles, sendTelegramMessage } from '@/lib/telegram/send-message';
-import { getRecentTransactions, getActivePlans } from '@/lib/supabase/queries/transactions';
+import { getRecentTransactions, getRecentActivities, getActivePlans } from '@/lib/supabase/queries/transactions';
+import { getUserPreferences } from '@/lib/supabase/queries/preferences';
 
 export async function GET(req: NextRequest) {
   const authHeader = req.headers.get('authorization');
@@ -43,14 +44,20 @@ export async function GET(req: NextRequest) {
         .limit(1)
         .maybeSingle();
 
-      const yesterdayTxs = await getRecentTransactions(user.id, 5);
-      const plans = await getActivePlans(user.id);
+      const [yesterdayTxs, activities, plans, preferences] = await Promise.all([
+        getRecentTransactions(user.id, 10),
+        getRecentActivities(user.id, 50),
+        getActivePlans(user.id),
+        getUserPreferences(user.id, 20),
+      ]);
 
       const briefing = await generateDailyBriefing({
         userName: user.name || 'Teman',
         insightPayload: insight?.payload || [],
         yesterdayTransactions: yesterdayTxs,
-        todayPlans: plans,
+        activities,
+        plans,
+        preferences,
       });
 
       if (briefing.messages && briefing.messages.length > 0) {
