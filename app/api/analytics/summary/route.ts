@@ -16,29 +16,30 @@ export async function GET(req: NextRequest) {
     return NextResponse.json({ error: 'Invalid userId format' }, { status: 400 });
   }
 
+  const forceRefresh = searchParams.get('forceRefresh') === 'true';
+
   try {
-    // Check cached daily insight first
-    const { data: cached } = await supabaseAdmin
-      .from('daily_insights')
-      .select('payload, insight_date')
-      .eq('user_id', userId)
-      .order('insight_date', { ascending: false })
-      .limit(1)
-      .maybeSingle();
-
-    if (cached?.payload) {
-      return NextResponse.json({
-        cached: true,
-        date: cached.insight_date,
-        insights: cached.payload,
-      });
-    }
-
-    // Fallback: calculate live
+    // Calculate live analytics directly to guarantee real-time accuracy matching Telegram
     const liveAnalytics = await calculate20Analytics(userId);
+    const today = new Date().toISOString().split('T')[0];
+
+    // Async cache update to daily_insights
+    supabaseAdmin
+      .from('daily_insights')
+      .upsert(
+        {
+          user_id: userId,
+          insight_date: today,
+          payload: liveAnalytics,
+        },
+        { onConflict: 'user_id,insight_date' }
+      )
+      .then(() => {})
+      .catch((err) => console.error('Cache update error:', err));
+
     return NextResponse.json({
       cached: false,
-      date: new Date().toISOString().split('T')[0],
+      date: today,
       insights: liveAnalytics,
     });
   } catch (error: any) {

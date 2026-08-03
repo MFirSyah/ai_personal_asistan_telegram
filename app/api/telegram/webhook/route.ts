@@ -110,11 +110,16 @@ export async function POST(req: NextRequest) {
     sendTelegramChatAction(chatId, 'typing').catch(console.error);
 
     const appBaseUrl = process.env.NEXT_PUBLIC_APP_URL || 'https://ai-personal-asistan-telegram.vercel.app';
-    const insights = await calculate20Analytics(user.id);
+    const [insights, recentTxs] = await Promise.all([
+      calculate20Analytics(user.id),
+      getRecentTransactions(user.id, 5),
+    ]);
 
     const expenseItem = insights.find((i) => i.id === 1);
     const incomeItem = insights.find((i) => i.id === 2);
     const netItem = insights.find((i) => i.id === 3);
+    const catItem = insights.find((i) => i.id === 4);
+    const merchantItem = insights.find((i) => i.id === 6);
     const projectionItem = insights.find((i) => i.id === 15);
     const scoreItem = insights.find((i) => i.id === 20);
 
@@ -124,13 +129,48 @@ export async function POST(req: NextRequest) {
     const projectedExpense = projectionItem?.data?.projectedExpense || 0;
     const healthScore = scoreItem?.data?.score || 'N/A';
 
-    let summaryMsg = `📊 **LAPORAN & RINGKASAN KEUANGAN** 📊\n\n`;
+    let summaryMsg = `📊 **LAPORAN & RINGKASAN KEUANGAN RINCI** 📊\n\n`;
     summaryMsg += `👤 **User**: ${user.name || 'Teman'}\n`;
     summaryMsg += `💸 **Total Pengeluaran**: Rp ${Number(totalExpense).toLocaleString('id-ID')}\n`;
     summaryMsg += `💰 **Total Pemasukan**: Rp ${Number(totalIncome).toLocaleString('id-ID')}\n`;
     summaryMsg += `📈 **Net Tabungan**: Rp ${Number(netSavings).toLocaleString('id-ID')}\n\n`;
     summaryMsg += `🔮 **Proyeksi Akhir Bulan**: Rp ${Number(projectedExpense).toLocaleString('id-ID')}\n`;
     summaryMsg += `🛡️ **Skor Kesehatan**: ${healthScore}\n\n`;
+
+    // Category breakdown
+    if (catItem?.chart_config?.labels?.length && catItem.chart_config.labels[0] !== 'Belum Ada Data') {
+      summaryMsg += `🏷️ **Rincian Per Kategori**:\n`;
+      const labels = catItem.chart_config.labels as string[];
+      const dataVals = catItem.chart_config.datasets[0].data as number[];
+      labels.slice(0, 5).forEach((label, idx) => {
+        const val = dataVals[idx] || 0;
+        summaryMsg += `• **${label}**: Rp ${Number(val).toLocaleString('id-ID')}\n`;
+      });
+      summaryMsg += `\n`;
+    }
+
+    // Top merchants
+    const merchants = merchantItem?.data?.topMerchants as Array<[string, number]> | undefined;
+    if (merchants?.length) {
+      summaryMsg += `🏪 **Top Tempat Belanja / Merchant**:\n`;
+      merchants.forEach(([m, val]) => {
+        summaryMsg += `• **${m}**: Rp ${Number(val).toLocaleString('id-ID')}\n`;
+      });
+      summaryMsg += `\n`;
+    }
+
+    // Recent 5 transactions
+    if (recentTxs?.length) {
+      summaryMsg += `📌 **5 Catatan Transaksi Terakhir**:\n`;
+      recentTxs.forEach((t) => {
+        const icon = t.type === 'income' ? '🟢' : '🔴';
+        const dateStr = new Date(t.occurred_at).toLocaleDateString('id-ID', { day: '2-digit', month: 'short' });
+        const nameStr = t.merchant || t.description || 'Transaksi';
+        summaryMsg += `${icon} \`${dateStr}\` | ${nameStr}: **Rp ${Number(t.amount).toLocaleString('id-ID')}**\n`;
+      });
+      summaryMsg += `\n`;
+    }
+
     summaryMsg += `💡 *Untuk melihat visualisasi grafik 20 analisis lengkap, klik tombol di bawah ini:*`;
 
     await sendTelegramMessage(
