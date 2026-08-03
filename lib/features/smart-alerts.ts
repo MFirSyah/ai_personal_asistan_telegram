@@ -78,3 +78,15 @@ export async function getUserDebts(userId: string): Promise<Debt[]> {
 
   return (data || []) as Debt[];
 }
+
+export async function markAllDebtsPaid(userId: string): Promise<number> {
+  const { data, error } = await supabaseAdmin
+    .from('debts')
+    .update({ status: 'paid' })
+    .eq('user_id', userId)
+    .eq('status', 'unpaid')
+    .select('id');
+
+  if (error) throw error;
+  return data?.length || 0;
+}

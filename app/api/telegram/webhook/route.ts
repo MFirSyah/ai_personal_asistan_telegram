@@ -13,8 +13,8 @@ import { getRecentTransactions, getRecentActivities } from '@/lib/supabase/queri
 import { generateExportFile } from '@/lib/export/export-data';
 import { linkPartnerAccounts } from '@/lib/features/couples';
 import { calculateSplitBill } from '@/lib/features/split-bill';
-import { getUserSubscriptions, getUserDebts } from '@/lib/features/smart-alerts';
-import { getUserHabits } from '@/lib/features/habits-and-tasks';
+import { getUserSubscriptions, getUserDebts, markAllDebtsPaid } from '@/lib/features/smart-alerts';
+import { getUserHabits, completeAllActivities } from '@/lib/features/habits-and-tasks';
 import { generateMonthlyPdfReport } from '@/lib/features/pdf-report';
 import { processVoiceNoteDirect } from '@/lib/telegram/voice-processor';
 import { supabaseAdmin } from '@/lib/supabase/client';
@@ -57,6 +57,14 @@ export async function POST(req: NextRequest) {
       );
     } else if (data === 'cancel') {
       await sendTelegramMessage(fromId, '❌ Tindakan dibatalkan.');
+    } else if (data.startsWith('act_complete_')) {
+      const actId = data.replace('act_complete_', '');
+      await supabaseAdmin.from('activities').update({ status: 'completed' }).eq('id', actId).eq('user_id', user.id);
+      await sendTelegramMessage(fromId, '✅ **AGENDA TERSEBUT TELAH DITANDAI SELESAI!**\n\nAnalisis & laporan ringkasan kamu otomatis diperbarui 100%.');
+    } else if (data.startsWith('act_in_progress_')) {
+      const actId = data.replace('act_in_progress_', '');
+      await supabaseAdmin.from('activities').update({ status: 'in_progress' }).eq('id', actId).eq('user_id', user.id);
+      await sendTelegramMessage(fromId, '⏳ **AGENDA DICATAT SEDANG BERLANGSUNG.**\n\nSemangat menyelesaikan agendamu!');
     }
 
     return NextResponse.json({ ok: true });
@@ -229,6 +237,24 @@ export async function POST(req: NextRequest) {
     }
     const res = await linkPartnerAccounts(user.id, partnerName);
     await sendTelegramMessage(chatId, res.message);
+    return NextResponse.json({ ok: true });
+  }
+
+  if (text.startsWith('/selesaikan_semua_aktivitas') || text.toLowerCase().includes('selesaikan semua aktivitas')) {
+    const count = await completeAllActivities(user.id);
+    await sendTelegramMessage(
+      chatId,
+      `✅ **BATCH PROSES AKTIVITAS SELESAI!**\n\nSebanyak **${count} agenda** telah diperbarui statusnya menjadi **Completed (Selesai)**!`
+    );
+    return NextResponse.json({ ok: true });
+  }
+
+  if (text.startsWith('/lunas_semua_utang') || text.toLowerCase().includes('lunas semua utang') || text.toLowerCase().includes('utang lunas semua')) {
+    const count = await markAllDebtsPaid(user.id);
+    await sendTelegramMessage(
+      chatId,
+      `💰 **BATCH PROSES HUTANG SELESAI!**\n\nSebanyak **${count} catatan hutang** telah berhasil diperbarui statusnya menjadi **Lunas (Paid)**!`
+    );
     return NextResponse.json({ ok: true });
   }
 

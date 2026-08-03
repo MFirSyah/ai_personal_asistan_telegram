@@ -41,13 +41,21 @@ export async function calculate20Analytics(userId: string): Promise<InsightItem[
 
   const netSavings = totalIncome - totalExpense;
 
+  const { data: userCats } = await supabaseAdmin
+    .from('categories')
+    .select('id, name')
+    .eq('user_id', userId);
+
+  const catMap = new Map<string, string>();
+  (userCats || []).forEach((c) => catMap.set(c.id, c.name));
+
   // Category breakdown
   const categoryTotals: Record<string, number> = {};
   transactions
     .filter((t) => t.type === 'expense')
     .forEach((t) => {
-      const cat = t.category_id || 'Lain-lain';
-      categoryTotals[cat] = (categoryTotals[cat] || 0) + Number(t.amount || 0);
+      const catName = (t.category_id && catMap.get(t.category_id)) || t.merchant || 'Lain-lain';
+      categoryTotals[catName] = (categoryTotals[catName] || 0) + Number(t.amount || 0);
     });
 
   const catLabels = Object.keys(categoryTotals);

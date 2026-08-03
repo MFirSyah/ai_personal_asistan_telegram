@@ -76,3 +76,15 @@ export function generateICalendarFile(title: string, description: string, startD
     filename,
   };
 }
+
+export async function completeAllActivities(userId: string): Promise<number> {
+  const { data, error } = await supabaseAdmin
+    .from('activities')
+    .update({ status: 'completed' })
+    .eq('user_id', userId)
+    .neq('status', 'completed')
+    .select('id');
+
+  if (error) throw error;
+  return data?.length || 0;
+}
