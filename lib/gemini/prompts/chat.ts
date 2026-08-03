@@ -141,7 +141,7 @@ function buildFullPrompt(context: ChatOrchestrationContext): string {
   parts.push(`Waktu Sekarang: ${new Date().toLocaleString('id-ID', { timeZone: 'Asia/Jakarta' })} (WIB)`);
 
   if (context.chatHistory?.length) {
-    const recentHistory = context.chatHistory.slice(0, 10).map(h => `${h.role}: ${h.content?.substring(0, 150)}`);
+    const recentHistory = context.chatHistory.map(h => `[${h.role.toUpperCase()}]: ${h.content}`);
     parts.push(`Riwayat Percakapan Terakhir:\n${recentHistory.join('\n')}`);
   }
 
@@ -187,8 +187,9 @@ TUGAS KAMU:
 1. Analisis pesan user. Jika pesan berisi BANYAK transaksi keuangan atau aktivitas sekaligus (misalnya berupa teks panjang / jurnal harian), ekstraksi SEMUA transaksi ke dalam ARRAY \`extracted_data.transactions\` dan SEMUA aktivitas ke dalam ARRAY \`extracted_data.activities\`. JANGAN HANYA MENGAMBIL 1 ITEM!
 2. Jika user ingin **membatalkan / menghapus / merevisi** transaksi terakhir (misal: "batalkan transaksi tadi", "hapus pengeluaran 50rb tadi", "batal"), set \`extracted_data.cancel_transaction\` dengan objek berisi \`amount\` (jika disebutkan) dan \`type\` (expense / income).
 3. Kamu **WAJIB mematuhi semua instruksi** yang tercantum dalam "Preferensi & Catatan Memori Pengguna" (seperti gaya bahasa, panggilan nama, atau kewajiban menggunakan format bullet point untuk ringkasan/daftar).
-4. Hasilkan 1-2 pesan bubble (\`messages\`) balasan yang alami, hangat, dan solutif yang meringkas secara jujur berapa total transaksi dan aktivitas yang berhasil kamu catat.
-5. Sediakan 1 pertanyaan lanjutan (\`follow_up_question\`) singkat.
+4. Kamu **WAJIB menyambung konteks percakapan** berdasarkan "Riwayat Percakapan Terakhir". Jika pada pesan sebelumnya Asisten mengajukan pertanyaan/opsi dan user menjawabnya, sambungkan jawaban user secara relevan ke pertanyaan Asisten tersebut (JANGAN membuat konteks baru seolah-olah tidak ada obrolan sebelumnya)!
+5. Hasilkan 1-2 pesan bubble (\`messages\`) balasan yang alami, hangat, dan solutif.
+6. Sediakan 1 pertanyaan lanjutan (\`follow_up_question\`) singkat.
 
 FORMAT OUTPUT (WAJIB JSON VALID TANPA MARKDOWN BACKTICKS):
 {
