@@ -11,6 +11,12 @@ import { calculate20Analytics } from '@/lib/analytics/calculators';
 import { getUserPreferences, saveUserPreference } from '@/lib/supabase/queries/preferences';
 import { getRecentTransactions } from '@/lib/supabase/queries/transactions';
 import { generateExportFile } from '@/lib/export/export-data';
+import { linkPartnerAccounts } from '@/lib/features/couples';
+import { calculateSplitBill } from '@/lib/features/split-bill';
+import { getUserSubscriptions, getUserDebts } from '@/lib/features/smart-alerts';
+import { getUserHabits } from '@/lib/features/habits-and-tasks';
+import { generateMonthlyPdfReport } from '@/lib/features/pdf-report';
+import { processVoiceNoteDirect } from '@/lib/telegram/voice-processor';
 import { supabaseAdmin } from '@/lib/supabase/client';
 
 export async function POST(req: NextRequest) {
@@ -200,6 +206,80 @@ export async function POST(req: NextRequest) {
     return NextResponse.json({ ok: true });
   }
 
+  if (text.startsWith('/pasangan')) {
+    const partnerName = text.replace('/pasangan', '').trim();
+    if (!partnerName) {
+      await sendTelegramMessage(
+        chatId,
+        '💖 **HUBUNGKAN AKUN PASANGAN**\n\nUntuk menghubungkan akun kamu dengan pasanganmu, ketik:\n`/pasangan nama_atau_id` *(contoh: `/pasangan Firman`)*'
+      );
+      return NextResponse.json({ ok: true });
+    }
+    const res = await linkPartnerAccounts(user.id, partnerName);
+    await sendTelegramMessage(chatId, res.message);
+    return NextResponse.json({ ok: true });
+  }
+
+  if (text.startsWith('/split')) {
+    const splitResult = calculateSplitBill({ totalBill: 100000, people: ['Kamu', 'Pasangan'] });
+    await sendTelegramMessage(chatId, splitResult.formattedSummary);
+    return NextResponse.json({ ok: true });
+  }
+
+  if (text.startsWith('/langganan')) {
+    const subs = await getUserSubscriptions(user.id);
+    if (!subs.length) {
+      await sendTelegramMessage(chatId, 'ℹ️ Belum ada tagihan langganan yang dicatat.');
+    } else {
+      let msg = `💳 **DAFTAR LANGGANAN RUTIN**\n\n`;
+      subs.forEach((s) => {
+        msg += `• **${s.service_name}**: Rp ${Number(s.amount).toLocaleString('id-ID')} (Jatuh tempo: ${s.next_billing_date})\n`;
+      });
+      await sendTelegramMessage(chatId, msg);
+    }
+    return NextResponse.json({ ok: true });
+  }
+
+  if (text.startsWith('/utang')) {
+    const debts = await getUserDebts(user.id);
+    if (!debts.length) {
+      await sendTelegramMessage(chatId, '🎉 Selamat! Belum ada catatan utang/piutang yang belum lunas.');
+    } else {
+      let msg = `📋 **DAFTAR UTANG & PIUTANG**\n\n`;
+      debts.forEach((d) => {
+        const typeStr = d.type === 'i_owe' ? '🔴 Utang Saya Ke' : '🟢 Piutang Dari';
+        msg += `• ${typeStr} **${d.person_name}**: Rp ${Number(d.amount).toLocaleString('id-ID')}\n`;
+      });
+      await sendTelegramMessage(chatId, msg);
+    }
+    return NextResponse.json({ ok: true });
+  }
+
+  if (text.startsWith('/habit')) {
+    const habits = await getUserHabits(user.id);
+    if (!habits.length) {
+      await sendTelegramMessage(chatId, 'ℹ️ Belum ada habit tracker. Kamu bisa minta AI untuk mencatat habit baru!');
+    } else {
+      let msg = `🔥 **HABIT TRACKER & STREAK**\n\n`;
+      habits.forEach((h) => {
+        msg += `• **${h.title}**: 🔥 ${h.streak_count} Hari Streak\n`;
+      });
+      await sendTelegramMessage(chatId, msg);
+    }
+    return NextResponse.json({ ok: true });
+  }
+
+  if (text.startsWith('/pdf') || text.startsWith('/laporan_pdf')) {
+    sendTelegramChatAction(chatId, 'upload_photo').catch(console.error);
+    try {
+      const pdfResult = await generateMonthlyPdfReport(user.id);
+      await sendTelegramDocument(chatId, pdfResult.buffer, pdfResult.filename, pdfResult.caption);
+    } catch (pdfErr: any) {
+      await sendTelegramMessage(chatId, `⚠️ Gagal meng-generate laporan PDF: ${pdfErr?.message || 'Error'}`);
+    }
+    return NextResponse.json({ ok: true });
+  }
+
   if (text.startsWith('/progress')) {
     const { data: latestJob } = await supabaseAdmin
       .from('batch_jobs')
@@ -359,9 +439,12 @@ export async function POST(req: NextRequest) {
 
   // 6. Use Next.js after() to execute background task in Vercel serverless without termination
   after(async () => {
+    const voice = message.voice;
     if (photo && photo.length > 0) {
       const largestPhoto = photo[photo.length - 1];
       await processReceiptDirect(user.id, chatId, largestPhoto.file_id);
+    } else if (voice && voice.file_id) {
+      await processVoiceNoteDirect(user.id, chatId, voice.file_id, user.name || message.from.first_name);
     } else {
       await processChatRespondDirect(
         user.id,
