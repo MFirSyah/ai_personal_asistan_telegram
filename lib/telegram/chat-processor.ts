@@ -34,7 +34,7 @@ export async function processChatRespondDirect(
       getRecentActivities(userId, 5),
       getActivePlans(userId),
       getUserPreferences(userId, 20),
-      getRecentChatHistory(userId, 16),
+      getRecentChatHistory(userId, 24),
       getUserCategories(userId),
     ]);
 
