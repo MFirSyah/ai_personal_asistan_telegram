@@ -15,6 +15,14 @@ export interface ChatOrchestrationResult {
   messages: string[];
   follow_up_question?: string;
   extracted_data?: {
+    transactions?: Array<{
+      amount: number;
+      type: 'expense' | 'income';
+      category: string;
+      merchant?: string;
+      description?: string;
+      occurred_at?: string;
+    }> | null;
     transaction?: {
       amount: number;
       type: 'expense' | 'income';
@@ -23,6 +31,12 @@ export interface ChatOrchestrationResult {
       description?: string;
       occurred_at?: string;
     } | null;
+    activities?: Array<{
+      title: string;
+      category?: string;
+      description?: string;
+      occurred_at?: string;
+    }> | null;
     activity?: {
       title: string;
       category?: string;
@@ -170,20 +184,35 @@ PESAN BARU DARI USER:
 "${context.userMessage}"
 
 TUGAS KAMU:
-1. Analisis pesan user. Jika mengandung pencatatan keuangan, aktivitas/agenda, atau preferensi baru, ekstraksi datanya ke \`extracted_data\`.
-2. Jika user ingin **membatalkan / menghapus / merevisi** transaksi terakhir (misal: "batalkan transaksi tadi", "hapus pengeluaran 50rb tadi", "batal"), set \`extracted_data.cancel_transaction\` dengan objek berisi \`amount\` (jika disebutkan) dan \`type\` (expense / income).
-3. Untuk pencatatan aktivitas/agenda (seperti jadwal rapat, ingatkan print, dll), ekstraksi ke \`extracted_data.activity\`.
-4. Kamu **WAJIB mematuhi semua instruksi** yang tercantum dalam "Preferensi & Catatan Memori Pengguna" (seperti gaya bahasa, panggilan nama, atau kewajiban menggunakan format bullet point untuk ringkasan/daftar).
-5. Hasilkan 1-2 pesan bubble (\`messages\`) balasan yang alami, hangat, dan solutif.
-6. Sediakan 1 pertanyaan lanjutan (\`follow_up_question\`) singkat.
+1. Analisis pesan user. Jika pesan berisi BANYAK transaksi keuangan atau aktivitas sekaligus (misalnya berupa teks panjang / jurnal harian), ekstraksi SEMUA transaksi ke dalam ARRAY `extracted_data.transactions` dan SEMUA aktivitas ke dalam ARRAY `extracted_data.activities`. JANGAN HANYA MENGAMBIL 1 ITEM!
+2. Jika user ingin **membatalkan / menghapus / merevisi** transaksi terakhir (misal: "batalkan transaksi tadi", "hapus pengeluaran 50rb tadi", "batal"), set `extracted_data.cancel_transaction` dengan objek berisi `amount` (jika disebutkan) dan `type` (expense / income).
+3. Kamu **WAJIB mematuhi semua instruksi** yang tercantum dalam "Preferensi & Catatan Memori Pengguna" (seperti gaya bahasa, panggilan nama, atau kewajiban menggunakan format bullet point untuk ringkasan/daftar).
+4. Hasilkan 1-2 pesan bubble (`messages`) balasan yang alami, hangat, dan solutif yang meringkas secara jujur berapa total transaksi dan aktivitas yang berhasil kamu catat.
+5. Sediakan 1 pertanyaan lanjutan (`follow_up_question`) singkat.
 
 FORMAT OUTPUT (WAJIB JSON VALID TANPA MARKDOWN BACKTICKS):
 {
   "messages": ["Bubble pesan 1"],
   "follow_up_question": "Pertanyaan lanjutan?",
   "extracted_data": {
-    "transaction": null,
-    "activity": null,
+    "transactions": [
+      {
+        "amount": 50000,
+        "type": "expense",
+        "category": "Makanan",
+        "merchant": "Warung",
+        "description": "Makan siang",
+        "occurred_at": "2026-06-01T12:00:00Z"
+      }
+    ],
+    "activities": [
+      {
+        "title": "Sidang Skripsi",
+        "category": "Akademik",
+        "description": "Sidang akhir",
+        "occurred_at": "2026-06-01T09:00:00Z"
+      }
+    ],
     "preference": null,
     "cancel_transaction": null
   },

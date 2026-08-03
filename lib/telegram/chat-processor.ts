@@ -57,35 +57,37 @@ export async function processChatRespondDirect(
     if (result.extracted_data) {
       const ext = result.extracted_data;
 
-      // Transactions — direct categorization without extra Gemini call (Fix #5)
-      if (ext.transaction && ext.transaction.amount > 0) {
-        const tx = ext.transaction;
-        const categoryName = tx.category || tx.merchant || 'Lain-lain';
+      // Transactions — support array of items (Fix for multi-transaction text journal)
+      const txList = ext.transactions || (ext.transaction ? [ext.transaction] : []);
+      for (const tx of txList) {
+        if (tx && tx.amount > 0) {
+          const categoryName = tx.category || tx.merchant || 'Lain-lain';
+          const category = await getOrCreateCategory(userId, categoryName);
 
-        // Get or create category in single pass
-        const category = await getOrCreateCategory(userId, categoryName);
-
-        await insertTransaction({
-          user_id: userId,
-          category_id: category.id,
-          amount: tx.amount,
-          type: tx.type || 'expense',
-          merchant: tx.merchant,
-          description: tx.description,
-          source: 'chat_manual',
-          occurred_at: tx.occurred_at || new Date().toISOString(),
-        });
+          await insertTransaction({
+            user_id: userId,
+            category_id: category.id,
+            amount: tx.amount,
+            type: tx.type || 'expense',
+            merchant: tx.merchant,
+            description: tx.description,
+            source: 'chat_manual',
+            occurred_at: tx.occurred_at || new Date().toISOString(),
+          });
+        }
       }
 
-      // Activities
-      if (ext.activity && ext.activity.title) {
-        const act = ext.activity;
-        await insertActivity({
-          user_id: userId,
-          title: act.title,
-          description: act.description,
-          occurred_at: act.occurred_at || new Date().toISOString(),
-        });
+      // Activities — support array of items
+      const actList = ext.activities || (ext.activity ? [ext.activity] : []);
+      for (const act of actList) {
+        if (act && act.title) {
+          await insertActivity({
+            user_id: userId,
+            title: act.title,
+            description: act.description,
+            occurred_at: act.occurred_at || new Date().toISOString(),
+          });
+        }
       }
 
       // Preferences
