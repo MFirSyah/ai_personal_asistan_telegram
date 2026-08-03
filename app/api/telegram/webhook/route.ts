@@ -187,7 +187,11 @@ export async function POST(req: NextRequest) {
       summaryMsg += `📌 **5 Catatan Transaksi Keuangan Terakhir**:\n`;
       recentTxs.forEach((t) => {
         const icon = t.type === 'income' ? '🟢' : '🔴';
-        const dateStr = new Date(t.occurred_at).toLocaleDateString('id-ID', { day: '2-digit', month: 'short' });
+        const rawDate = t.occurred_at || t.created_at;
+        const dt = new Date(rawDate);
+        const isDummyJan1 = dt.getFullYear() === 2026 && dt.getMonth() === 0 && dt.getDate() === 1;
+        const finalDt = (isDummyJan1 && t.created_at) ? new Date(t.created_at) : dt;
+        const dateStr = finalDt.toLocaleDateString('id-ID', { day: '2-digit', month: 'short' });
         const nameStr = t.merchant || t.description || 'Transaksi';
         summaryMsg += `${icon} \`${dateStr}\` | ${nameStr}: **Rp ${Number(t.amount).toLocaleString('id-ID')}**\n`;
       });
@@ -199,7 +203,11 @@ export async function POST(req: NextRequest) {
       summaryMsg += `📅 **5 Catatan Agenda & Aktivitas Terakhir**:\n`;
       recentActs.forEach((a) => {
         const priorityIcon = a.priority === 'urgent' ? '🚨' : a.priority === 'high' ? '⚠️' : '📌';
-        const dateStr = new Date(a.occurred_at).toLocaleDateString('id-ID', { day: '2-digit', month: 'short' });
+        const rawDate = a.occurred_at || a.created_at;
+        const dt = new Date(rawDate);
+        const isDummyJan1 = dt.getFullYear() === 2026 && dt.getMonth() === 0 && dt.getDate() === 1;
+        const finalDt = (isDummyJan1 && a.created_at) ? new Date(a.created_at) : dt;
+        const dateStr = finalDt.toLocaleDateString('id-ID', { day: '2-digit', month: 'short' });
         summaryMsg += `${priorityIcon} \`${dateStr}\` | **${a.title}** (${a.status || 'Aktif'})\n`;
       });
       summaryMsg += `\n`;

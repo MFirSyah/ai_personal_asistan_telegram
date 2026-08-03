@@ -20,11 +20,14 @@ import { generateExportFile } from '@/lib/export/export-data';
 import { supabaseAdmin } from '@/lib/supabase/client';
 
 function parseSafeIsoDate(dateStr?: string): string {
-  if (!dateStr) return new Date().toISOString();
+  if (!dateStr || dateStr.startsWith('2026-01-01')) return new Date().toISOString();
   try {
     const cleanStr = dateStr.split(/[-–—]/)[0].trim();
     let d = new Date(cleanStr);
     if (!isNaN(d.getTime())) {
+      if (d.getFullYear() === 2026 && d.getMonth() === 0 && d.getDate() === 1) {
+        return new Date().toISOString();
+      }
       return d.toISOString();
     }
     const parts = cleanStr.split(/[\/\s:]/);
@@ -36,6 +39,9 @@ function parseSafeIsoDate(dateStr?: string): string {
       const min = parts[4] ? parseInt(parts[4], 10) : 0;
       d = new Date(Date.UTC(year < 100 ? 2000 + year : year, month, day, hour, min));
       if (!isNaN(d.getTime())) {
+        if (d.getFullYear() === 2026 && d.getMonth() === 0 && d.getDate() === 1) {
+          return new Date().toISOString();
+        }
         return d.toISOString();
       }
     }
