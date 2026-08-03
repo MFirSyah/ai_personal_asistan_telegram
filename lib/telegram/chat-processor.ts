@@ -135,15 +135,17 @@ export async function processChatRespondDirect(
         }
       }
 
-      // Preferences
-      if (ext.preference && ext.preference.key) {
-        const pref = ext.preference;
-        await saveUserPreference(userId, pref.key, pref.value, pref.learned_from);
+      // Preferences — support array of learned preferences
+      const prefList = ext.preferences || (ext.preference ? [ext.preference] : []);
+      for (const pref of prefList) {
+        if (pref && pref.key) {
+          await saveUserPreference(userId, pref.key, pref.value, pref.learned_from || userMessage);
 
-        // Sync name preference directly to users.name column in database
-        const keyLower = pref.key.toLowerCase();
-        if (keyLower.includes('nama') || keyLower.includes('name') || keyLower.includes('panggilan')) {
-          await updateUserName(userId, pref.value);
+          // Sync name preference directly to users.name column in database
+          const keyLower = pref.key.toLowerCase();
+          if (keyLower.includes('nama') || keyLower.includes('name') || keyLower.includes('panggilan')) {
+            await updateUserName(userId, pref.value);
+          }
         }
       }
 
