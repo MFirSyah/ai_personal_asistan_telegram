@@ -32,6 +32,7 @@ export async function setTelegramBotCommands(): Promise<any> {
     { command: 'start', description: 'Mulai & status akun kamu' },
     { command: 'ringkasan', description: 'Laporan ringkas pengeluaran & kesehatan finansial' },
     { command: 'dashboard', description: 'Buka Mini App Dashboard interaktif' },
+    { command: 'export', description: 'Export data transaksi & aktivitas ke Excel/CSV' },
     { command: 'progress', description: 'Cek progress tugas background / hapus data' },
     { command: 'preferensi', description: 'Lihat preferensi & gaya bahasa yang dipelajari AI' },
     { command: 'nama', description: 'Lihat & ubah nama panggilan kamu untuk AI' },
@@ -132,5 +133,36 @@ export async function sendTelegramMessageBubbles(
     if (!isLast && delayMs > 0) {
       await new Promise((res) => setTimeout(res, delayMs));
     }
+  }
+}
+
+export async function sendTelegramDocument(
+  chatId: number | string,
+  fileBuffer: Buffer | Uint8Array,
+  filename: string,
+  caption?: string
+): Promise<any> {
+  if (!TELEGRAM_BOT_TOKEN) return { ok: true, mock: true };
+
+  const url = `${TELEGRAM_API_BASE}/sendDocument`;
+  const formData = new FormData();
+  formData.append('chat_id', String(chatId));
+
+  const blob = new Blob([Buffer.from(fileBuffer)], { type: 'text/csv' });
+  formData.append('document', blob, filename);
+
+  if (caption) {
+    formData.append('caption', caption);
+  }
+
+  try {
+    const res = await fetch(url, {
+      method: 'POST',
+      body: formData,
+    });
+    return await res.json();
+  } catch (error) {
+    console.error('Failed to send Telegram document:', error);
+    return null;
   }
 }

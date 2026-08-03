@@ -11,10 +11,13 @@ import {
 import { getUserPreferences, saveUserPreference } from '@/lib/supabase/queries/preferences';
 import { updateUserName } from '@/lib/supabase/queries/sessions';
 import { getUserCategories, getOrCreateCategory } from '@/lib/supabase/queries/categories';
-import { sendTelegramMessageBubbles, sendTelegramMessage, sendTelegramChatAction } from '@/lib/telegram/send-message';
+import { sendTelegramMessageBubbles, sendTelegramMessage, sendTelegramChatAction, sendTelegramDocument } from '@/lib/telegram/send-message';
 import { sendTelegramChart } from '@/lib/telegram/send-chart';
 import { sendTelegramLocation } from '@/lib/telegram/send-location';
+import { buildConfirmationInlineKeyboard } from '@/lib/telegram/inline-keyboard';
 import { runChatOrchestration } from '@/lib/gemini/prompts/chat';
+import { generateExportFile } from '@/lib/export/export-data';
+import { supabaseAdmin } from '@/lib/supabase/client';
 
 export async function processChatRespondDirect(
   userId: string,
@@ -117,6 +120,25 @@ export async function processChatRespondDirect(
           amount: cancel.amount || undefined,
           type: cancel.type || undefined,
         });
+      }
+
+      // Delete All Request
+      if (ext.delete_all_request && chatId) {
+        await sendTelegramMessage(
+          chatId,
+          '⚠️ **KONFIRMASI PENGHAPUSAN DATA**\n\nApakah kamu yakin ingin menghapus semua catatan pengeluaran dan aktivitas kamu?\n\n*(Klik tombol konfirmasi di bawah untuk memproses)*',
+          buildConfirmationInlineKeyboard('confirm_delete_all', 'cancel')
+        );
+      }
+
+      // Export Request
+      if (ext.export_request && chatId) {
+        try {
+          const exportResult = await generateExportFile(userId, ext.export_request);
+          await sendTelegramDocument(chatId, exportResult.buffer, exportResult.filename, exportResult.caption);
+        } catch (expErr) {
+          console.error('Export error:', expErr);
+        }
       }
     }
 

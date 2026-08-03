@@ -2,7 +2,7 @@ import { NextRequest, NextResponse, after } from 'next/server';
 import { verifyTelegramWebhook } from '@/lib/telegram/verify-webhook';
 import { getUserByTelegramId, touchOrStartSession, updateUserName } from '@/lib/supabase/queries/sessions';
 import { checkAndUpdateRateLimit } from '@/lib/gemini/rate-limiter';
-import { sendTelegramMessage, sendTelegramChatAction, setTelegramBotCommands } from '@/lib/telegram/send-message';
+import { sendTelegramMessage, sendTelegramChatAction, setTelegramBotCommands, sendTelegramDocument } from '@/lib/telegram/send-message';
 import { buildConfirmationInlineKeyboard, buildDashboardInlineKeyboard } from '@/lib/telegram/inline-keyboard';
 import { scheduleBatchJob } from '@/lib/jobs/create-job';
 import { processChatRespondDirect } from '@/lib/telegram/chat-processor';
@@ -10,6 +10,7 @@ import { processReceiptDirect } from '@/lib/telegram/receipt-processor';
 import { calculate20Analytics } from '@/lib/analytics/calculators';
 import { getUserPreferences, saveUserPreference } from '@/lib/supabase/queries/preferences';
 import { getRecentTransactions } from '@/lib/supabase/queries/transactions';
+import { generateExportFile } from '@/lib/export/export-data';
 import { supabaseAdmin } from '@/lib/supabase/client';
 
 export async function POST(req: NextRequest) {
@@ -37,10 +38,16 @@ export async function POST(req: NextRequest) {
     }
 
     if (data === 'confirm_delete_all') {
-      await scheduleBatchJob(user.id, 'delete_all', 100);
+      const nowIso = new Date().toISOString();
+      await Promise.all([
+        supabaseAdmin.from('transactions').update({ deleted_at: nowIso }).eq('user_id', user.id).is('deleted_at', null),
+        supabaseAdmin.from('activities').update({ deleted_at: nowIso }).eq('user_id', user.id).is('deleted_at', null),
+        supabaseAdmin.from('plans').update({ status: 'cancelled' }).eq('user_id', user.id),
+      ]);
+
       await sendTelegramMessage(
         fromId,
-        '⏳ Permintaan hapus data telah dikonfirmasi dan sedang diproses di background. Kamu akan mendapat notifikasi setelah selesai.'
+        '🗑️ **SEMUA DATA BERHASIL DIHAPUS!**\n\nSeluruh catatan transaksi, aktivitas, dan rencana kamu telah dibersihkan. Sekarang database kamu sudah bersih kembali 100%!'
       );
     } else if (data === 'cancel') {
       await sendTelegramMessage(fromId, '❌ Tindakan dibatalkan.');
@@ -179,6 +186,17 @@ export async function POST(req: NextRequest) {
       summaryMsg,
       buildDashboardInlineKeyboard(`${appBaseUrl}/dashboard?telegram_id=${telegramId}`)
     );
+    return NextResponse.json({ ok: true });
+  }
+
+  if (text.startsWith('/export')) {
+    sendTelegramChatAction(chatId, 'upload_photo').catch(console.error);
+    try {
+      const exportResult = await generateExportFile(user.id, { target: 'all' });
+      await sendTelegramDocument(chatId, exportResult.buffer, exportResult.filename, exportResult.caption);
+    } catch (expErr: any) {
+      await sendTelegramMessage(chatId, `⚠️ Gagal meng-export data: ${expErr?.message || 'Error tidak diketahui'}`);
+    }
     return NextResponse.json({ ok: true });
   }
 

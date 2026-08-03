@@ -66,6 +66,16 @@ export interface ChatOrchestrationResult {
       amount?: number;
       type?: 'expense' | 'income';
     } | null;
+    delete_all_request?: boolean | null;
+    export_request?: {
+      target?: 'transactions' | 'activities' | 'all';
+      startDate?: string;
+      endDate?: string;
+      merchant?: string;
+      paymentMethod?: string;
+      category?: string;
+      sortByPriority?: boolean;
+    } | null;
   } | null;
   reasoning?: string;
   chart?: {
@@ -199,14 +209,20 @@ PESAN BARU DARI USER:
 
 TUGAS KAMU:
 1. Analisis pesan user. Jika pesan berisi BANYAK transaksi keuangan atau aktivitas sekaligus (misalnya berupa teks panjang / jurnal harian), ekstraksi SEMUA transaksi ke dalam ARRAY \`extracted_data.transactions\` dan SEMUA aktivitas ke dalam ARRAY \`extracted_data.activities\`. JANGAN HANYA MENGAMBIL 1 ITEM!
-2. Jika user ingin **membatalkan / menghapus / merevisi** transaksi terakhir (misal: "batalkan transaksi tadi", "hapus pengeluaran 50rb tadi", "batal"), set \`extracted_data.cancel_transaction\` dengan objek berisi \`amount\` (jika disebutkan) dan \`type\` (expense / income).
-3. Kamu **WAJIB mematuhi semua instruksi** yang tercantum dalam "Preferensi & Catatan Memori Pengguna" (seperti gaya bahasa, panggilan nama, atau kewajiban menggunakan format bullet point untuk ringkasan/daftar).
-4. **SANGAT PENTING - DILARANG MENYAPA ULANG / GREETING LOOP ON SHORT AFFIRMATION**:
+2. Jika user ingin **membatalkan / menghapus / merevisi** transaksi (misal: "batalkan transaksi tadi", "hapus 50rb tadi"), set \`extracted_data.cancel_transaction\`. Jika user meminta **MENGHAPUS SEMUA DATA** (misal: "hapus semua data saya", "kosongkan data", "reset data"), set \`extracted_data.delete_all_request = true\` (JANGAN mengklaim data sudah terhapus jika belum memicu sistem).
+3. Jika user meminta **EXPORT DATA KE EXCEL/CSV** (misal: "bantu export transaksi tanggal X ke Y", "export data Alfamart", "export aktivitas urgent", "export semua data"), set \`extracted_data.export_request\` dengan parameter:
+   - \`target\`: "transactions" | "activities" | "all"
+   - \`startDate\`: "YYYY-MM-DD" (jika ada rentang tanggal)
+   - \`endDate\`: "YYYY-MM-DD" (jika ada rentang tanggal)
+   - \`merchant\`: nama merchant / tempat (jika disebutkan)
+   - \`paymentMethod\`: nama metode pembayaran / dompet (jika disebutkan)
+   - \`sortByPriority\`: true (jika user minta urutkan aktivitas dari urgent)
+4. Kamu **WAJIB mematuhi semua instruksi** yang tercantum dalam "Preferensi & Catatan Memori Pengguna" (seperti gaya bahasa, panggilan nama, atau kewajiban menggunakan format bullet point untuk ringkasan/daftar).
+5. **SANGAT PENTING - DILARANG MENYAPA ULANG / GREETING LOOP ON SHORT AFFIRMATION**:
    - JANGAN PERNAH menyapa ulang user dengan kata-kata pembuka generik seperti *"Halo [Nama]! Senang bisa ngobrol lagi. Ada yang bisa aku bantu hari ini?"* jika obrolan sedang berjalan!
    - Jika \`PESAN BARU DARI USER\` berisi kata persetujuan / konfirmasi singkat (seperti *"Mau"*, *"Boleh"*, *"Iya"*, *"Oke"*, *"Siap"*, *"Lanjutkan"*), kamu **WAJIB LANGSUNG MEMENUHI & MEMBERIKAN DETAIL RINCIAN** dari tawaran/pertanyaan yang diajukan Asisten di pesan terakhir!
-   - Contoh Kasus: Jika di pesan sebelumnya Asisten menanyakan *"Mau kita buatkan rincian alokasi detail untuk budget Rp1 juta ke Dieng tersebut sekarang, Mas?"* dan user membalas *"Mau"*, kamu **WAJIB LANGSUNG MEMBERIKAN RINCIAN ALOKASI ANGGARAN DIENG TERSEBUT DEGAN LENGKAP**! JANGAN menyapa ulang atau menawarkan menu awal dari nol!
-5. Hasilkan 1-2 pesan bubble (\`messages\`) balasan yang alami, hangat, dan solutif.
-6. Sediakan 1 pertanyaan lanjutan (\`follow_up_question\`) singkat.
+6. Hasilkan 1-2 pesan bubble (\`messages\`) balasan yang alami, hangat, dan solutif.
+7. Sediakan 1 pertanyaan lanjutan (\`follow_up_question\`) singkat.
 
 FORMAT OUTPUT (WAJIB JSON VALID TANPA MARKDOWN BACKTICKS):
 {
@@ -237,7 +253,9 @@ FORMAT OUTPUT (WAJIB JSON VALID TANPA MARKDOWN BACKTICKS):
       }
     ],
     "preference": null,
-    "cancel_transaction": null
+    "cancel_transaction": null,
+    "delete_all_request": null,
+    "export_request": null
   },
   "reasoning": "Alasan singkat",
   "chart": null,
