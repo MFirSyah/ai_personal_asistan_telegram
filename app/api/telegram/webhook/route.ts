@@ -9,7 +9,7 @@ import { processChatRespondDirect } from '@/lib/telegram/chat-processor';
 import { processReceiptDirect } from '@/lib/telegram/receipt-processor';
 import { calculate20Analytics } from '@/lib/analytics/calculators';
 import { getUserPreferences, saveUserPreference } from '@/lib/supabase/queries/preferences';
-import { getRecentTransactions } from '@/lib/supabase/queries/transactions';
+import { getRecentTransactions, getRecentActivities } from '@/lib/supabase/queries/transactions';
 import { generateExportFile } from '@/lib/export/export-data';
 import { linkPartnerAccounts } from '@/lib/features/couples';
 import { calculateSplitBill } from '@/lib/features/split-bill';
@@ -124,9 +124,10 @@ export async function POST(req: NextRequest) {
     sendTelegramChatAction(chatId, 'typing').catch(console.error);
 
     const appBaseUrl = process.env.NEXT_PUBLIC_APP_URL || 'https://ai-personal-asistan-telegram.vercel.app';
-    const [insights, recentTxs] = await Promise.all([
+    const [insights, recentTxs, recentActs] = await Promise.all([
       calculate20Analytics(user.id),
       getRecentTransactions(user.id, 5),
+      getRecentActivities(user.id, 5),
     ]);
 
     const expenseItem = insights.find((i) => i.id === 1);
@@ -143,13 +144,13 @@ export async function POST(req: NextRequest) {
     const projectedExpense = projectionItem?.data?.projectedExpense || 0;
     const healthScore = scoreItem?.data?.score || 'N/A';
 
-    let summaryMsg = `📊 **LAPORAN & RINGKASAN KEUANGAN RINCI** 📊\n\n`;
+    let summaryMsg = `📊 **LAPORAN & RINGKASAN GABUNGAN (KEUANGAN & AKTIVITAS)** 📊\n\n`;
     summaryMsg += `👤 **User**: ${user.name || 'Teman'}\n`;
     summaryMsg += `💸 **Total Pengeluaran**: Rp ${Number(totalExpense).toLocaleString('id-ID')}\n`;
     summaryMsg += `💰 **Total Pemasukan**: Rp ${Number(totalIncome).toLocaleString('id-ID')}\n`;
     summaryMsg += `📈 **Net Tabungan**: Rp ${Number(netSavings).toLocaleString('id-ID')}\n\n`;
     summaryMsg += `🔮 **Proyeksi Akhir Bulan**: Rp ${Number(projectedExpense).toLocaleString('id-ID')}\n`;
-    summaryMsg += `🛡️ **Skor Kesehatan**: ${healthScore}\n\n`;
+    summaryMsg += `🛡️ **Skor Kesehatan Finansial**: ${healthScore}\n\n`;
 
     // Category breakdown
     if (catItem?.chart_config?.labels?.length && catItem.chart_config.labels[0] !== 'Belum Ada Data') {
@@ -175,12 +176,23 @@ export async function POST(req: NextRequest) {
 
     // Recent 5 transactions
     if (recentTxs?.length) {
-      summaryMsg += `📌 **5 Catatan Transaksi Terakhir**:\n`;
+      summaryMsg += `📌 **5 Catatan Transaksi Keuangan Terakhir**:\n`;
       recentTxs.forEach((t) => {
         const icon = t.type === 'income' ? '🟢' : '🔴';
         const dateStr = new Date(t.occurred_at).toLocaleDateString('id-ID', { day: '2-digit', month: 'short' });
         const nameStr = t.merchant || t.description || 'Transaksi';
         summaryMsg += `${icon} \`${dateStr}\` | ${nameStr}: **Rp ${Number(t.amount).toLocaleString('id-ID')}**\n`;
+      });
+      summaryMsg += `\n`;
+    }
+
+    // Recent 5 activities
+    if (recentActs?.length) {
+      summaryMsg += `📅 **5 Catatan Agenda & Aktivitas Terakhir**:\n`;
+      recentActs.forEach((a) => {
+        const priorityIcon = a.priority === 'urgent' ? '🚨' : a.priority === 'high' ? '⚠️' : '📌';
+        const dateStr = new Date(a.occurred_at).toLocaleDateString('id-ID', { day: '2-digit', month: 'short' });
+        summaryMsg += `${priorityIcon} \`${dateStr}\` | **${a.title}** (${a.status || 'Aktif'})\n`;
       });
       summaryMsg += `\n`;
     }
