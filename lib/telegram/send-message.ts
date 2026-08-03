@@ -38,6 +38,8 @@ export async function setTelegramBotCommands(): Promise<any> {
     { command: 'pdf', description: 'Cetak Laporan Eksklusif Bulanan ke PDF/Doc' },
     { command: 'langganan', description: 'Daftar tagihan langganan rutin' },
     { command: 'utang', description: 'Daftar catatan utang & piutang' },
+    { command: 'lunas_semua_utang', description: 'Batch update: Tandai semua utang lunas' },
+    { command: 'selesaikan_semua_aktivitas', description: 'Batch update: Tandai semua aktivitas selesai' },
     { command: 'habit', description: 'Statistik habit tracker & streak' },
     { command: 'nama', description: 'Lihat & ubah nama panggilan AI kamu' },
     { command: 'briefing', description: 'Atur jam morning briefing harian' },
