@@ -206,6 +206,9 @@ FORMAT OUTPUT (WAJIB JSON VALID TANPA MARKDOWN BACKTICKS):
         "category": "Makanan",
         "merchant": "Warung",
         "description": "Makan siang",
+        "payment_method": "QRIS",
+        "tags": ["harian"],
+        "items": [],
         "occurred_at": "2026-06-01T12:00:00Z"
       }
     ],
@@ -214,6 +217,8 @@ FORMAT OUTPUT (WAJIB JSON VALID TANPA MARKDOWN BACKTICKS):
         "title": "Sidang Skripsi",
         "category": "Akademik",
         "description": "Sidang akhir",
+        "priority": "urgent",
+        "tags": ["skripsi"],
         "occurred_at": "2026-06-01T09:00:00Z"
       }
     ],

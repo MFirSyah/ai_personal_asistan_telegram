@@ -73,6 +73,10 @@ export async function processChatRespondDirect(
             merchant: tx.merchant,
             description: tx.description,
             source: 'chat_manual',
+            payment_method: tx.payment_method,
+            location: tx.location,
+            items: tx.items || [],
+            tags: tx.tags || [],
             occurred_at: tx.occurred_at || new Date().toISOString(),
           });
         }
@@ -86,6 +90,9 @@ export async function processChatRespondDirect(
             user_id: userId,
             title: act.title,
             description: act.description,
+            status: act.status || 'scheduled',
+            priority: act.priority || 'medium',
+            tags: act.tags || [],
             occurred_at: act.occurred_at || new Date().toISOString(),
           });
         }

@@ -9,6 +9,10 @@ export interface Transaction {
   merchant?: string;
   description?: string;
   source: 'receipt_ocr' | 'chat_manual';
+  payment_method?: string;
+  location?: string;
+  items?: any[];
+  tags?: string[];
   raw_ai_response?: any;
   occurred_at: string;
   deleted_at?: string | null;
@@ -21,6 +25,9 @@ export interface Activity {
   category_id?: string;
   title: string;
   description?: string;
+  status?: 'scheduled' | 'in_progress' | 'completed' | 'cancelled';
+  priority?: 'low' | 'medium' | 'high' | 'urgent';
+  tags?: string[];
   occurred_at: string;
   deleted_at?: string | null;
   created_at: string;
