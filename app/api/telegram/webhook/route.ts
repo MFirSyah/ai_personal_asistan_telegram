@@ -8,7 +8,7 @@ import { scheduleBatchJob } from '@/lib/jobs/create-job';
 import { processChatRespondDirect } from '@/lib/telegram/chat-processor';
 import { processReceiptDirect } from '@/lib/telegram/receipt-processor';
 import { calculate20Analytics } from '@/lib/analytics/calculators';
-import { getUserPreferences } from '@/lib/supabase/queries/preferences';
+import { getUserPreferences, saveUserPreference } from '@/lib/supabase/queries/preferences';
 import { supabaseAdmin } from '@/lib/supabase/client';
 
 export async function POST(req: NextRequest) {
