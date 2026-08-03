@@ -30,15 +30,20 @@ export async function setTelegramBotCommands(): Promise<any> {
   const url = `${TELEGRAM_API_BASE}/setMyCommands`;
   const commands = [
     { command: 'start', description: 'Mulai & status akun kamu' },
-    { command: 'ringkasan', description: 'Laporan ringkas pengeluaran & kesehatan finansial' },
+    { command: 'ringkasan', description: 'Laporan ringkas pengeluaran & saldo' },
     { command: 'dashboard', description: 'Buka Mini App Dashboard interaktif' },
-    { command: 'export', description: 'Export data transaksi & aktivitas ke Excel/CSV' },
-    { command: 'progress', description: 'Cek progress tugas background / hapus data' },
-    { command: 'preferensi', description: 'Lihat preferensi & gaya bahasa yang dipelajari AI' },
-    { command: 'nama', description: 'Lihat & ubah nama panggilan kamu untuk AI' },
+    { command: 'pasangan', description: 'Hubungkan akun dengan pasangan' },
+    { command: 'split', description: 'Kalkulator patungan tagihan (Split Bill)' },
+    { command: 'export', description: 'Export data keuangan/aktivitas ke Excel/CSV' },
+    { command: 'pdf', description: 'Cetak Laporan Eksklusif Bulanan ke PDF/Doc' },
+    { command: 'langganan', description: 'Daftar tagihan langganan rutin' },
+    { command: 'utang', description: 'Daftar catatan utang & piutang' },
+    { command: 'habit', description: 'Statistik habit tracker & streak' },
+    { command: 'nama', description: 'Lihat & ubah nama panggilan AI kamu' },
     { command: 'briefing', description: 'Atur jam morning briefing harian' },
-    { command: 'bantuan', description: 'Lihat panduan penggunaan bot' },
-    { command: 'hapus_semua', description: 'Hapus semua data (perlu konfirmasi)' },
+    { command: 'preferensi', description: 'Lihat pola & gaya bahasa yang dipelajari AI' },
+    { command: 'bantuan', description: 'Panduan lengkap & daftar perintah bot' },
+    { command: 'hapus_semua', description: 'Hapus semua data (dengan konfirmasi)' },
   ];
 
   try {
