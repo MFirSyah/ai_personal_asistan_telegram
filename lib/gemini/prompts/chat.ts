@@ -184,11 +184,11 @@ PESAN BARU DARI USER:
 "${context.userMessage}"
 
 TUGAS KAMU:
-1. Analisis pesan user. Jika pesan berisi BANYAK transaksi keuangan atau aktivitas sekaligus (misalnya berupa teks panjang / jurnal harian), ekstraksi SEMUA transaksi ke dalam ARRAY `extracted_data.transactions` dan SEMUA aktivitas ke dalam ARRAY `extracted_data.activities`. JANGAN HANYA MENGAMBIL 1 ITEM!
-2. Jika user ingin **membatalkan / menghapus / merevisi** transaksi terakhir (misal: "batalkan transaksi tadi", "hapus pengeluaran 50rb tadi", "batal"), set `extracted_data.cancel_transaction` dengan objek berisi `amount` (jika disebutkan) dan `type` (expense / income).
+1. Analisis pesan user. Jika pesan berisi BANYAK transaksi keuangan atau aktivitas sekaligus (misalnya berupa teks panjang / jurnal harian), ekstraksi SEMUA transaksi ke dalam ARRAY \`extracted_data.transactions\` dan SEMUA aktivitas ke dalam ARRAY \`extracted_data.activities\`. JANGAN HANYA MENGAMBIL 1 ITEM!
+2. Jika user ingin **membatalkan / menghapus / merevisi** transaksi terakhir (misal: "batalkan transaksi tadi", "hapus pengeluaran 50rb tadi", "batal"), set \`extracted_data.cancel_transaction\` dengan objek berisi \`amount\` (jika disebutkan) dan \`type\` (expense / income).
 3. Kamu **WAJIB mematuhi semua instruksi** yang tercantum dalam "Preferensi & Catatan Memori Pengguna" (seperti gaya bahasa, panggilan nama, atau kewajiban menggunakan format bullet point untuk ringkasan/daftar).
-4. Hasilkan 1-2 pesan bubble (`messages`) balasan yang alami, hangat, dan solutif yang meringkas secara jujur berapa total transaksi dan aktivitas yang berhasil kamu catat.
-5. Sediakan 1 pertanyaan lanjutan (`follow_up_question`) singkat.
+4. Hasilkan 1-2 pesan bubble (\`messages\`) balasan yang alami, hangat, dan solutif yang meringkas secara jujur berapa total transaksi dan aktivitas yang berhasil kamu catat.
+5. Sediakan 1 pertanyaan lanjutan (\`follow_up_question\`) singkat.
 
 FORMAT OUTPUT (WAJIB JSON VALID TANPA MARKDOWN BACKTICKS):
 {
