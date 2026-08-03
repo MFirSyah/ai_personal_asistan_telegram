@@ -181,3 +181,73 @@ export async function saveChatMessage(userId: string, role: 'user' | 'assistant'
     content,
   });
 }
+
+export async function randomizeTransactionTimestamps(
+  userId: string,
+  targetDateStr?: string,
+  startHour = 8,
+  endHour = 21
+): Promise<number> {
+  const targetDate = targetDateStr ? new Date(targetDateStr) : new Date();
+
+  const { data: txs, error } = await supabaseAdmin
+    .from('transactions')
+    .select('id, occurred_at')
+    .eq('user_id', userId)
+    .is('deleted_at', null);
+
+  if (error || !txs || !txs.length) return 0;
+
+  let updatedCount = 0;
+  for (const tx of txs) {
+    const randomHour = Math.floor(Math.random() * (endHour - startHour + 1)) + startHour;
+    const randomMin = Math.floor(Math.random() * 60);
+    const randomSec = Math.floor(Math.random() * 60);
+
+    const newDate = new Date(targetDate);
+    newDate.setHours(randomHour, randomMin, randomSec, 0);
+
+    const { error: updateErr } = await supabaseAdmin
+      .from('transactions')
+      .update({ occurred_at: newDate.toISOString() })
+      .eq('id', tx.id);
+
+    if (!updateErr) updatedCount++;
+  }
+  return updatedCount;
+}
+
+export async function randomizeActivityTimestamps(
+  userId: string,
+  targetDateStr?: string,
+  startHour = 8,
+  endHour = 21
+): Promise<number> {
+  const targetDate = targetDateStr ? new Date(targetDateStr) : new Date();
+
+  const { data: acts, error } = await supabaseAdmin
+    .from('activities')
+    .select('id, occurred_at')
+    .eq('user_id', userId)
+    .is('deleted_at', null);
+
+  if (error || !acts || !acts.length) return 0;
+
+  let updatedCount = 0;
+  for (const act of acts) {
+    const randomHour = Math.floor(Math.random() * (endHour - startHour + 1)) + startHour;
+    const randomMin = Math.floor(Math.random() * 60);
+    const randomSec = Math.floor(Math.random() * 60);
+
+    const newDate = new Date(targetDate);
+    newDate.setHours(randomHour, randomMin, randomSec, 0);
+
+    const { error: updateErr } = await supabaseAdmin
+      .from('activities')
+      .update({ occurred_at: newDate.toISOString() })
+      .eq('id', act.id);
+
+    if (!updateErr) updatedCount++;
+  }
+  return updatedCount;
+}

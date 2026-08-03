@@ -9,7 +9,7 @@ import { processChatRespondDirect } from '@/lib/telegram/chat-processor';
 import { processReceiptDirect } from '@/lib/telegram/receipt-processor';
 import { calculate20Analytics } from '@/lib/analytics/calculators';
 import { getUserPreferences, saveUserPreference } from '@/lib/supabase/queries/preferences';
-import { getRecentTransactions, getRecentActivities } from '@/lib/supabase/queries/transactions';
+import { getRecentTransactions, getRecentActivities, randomizeTransactionTimestamps, randomizeActivityTimestamps } from '@/lib/supabase/queries/transactions';
 import { generateExportFile } from '@/lib/export/export-data';
 import { linkPartnerAccounts } from '@/lib/features/couples';
 import { calculateSplitBill } from '@/lib/features/split-bill';
@@ -262,6 +262,24 @@ export async function POST(req: NextRequest) {
     await sendTelegramMessage(
       chatId,
       `💰 **BATCH PROSES HUTANG SELESAI!**\n\nSebanyak **${count} catatan hutang** telah berhasil diperbarui statusnya menjadi **Lunas (Paid)**!`
+    );
+    return NextResponse.json({ ok: true });
+  }
+
+  if (text.startsWith('/acak_jam') || text.startsWith('/update_tanggal')) {
+    const parts = text.split(' ').filter(Boolean);
+    const startHr = parts[1] && !isNaN(parseInt(parts[1], 10)) ? parseInt(parts[1], 10) : 8;
+    const endHr = parts[2] && !isNaN(parseInt(parts[2], 10)) ? parseInt(parts[2], 10) : 21;
+    const targetDate = new Date().toISOString().split('T')[0];
+
+    const [txCount, actCount] = await Promise.all([
+      randomizeTransactionTimestamps(user.id, targetDate, startHr, endHr),
+      randomizeActivityTimestamps(user.id, targetDate, startHr, endHr),
+    ]);
+
+    await sendTelegramMessage(
+      chatId,
+      `⏰ **BERHASIL MENGACAK TANGGAL & JAM!**\n\n• **Tanggal Target**: ${targetDate} (Hari Ini)\n• **Rentang Jam**: ${String(startHr).padStart(2, '0')}:00 - ${String(endHr).padStart(2, '0')}:00 WIB\n• **Total Transaksi Diperbarui**: ${txCount}\n• **Total Aktivitas Diperbarui**: ${actCount}`
     );
     return NextResponse.json({ ok: true });
   }

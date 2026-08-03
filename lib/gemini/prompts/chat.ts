@@ -81,6 +81,12 @@ export interface ChatOrchestrationResult {
       category?: string;
       sortByPriority?: boolean;
     } | null;
+    update_timestamps?: {
+      targetDate?: string;
+      startHour?: number;
+      endHour?: number;
+      target?: 'transactions' | 'activities' | 'all';
+    } | null;
   } | null;
   reasoning?: string;
   chart?: {
@@ -230,12 +236,17 @@ TUGAS KAMU:
    - Jika user menyebutkan "kemarin", hitung tanggal H-1 dari Waktu Sekarang.
 5. Jika user ingin **membatalkan / menghapus / merevisi** transaksi (misal: "batalkan transaksi tadi", "hapus 50rb tadi"), set \`extracted_data.cancel_transaction\`. Jika user meminta **MENGHAPUS SEMUA DATA** (misal: "hapus semua data saya", "kosongkan data", "reset data"), set \`extracted_data.delete_all_request = true\`.
 6. Jika user meminta **EXPORT DATA KE EXCEL/CSV** (misal: "bantu export transaksi tanggal X ke Y", "export data Alfamart"), set \`extracted_data.export_request\`.
-7. Kamu **WAJIB MEMATUHI SEMUA PREFERENSI & CATATAN MEMORI PENGGUNA** yang ada dalam konteks (seperti format bullet point •, gaya bahasa, panggilan nama).
-8. **SANGAT PENTING - DILARANG MENYAPA ULANG / GREETING LOOP ON SHORT AFFIRMATION**:
+7. Jika user meminta **MENGUBAH / MENGACAK TANGGAL & JAM TRANSAKSI/AKTIVITAS** (misal: "ubah semua transaksi ke tanggal hari ini", "acak jam transaksi dari jam 8 sampai 20", "set tanggal transaksi jadi hari ini jam sekian"), set \`extracted_data.update_timestamps\`:
+   - \`targetDate\`: "YYYY-MM-DD" (jika user sebut tanggal, atau default hari ini)
+   - \`startHour\`: jam mulai (integer 0-23, misal 8)
+   - \`endHour\`: jam akhir (integer 0-23, misal 20)
+   - \`target\`: "transactions" | "activities" | "all"
+8. Kamu **WAJIB MEMATUHI SEMUA PREFERENSI & CATATAN MEMORI PENGGUNA** yang ada dalam konteks (seperti format bullet point •, gaya bahasa, panggilan nama).
+9. **SANGAT PENTING - DILARANG MENYAPA ULANG / GREETING LOOP ON SHORT AFFIRMATION**:
    - JANGAN PERNAH menyapa ulang user dengan kata-kata pembuka generik seperti *"Halo [Nama]! Senang bisa ngobrol lagi. Ada yang bisa aku bantu hari ini?"* jika obrolan sedang berjalan!
    - Jika \`PESAN BARU DARI USER\` berisi kata persetujuan / konfirmasi singkat (seperti *"Mau"*, *"Boleh"*, *"Iya"*, *"Oke"*, *"Siap"*, *"Lanjutkan"*), kamu **WAJIB LANGSUNG MEMENUHI & MEMBERIKAN DETAIL RINCIAN**!
-9. Hasilkan 1-2 pesan bubble (\`messages\`) balasan yang alami, hangat, dan solutif.
-10. Sediakan 1 pertanyaan lanjutan (\`follow_up_question\`) singkat.
+10. Hasilkan 1-2 pesan bubble (\`messages\`) balasan yang alami, hangat, dan solutif.
+11. Sediakan 1 pertanyaan lanjutan (\`follow_up_question\`) singkat.
 
 FORMAT OUTPUT (WAJIB JSON VALID TANPA MARKDOWN BACKTICKS):
 {

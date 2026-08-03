@@ -7,6 +7,8 @@ import {
   insertTransaction,
   insertActivity,
   softDeleteTransactionByCriteria,
+  randomizeTransactionTimestamps,
+  randomizeActivityTimestamps,
 } from '@/lib/supabase/queries/transactions';
 import { getUserPreferences, saveUserPreference } from '@/lib/supabase/queries/preferences';
 import { updateUserName } from '@/lib/supabase/queries/sessions';
@@ -180,6 +182,34 @@ export async function processChatRespondDirect(
           await sendTelegramDocument(chatId, exportResult.buffer, exportResult.filename, exportResult.caption);
         } catch (expErr) {
           console.error('Export error:', expErr);
+        }
+      }
+
+      // Update / Randomize Timestamps Request
+      if (ext.update_timestamps && chatId) {
+        try {
+          const req = ext.update_timestamps;
+          const targetDate = req.targetDate || new Date().toISOString().split('T')[0];
+          const startHr = req.startHour ?? 8;
+          const endHr = req.endHour ?? 21;
+          const target = req.target || 'all';
+
+          let countTx = 0;
+          let countAct = 0;
+
+          if (target === 'transactions' || target === 'all') {
+            countTx = await randomizeTransactionTimestamps(userId, targetDate, startHr, endHr);
+          }
+          if (target === 'activities' || target === 'all') {
+            countAct = await randomizeActivityTimestamps(userId, targetDate, startHr, endHr);
+          }
+
+          await sendTelegramMessage(
+            chatId,
+            `⏰ **BERHASIL MENGACAK TANGGAL & JAM!**\n\n• **Tanggal Target**: ${targetDate}\n• **Rentang Jam**: ${String(startHr).padStart(2, '0')}:00 - ${String(endHr).padStart(2, '0')}:00 WIB\n• **Total Transaksi Diperbarui**: ${countTx}\n• **Total Aktivitas Diperbarui**: ${countAct}`
+          );
+        } catch (tsErr) {
+          console.error('Update timestamps error:', tsErr);
         }
       }
     }
