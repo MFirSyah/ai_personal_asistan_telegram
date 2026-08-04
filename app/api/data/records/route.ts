@@ -61,12 +61,23 @@ export async function GET(req: NextRequest) {
       .select('*')
       .or(`user_id.eq.${userId},is_default.eq.true`);
 
+    // Attach short IDs
+    const txWithShortIds = (transactions || []).map((t) => ({
+      ...t,
+      short_id: `TX-${t.id.replace(/-/g, '').substring(0, 4).toUpperCase()}`,
+    }));
+
+    const actWithShortIds = (activities || []).map((a) => ({
+      ...a,
+      short_id: `ACT-${a.id.replace(/-/g, '').substring(0, 4).toUpperCase()}`,
+    }));
+
     return NextResponse.json({
       ok: true,
       userId,
       userName: resolvedUserName,
-      transactions: transactions || [],
-      activities: activities || [],
+      transactions: txWithShortIds,
+      activities: actWithShortIds,
       categories: categories || [],
     });
   } catch (err: any) {

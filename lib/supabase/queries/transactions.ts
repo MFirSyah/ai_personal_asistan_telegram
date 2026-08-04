@@ -251,3 +251,83 @@ export async function randomizeActivityTimestamps(
   }
   return updatedCount;
 }
+
+export async function findRecordIdByShortOrFull(
+  userId: string,
+  idOrShortId: string,
+  type: 'transaction' | 'activity'
+): Promise<string | null> {
+  const table = type === 'transaction' ? 'transactions' : 'activities';
+  const cleanStr = idOrShortId.trim();
+
+  // If full UUID format (36 chars)
+  if (cleanStr.length === 36) {
+    return cleanStr;
+  }
+
+  // Fetch all non-deleted records for user and match by short ID or prefix
+  const { data: records } = await supabaseAdmin
+    .from(table)
+    .select('id')
+    .eq('user_id', userId)
+    .is('deleted_at', null);
+
+  if (!records || records.length === 0) return null;
+
+  const hexPart = cleanStr.replace(/^(TX|ACT)-?/i, '').toLowerCase();
+
+  for (const r of records) {
+    const rClean = r.id.replace(/-/g, '').toLowerCase();
+    if (rClean.startsWith(hexPart) || r.id.toLowerCase() === cleanStr.toLowerCase()) {
+      return r.id;
+    }
+  }
+
+  return null;
+}
+
+export async function updateRecordById(
+  userId: string,
+  idOrShortId: string,
+  type: 'transaction' | 'activity',
+  updates: Record<string, any>
+): Promise<boolean> {
+  const realId = await findRecordIdByShortOrFull(userId, idOrShortId, type);
+  if (!realId) return false;
+
+  const table = type === 'transaction' ? 'transactions' : 'activities';
+  const { error } = await supabaseAdmin
+    .from(table)
+    .update(updates)
+    .eq('id', realId)
+    .eq('user_id', userId);
+
+  if (error) {
+    console.error(`Failed to update ${type} ${realId}:`, error);
+    return false;
+  }
+  return true;
+}
+
+export async function deleteRecordById(
+  userId: string,
+  idOrShortId: string,
+  type: 'transaction' | 'activity'
+): Promise<boolean> {
+  const realId = await findRecordIdByShortOrFull(userId, idOrShortId, type);
+  if (!realId) return false;
+
+  const table = type === 'transaction' ? 'transactions' : 'activities';
+  const { error } = await supabaseAdmin
+    .from(table)
+    .update({ deleted_at: new Date().toISOString() })
+    .eq('id', realId)
+    .eq('user_id', userId);
+
+  if (error) {
+    console.error(`Failed to delete ${type} ${realId}:`, error);
+    return false;
+  }
+  return true;
+}
+

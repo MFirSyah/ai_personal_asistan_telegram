@@ -9,6 +9,8 @@ import {
   softDeleteTransactionByCriteria,
   randomizeTransactionTimestamps,
   randomizeActivityTimestamps,
+  updateRecordById,
+  deleteRecordById,
 } from '@/lib/supabase/queries/transactions';
 import { getUserPreferences, saveUserPreference } from '@/lib/supabase/queries/preferences';
 import { updateUserName } from '@/lib/supabase/queries/sessions';
@@ -153,6 +155,42 @@ export async function processChatRespondDirect(
           const keyLower = pref.key.toLowerCase();
           if (keyLower.includes('nama') || keyLower.includes('name') || keyLower.includes('panggilan')) {
             await updateUserName(userId, pref.value);
+          }
+        }
+      }
+
+      // Edit Record by ID (TX-XXXX or ACT-XXXX)
+      if ((ext as any).edit_record) {
+        const editReq = (ext as any).edit_record;
+        if (editReq?.id && editReq?.type && editReq?.changes) {
+          try {
+            const success = await updateRecordById(userId, editReq.id, editReq.type, editReq.changes);
+            if (success && chatId) {
+              await sendTelegramMessage(
+                chatId,
+                `✏️ **BERHASIL MENGUBAH DATA [${editReq.id.toUpperCase()}]**\n\nPerubahan berhasil disimpan di database Supabase.`
+              );
+            }
+          } catch (editErr) {
+            console.error('Error editing record by ID:', editErr);
+          }
+        }
+      }
+
+      // Delete Record by ID (TX-XXXX or ACT-XXXX)
+      if ((ext as any).delete_record) {
+        const delReq = (ext as any).delete_record;
+        if (delReq?.id && delReq?.type) {
+          try {
+            const success = await deleteRecordById(userId, delReq.id, delReq.type);
+            if (success && chatId) {
+              await sendTelegramMessage(
+                chatId,
+                `🗑️ **BERHASIL MENGHAPUS DATA [${delReq.id.toUpperCase()}]**\n\nCatatan tersebut telah dihapus dari database.`
+              );
+            }
+          } catch (delErr) {
+            console.error('Error deleting record by ID:', delErr);
           }
         }
       }

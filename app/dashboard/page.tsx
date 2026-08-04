@@ -259,15 +259,27 @@ function DashboardContent() {
 
   // Filtered transactions & activities for Edit Data
   const filteredTxs = records.transactions.filter((t) => {
-    const q = searchQuery.toLowerCase();
-    const matchQ = !q || t.merchant?.toLowerCase().includes(q) || t.description?.toLowerCase().includes(q) || String(t.amount).includes(q);
+    const q = searchQuery.toLowerCase().trim();
+    const matchQ =
+      !q ||
+      t.short_id?.toLowerCase().includes(q) ||
+      t.id?.toLowerCase().includes(q) ||
+      t.merchant?.toLowerCase().includes(q) ||
+      t.description?.toLowerCase().includes(q) ||
+      String(t.amount).includes(q);
     const matchCat = categoryFilter === 'all' || t.type === categoryFilter;
     return matchQ && matchCat;
   });
 
   const filteredActs = records.activities.filter((a) => {
-    const q = searchQuery.toLowerCase();
-    return !q || a.title?.toLowerCase().includes(q) || a.description?.toLowerCase().includes(q);
+    const q = searchQuery.toLowerCase().trim();
+    return (
+      !q ||
+      a.short_id?.toLowerCase().includes(q) ||
+      a.id?.toLowerCase().includes(q) ||
+      a.title?.toLowerCase().includes(q) ||
+      a.description?.toLowerCase().includes(q)
+    );
   });
 
   return (
@@ -800,6 +812,7 @@ function DashboardContent() {
                     <table className="w-full text-left border-collapse min-w-[800px]">
                       <thead>
                         <tr className="bg-[#e2e2e2] font-bold text-xs uppercase">
+                          <th className="p-4 cell-border border-b-4 border-black w-28">ID Unik</th>
                           <th className="p-4 cell-border border-b-4 border-black w-32">Date</th>
                           <th className="p-4 cell-border border-b-4 border-black">Description / Merchant</th>
                           <th className="p-4 cell-border border-b-4 border-black w-40">Category</th>
@@ -810,13 +823,18 @@ function DashboardContent() {
                       <tbody className="font-jetbrains text-sm">
                         {filteredTxs.length === 0 ? (
                           <tr>
-                            <td colSpan={5} className="p-8 text-center font-bold uppercase text-black/60">
+                            <td colSpan={6} className="p-8 text-center font-bold uppercase text-black/60">
                               Tidak ada catatan transaksi ditemukan.
                             </td>
                           </tr>
                         ) : (
                           filteredTxs.map((t) => (
                             <tr key={t.id} className="hover:bg-[#008080]/5 transition-colors group">
+                              <td className="p-4 cell-border font-bold">
+                                <span className="bg-black text-[#d2f000] px-2 py-1 border border-black font-mono text-xs">
+                                  {t.short_id || `TX-${t.id?.replace(/-/g, '').substring(0, 4).toUpperCase()}`}
+                                </span>
+                              </td>
                               <td className="p-4 cell-border font-bold">
                                 {new Date(t.occurred_at || t.created_at).toLocaleDateString('id-ID')}
                               </td>
@@ -855,8 +873,10 @@ function DashboardContent() {
                       filteredTxs.map((t) => (
                         <div key={t.id} className="border-2 border-black p-3 bg-white space-y-2 brutalist-shadow">
                           <div className="flex justify-between items-center border-b border-black pb-1">
+                            <span className="bg-black text-[#d2f000] px-2 py-0.5 border border-black font-bold font-mono">
+                              {t.short_id || `TX-${t.id?.replace(/-/g, '').substring(0, 4).toUpperCase()}`}
+                            </span>
                             <span className="font-bold">{new Date(t.occurred_at || t.created_at).toLocaleDateString('id-ID')}</span>
-                            <span className="bg-[#e2e2e2] px-2 py-0.5 border border-black font-bold uppercase">{t.type}</span>
                           </div>
                           <p className="font-bold text-sm">{t.merchant || t.description || 'Transaksi'}</p>
                           <div className="flex justify-between items-center pt-1">
@@ -889,6 +909,7 @@ function DashboardContent() {
                     <table className="w-full text-left border-collapse min-w-[800px]">
                       <thead>
                         <tr className="bg-[#e2e2e2] font-bold text-xs uppercase">
+                          <th className="p-4 cell-border border-b-4 border-black w-28">ID Unik</th>
                           <th className="p-4 cell-border border-b-4 border-black w-32">Date</th>
                           <th className="p-4 cell-border border-b-4 border-black">Judul Agenda</th>
                           <th className="p-4 cell-border border-b-4 border-black w-32">Priority</th>
@@ -899,13 +920,18 @@ function DashboardContent() {
                       <tbody className="font-jetbrains text-sm">
                         {filteredActs.length === 0 ? (
                           <tr>
-                            <td colSpan={5} className="p-8 text-center font-bold uppercase text-black/60">
+                            <td colSpan={6} className="p-8 text-center font-bold uppercase text-black/60">
                               Tidak ada catatan aktivitas ditemukan.
                             </td>
                           </tr>
                         ) : (
                           filteredActs.map((a) => (
                             <tr key={a.id} className="hover:bg-[#536000]/5 transition-colors group">
+                              <td className="p-4 cell-border font-bold">
+                                <span className="bg-black text-[#d2f000] px-2 py-1 border border-black font-mono text-xs">
+                                  {a.short_id || `ACT-${a.id?.replace(/-/g, '').substring(0, 4).toUpperCase()}`}
+                                </span>
+                              </td>
                               <td className="p-4 cell-border font-bold">
                                 {new Date(a.occurred_at || a.created_at).toLocaleDateString('id-ID')}
                               </td>
@@ -944,10 +970,10 @@ function DashboardContent() {
                       filteredActs.map((a) => (
                         <div key={a.id} className="border-2 border-black p-3 bg-white space-y-2 brutalist-shadow">
                           <div className="flex justify-between items-center border-b border-black pb-1">
-                            <span className="font-bold">{new Date(a.occurred_at || a.created_at).toLocaleDateString('id-ID')}</span>
-                            <span className={`px-2 py-0.5 border border-black font-bold uppercase ${a.priority === 'urgent' ? 'bg-[#ba1a1a] text-white' : 'bg-[#e2e2e2]'}`}>
-                              {a.priority || 'medium'}
+                            <span className="bg-black text-[#d2f000] px-2 py-0.5 border border-black font-bold font-mono">
+                              {a.short_id || `ACT-${a.id?.replace(/-/g, '').substring(0, 4).toUpperCase()}`}
                             </span>
+                            <span className="font-bold">{new Date(a.occurred_at || a.created_at).toLocaleDateString('id-ID')}</span>
                           </div>
                           <p className="font-bold text-sm">{a.title}</p>
                           <div className="flex justify-between items-center pt-1">

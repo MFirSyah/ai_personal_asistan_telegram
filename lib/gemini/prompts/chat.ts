@@ -87,6 +87,24 @@ export interface ChatOrchestrationResult {
       endHour?: number;
       target?: 'transactions' | 'activities' | 'all';
     } | null;
+    edit_record?: {
+      id: string; // e.g. "TX-8F3A" or "ACT-4E91" or UUID
+      type: 'transaction' | 'activity';
+      changes: {
+        amount?: number;
+        merchant?: string;
+        description?: string;
+        title?: string;
+        type?: 'expense' | 'income';
+        status?: 'scheduled' | 'in_progress' | 'completed' | 'cancelled';
+        priority?: 'low' | 'medium' | 'high' | 'urgent';
+        occurred_at?: string;
+      };
+    } | null;
+    delete_record?: {
+      id: string; // e.g. "TX-8F3A" or "ACT-4E91" or UUID
+      type: 'transaction' | 'activity';
+    } | null;
   } | null;
   reasoning?: string;
   chart?: {
@@ -181,22 +199,34 @@ function buildFullPrompt(context: ChatOrchestrationContext): string {
   }
 
   if (context.recentTransactions?.length) {
-    const slimTxs = context.recentTransactions.slice(0, 10).map(t => ({
-      amount: t.amount,
-      type: t.type,
-      merchant: t.merchant,
-      description: t.description,
-      occurred_at: t.occurred_at,
-    }));
-    parts.push(`Transaksi Terakhir: ${JSON.stringify(slimTxs)}`);
+    const slimTxs = context.recentTransactions.slice(0, 15).map(t => {
+      const shortId = `TX-${t.id.replace(/-/g, '').substring(0, 4).toUpperCase()}`;
+      return {
+        id: shortId,
+        full_id: t.id,
+        amount: t.amount,
+        type: t.type,
+        merchant: t.merchant,
+        description: t.description,
+        occurred_at: t.occurred_at,
+      };
+    });
+    parts.push(`Transaksi Terakhir (dengan ID unik): ${JSON.stringify(slimTxs)}`);
   }
 
   if (context.recentActivities?.length) {
-    const slimActs = context.recentActivities.slice(0, 5).map(a => ({
-      title: a.title,
-      occurred_at: a.occurred_at,
-    }));
-    parts.push(`Aktivitas Terakhir: ${JSON.stringify(slimActs)}`);
+    const slimActs = context.recentActivities.slice(0, 10).map(a => {
+      const shortId = `ACT-${a.id.replace(/-/g, '').substring(0, 4).toUpperCase()}`;
+      return {
+        id: shortId,
+        full_id: a.id,
+        title: a.title,
+        status: a.status,
+        priority: a.priority,
+        occurred_at: a.occurred_at,
+      };
+    });
+    parts.push(`Aktivitas Terakhir (dengan ID unik): ${JSON.stringify(slimActs)}`);
   }
 
   if (context.preferences?.length) {
@@ -221,32 +251,28 @@ PESAN BARU DARI USER:
 TUGAS KAMU:
 1. Analisis pesan user. Jika pesan berisi BANYAK transaksi keuangan atau aktivitas sekaligus (misalnya berupa teks panjang / jurnal harian), ekstraksi SEMUA transaksi ke dalam ARRAY \`extracted_data.transactions\` dan SEMUA aktivitas ke dalam ARRAY \`extracted_data.activities\`. JANGAN HANYA MENGAMBIL 1 ITEM!
 2. Jika user menyebutkan **PREFERENSI KOMUNIKASI, FORMAT PESAN (bullet point •, emoji, gaya bahasa santai/formal, panggilan, dll.)**, KAMU WAJIB mengekstraknya ke ARRAY \`extracted_data.preferences\`!
-   Contoh:
-   \`"preferences": [\`
-     \`{ "key": "format_poin", "value": "Menggunakan format bullet point (•) untuk ringkasan", "learned_from": "Permintaan user di chat" },\`
-     \`{ "key": "gaya_bicara", "value": "Gaya bahasa santai, akrab, dan hangat", "learned_from": "Permintaan user di chat" }\`
-   \`]\`
-3. Jika user menanyakan **LOKASI, RUTE, ATAU PETUNJUK ARAH KE SUATU TEMPAT** (misal: "aku mau ke unesa lidah", "rute ke pasar kletek", "lokasi XXI Sidoarjo"):
+3. **MENGEDIT DATA TERTENTU DENGAN ID UNIK (\`edit_record\`)**:
+   - Jika user meminta mengedit / mengubah suatu data transaksi atau aktivitas tertentu (misal: "edit transaksi TX-8F3A nominalnya 60rb", "ubah status agenda ACT-4E91 jadi selesai", "ganti merchant TX-A1B2 jadi Warung Bu Edi"), KAMU WAJIB MENGEKSTRAK \`extracted_data.edit_record\`:
+     \`"edit_record": { "id": "TX-8F3A", "type": "transaction", "changes": { "amount": 60000 } }\`
+4. **MENGHAPUS DATA TERTENTU DENGAN ID UNIK (\`delete_record\`)**:
+   - Jika user meminta menghapus data spesifik berdasarkan ID (misal: "hapus transaksi TX-8F3A", "hapus agenda ACT-4E91"), KAMU WAJIB MENGEKSTRAK \`extracted_data.delete_record\`:
+     \`"delete_record": { "id": "TX-8F3A", "type": "transaction" }\`
+5. Jika user menanyakan **LOKASI, RUTE, ATAU PETUNJUK ARAH KE SUATU TEMPAT** (misal: "aku mau ke unesa lidah", "rute ke pasar kletek", "lokasi XXI Sidoarjo"):
    a) KAMU WAJIB menyertakan link Google Maps langsung di dalam bubble balasan (\`messages\`), contoh:
       \`[🗺️ Buka Google Maps](https://www.google.com/maps/search/?api=1&query=UNESA+Lidah+Wetan+Surabaya)\`
    b) Serta mengisikan objek \`location\` pada JSON output:
       \`"location": { "name": "UNESA Lidah Wetan", "lat": -7.3006, "lng": 112.6744 }\`
-4. **ATURAN EKSPLISIT TANGGAL (\`occurred_at\`)**:
-   - Jika user TIDAK menyebutkan tanggal secara eksplisit (misal: "Dieng 440rb", "SPBU 30rb", "Mulai narik gojek"), KAMU WAJIB MENGGUNAKAN ISO WAKTU SEKARANG: \`${new Date().toISOString()}\`! JANGAN PERNAH MENYALIN DUMMY DATE TANGGAL 1 JANUARI!
+6. **ATURAN EKSPLISIT TANGGAL (\`occurred_at\`)**:
+   - Jika user TIDAK menyebutkan tanggal secara eksplisit, KAMU WAJIB MENGGUNAKAN ISO WAKTU SEKARANG: \`${new Date().toISOString()}\`! JANGAN PERNAH MENYALIN DUMMY DATE TANGGAL 1 JANUARI!
    - Jika user menyebutkan "kemarin", hitung tanggal H-1 dari Waktu Sekarang.
-5. Jika user ingin **membatalkan / menghapus / merevisi** transaksi (misal: "batalkan transaksi tadi", "hapus 50rb tadi"), set \`extracted_data.cancel_transaction\`. Jika user meminta **MENGHAPUS SEMUA DATA** (misal: "hapus semua data saya", "kosongkan data", "reset data"), set \`extracted_data.delete_all_request = true\`.
-6. Jika user meminta **EXPORT DATA KE EXCEL/CSV** (misal: "bantu export transaksi tanggal X ke Y", "export data Alfamart"), set \`extracted_data.export_request\`.
-7. Jika user meminta **MENGUBAH / MENGACAK TANGGAL & JAM TRANSAKSI/AKTIVITAS** (misal: "ubah semua transaksi ke tanggal hari ini", "acak jam transaksi dari jam 8 sampai 20", "set tanggal transaksi jadi hari ini jam sekian"), set \`extracted_data.update_timestamps\`:
-   - \`targetDate\`: "YYYY-MM-DD" (jika user sebut tanggal, atau default hari ini)
-   - \`startHour\`: jam mulai (integer 0-23, misal 8)
-   - \`endHour\`: jam akhir (integer 0-23, misal 20)
-   - \`target\`: "transactions" | "activities" | "all"
-8. Kamu **WAJIB MEMATUHI SEMUA PREFERENSI & CATATAN MEMORI PENGGUNA** yang ada dalam konteks (seperti format bullet point •, gaya bahasa, panggilan nama).
-9. **SANGAT PENTING - DILARANG MENYAPA ULANG / GREETING LOOP ON SHORT AFFIRMATION**:
-   - JANGAN PERNAH menyapa ulang user dengan kata-kata pembuka generik seperti *"Halo [Nama]! Senang bisa ngobrol lagi. Ada yang bisa aku bantu hari ini?"* jika obrolan sedang berjalan!
-   - Jika \`PESAN BARU DARI USER\` berisi kata persetujuan / konfirmasi singkat (seperti *"Mau"*, *"Boleh"*, *"Iya"*, *"Oke"*, *"Siap"*, *"Lanjutkan"*), kamu **WAJIB LANGSUNG MEMENUHI & MEMBERIKAN DETAIL RINCIAN**!
-10. Hasilkan 1-2 pesan bubble (\`messages\`) balasan yang alami, hangat, dan solutif.
-11. Sediakan 1 pertanyaan lanjutan (\`follow_up_question\`) singkat.
+7. Jika user meminta **MENGHAPUS SEMUA DATA** (misal: "hapus semua data saya", "kosongkan data", "reset data"), set \`extracted_data.delete_all_request = true\`.
+8. Jika user meminta **EXPORT DATA KE EXCEL/CSV** (misal: "bantu export transaksi tanggal X ke Y", "export data Alfamart"), set \`extracted_data.export_request\`.
+9. Jika user meminta **MENGUBAH / MENGACAK TANGGAL & JAM TRANSAKSI/AKTIVITAS** (misal: "ubah semua transaksi ke tanggal hari ini", "acak jam transaksi dari jam 8 sampai 20"), set \`extracted_data.update_timestamps\`.
+10. Kamu **WAJIB MEMATUHI SEMUA PREFERENSI & CATATAN MEMORI PENGGUNA** yang ada dalam konteks (seperti format bullet point •, gaya bahasa, panggilan nama).
+11. **SANGAT PENTING - DILARANG MENYAPA ULANG / GREETING LOOP ON SHORT AFFIRMATION**:
+    - JANGAN PERNAH menyapa ulang user dengan kata-kata pembuka generik seperti *"Halo [Nama]! Senang bisa ngobrol lagi."* jika obrolan sedang berjalan!
+12. Hasilkan 1-2 pesan bubble (\`messages\`) balasan yang alami, hangat, dan solutif. Sebutkan ID unik yang diedit/dihapus dalam pesan balasan jika ada.
+13. Sediakan 1 pertanyaan lanjutan (\`follow_up_question\`) singkat.
 
 FORMAT OUTPUT (WAJIB JSON VALID TANPA MARKDOWN BACKTICKS):
 {
