@@ -5,9 +5,6 @@ import { useSearchParams } from 'next/navigation';
 import { supabase } from '@/lib/supabase/client';
 import {
   ResponsiveContainer,
-  PieChart,
-  Pie,
-  Cell,
   BarChart,
   Bar,
   XAxis,
@@ -23,9 +20,22 @@ function DashboardContent() {
   const [analytics, setAnalytics] = useState<any[]>([]);
   const [activeTab, setActiveTab] = useState<'analisis' | 'edit'>('analisis');
   const [sideTab, setSideTab] = useState<'overview' | 'keuangan' | 'aktifitas' | 'anomali'>('overview');
+  const [editSubTab, setEditSubTab] = useState<'keuangan' | 'aktifitas'>('keuangan');
   const [userName, setUserName] = useState<string>('System_Admin');
-  const [telegramLinked, setTelegramLinked] = useState<boolean>(false);
   const [userId, setUserId] = useState<string>('demo-user');
+
+  // Morning Briefing Banner & Notification Center state
+  const [briefingDismissed, setBriefingDismissed] = useState(false);
+  const [showNotificationsModal, setShowNotificationsModal] = useState(false);
+  const [briefingData, setBriefingData] = useState<{
+    todayActs: string[];
+    urgentActs: string[];
+    upcomingActs: string[];
+  }>({
+    todayActs: ['Sidang Skripsi (Persiapan hardfile & berkas)', 'Narik Gojek target harian'],
+    urgentActs: ['Pastikan berkas sidang lengkap', 'Ingatkan pacar untuk menjenguk ibunya'],
+    upcomingActs: ['Persiapan Sidang Skripsi (Dosen Penguji: Bu Sri & Bu Rafika)'],
+  });
 
   // Edit Data states
   const [records, setRecords] = useState<{ transactions: any[]; activities: any[] }>({
@@ -34,10 +44,12 @@ function DashboardContent() {
   });
   const [searchQuery, setSearchQuery] = useState('');
   const [categoryFilter, setCategoryFilter] = useState('all');
-  const [statusFilter, setStatusFilter] = useState('all');
 
-  // Modal State
+  // Modals & Shortcuts
   const [showAddModal, setShowAddModal] = useState(false);
+  const [showCommandPalette, setShowCommandPalette] = useState(false);
+  const [quickViewRecord, setQuickViewRecord] = useState<any | null>(null);
+
   const [newRecordType, setNewRecordType] = useState<'transaction' | 'activity'>('transaction');
   const [formData, setFormData] = useState({
     titleOrMerchant: '',
@@ -46,6 +58,24 @@ function DashboardContent() {
     description: '',
     priority: 'medium',
   });
+
+  // Escape key shortcut to close all open modals
+  useEffect(() => {
+    const handleKeyDown = (e: KeyboardEvent) => {
+      if (e.key === 'Escape') {
+        setShowAddModal(false);
+        setShowCommandPalette(false);
+        setQuickViewRecord(null);
+        setShowNotificationsModal(false);
+      }
+      if ((e.ctrlKey || e.metaKey) && e.key.toLowerCase() === 'k') {
+        e.preventDefault();
+        setShowCommandPalette((prev) => !prev);
+      }
+    };
+    window.addEventListener('keydown', handleKeyDown);
+    return () => window.removeEventListener('keydown', handleKeyDown);
+  }, []);
 
   useEffect(() => {
     const initAuthAndData = async () => {
@@ -81,7 +111,6 @@ function DashboardContent() {
           const tgData = await tgRes.json();
 
           if (tgData.ok && tgData.user) {
-            setTelegramLinked(true);
             targetUserId = tgData.user.id;
             setUserName(tgData.user.name || effectiveName);
           }
@@ -106,7 +135,6 @@ function DashboardContent() {
               });
               const linkData = await linkRes.json();
               if (linkData.ok && linkData.user) {
-                setTelegramLinked(true);
                 targetUserId = linkData.user.id;
                 setUserName(linkData.user.name || effectiveName);
               }
@@ -173,6 +201,7 @@ function DashboardContent() {
             activities: prev.activities.filter((a) => a.id !== id),
           }));
         }
+        if (quickViewRecord?.id === id) setQuickViewRecord(null);
       }
     } catch (err) {
       console.error('Delete error:', err);
@@ -227,12 +256,17 @@ function DashboardContent() {
   const completedActsCount = records.activities.filter((a) => a.status === 'completed').length;
   const totalActsCount = records.activities.length || 8;
 
-  // Filtered transactions for Edit Data
+  // Filtered transactions & activities for Edit Data
   const filteredTxs = records.transactions.filter((t) => {
     const q = searchQuery.toLowerCase();
     const matchQ = !q || t.merchant?.toLowerCase().includes(q) || t.description?.toLowerCase().includes(q) || String(t.amount).includes(q);
     const matchCat = categoryFilter === 'all' || t.type === categoryFilter;
     return matchQ && matchCat;
+  });
+
+  const filteredActs = records.activities.filter((a) => {
+    const q = searchQuery.toLowerCase();
+    return !q || a.title?.toLowerCase().includes(q) || a.description?.toLowerCase().includes(q);
   });
 
   return (
@@ -270,22 +304,34 @@ function DashboardContent() {
             </button>
           </div>
 
-          {/* Actions & Search */}
+          {/* Actions & Search Shortcut */}
           <div className="flex items-center gap-4">
-            <div className="hidden md:flex items-center brutalist-border bg-white text-black h-10 px-2">
+            <button
+              onClick={() => setShowCommandPalette(true)}
+              className="hidden md:flex items-center brutalist-border bg-white text-black h-10 px-3 hover:bg-[#d2f000] active:translate-y-1 transition-all cursor-pointer"
+            >
               <span className="material-symbols-outlined mr-2">search</span>
-              <input
-                type="text"
-                placeholder="SEARCH..."
-                value={searchQuery}
-                onChange={(e) => setSearchQuery(e.target.value)}
-                className="bg-transparent border-none outline-none font-jetbrains text-sm w-32 focus:w-48 transition-all"
-              />
-            </div>
-            <button className="hover:bg-white/10 p-2 brutalist-active flex items-center">
-              <span className="material-symbols-outlined">notifications</span>
+              <span className="font-jetbrains text-xs font-bold uppercase mr-4">Quick Search...</span>
+              <kbd className="bg-black text-white px-2 py-0.5 text-[10px] font-jetbrains font-bold">Ctrl+K</kbd>
             </button>
-            <button className="hover:bg-white/10 p-2 brutalist-active flex items-center">
+
+            {/* Notification Center Button */}
+            <button
+              onClick={() => setShowNotificationsModal(true)}
+              className="relative hover:bg-white/10 p-2 brutalist-active flex items-center cursor-pointer"
+              title="Notifikasi & Briefing"
+            >
+              <span className="material-symbols-outlined">notifications</span>
+              {briefingDismissed && (
+                <span className="absolute top-1 right-1 w-3 h-3 bg-[#d2f000] border-2 border-black rounded-full"></span>
+              )}
+            </button>
+
+            <button
+              onClick={() => setShowCommandPalette(true)}
+              className="hover:bg-white/10 p-2 brutalist-active flex items-center cursor-pointer"
+              title="Pengaturan"
+            >
               <span className="material-symbols-outlined">settings</span>
             </button>
           </div>
@@ -322,9 +368,9 @@ function DashboardContent() {
             </button>
 
             <button
-              onClick={() => { setActiveTab('edit'); setSideTab('keuangan'); }}
+              onClick={() => { setActiveTab('edit'); setSideTab('keuangan'); setEditSubTab('keuangan'); }}
               className={`flex items-center gap-4 p-4 mb-2 font-bold text-sm text-left transition-all border-2 ${
-                activeTab === 'edit' && sideTab === 'keuangan'
+                activeTab === 'edit' && editSubTab === 'keuangan'
                   ? 'bg-[#d2f000] text-black border-black shadow-[4px_4px_0px_0px_rgba(0,0,0,1)]'
                   : 'text-black/80 hover:bg-[#e2e2e2] border-transparent hover:border-black'
               }`}
@@ -334,9 +380,9 @@ function DashboardContent() {
             </button>
 
             <button
-              onClick={() => { setActiveTab('edit'); setSideTab('aktifitas'); }}
+              onClick={() => { setActiveTab('edit'); setSideTab('aktifitas'); setEditSubTab('aktifitas'); }}
               className={`flex items-center gap-4 p-4 mb-2 font-bold text-sm text-left transition-all border-2 ${
-                activeTab === 'edit' && sideTab === 'aktifitas'
+                activeTab === 'edit' && editSubTab === 'aktifitas'
                   ? 'bg-[#d2f000] text-black border-black shadow-[4px_4px_0px_0px_rgba(0,0,0,1)]'
                   : 'text-black/80 hover:bg-[#e2e2e2] border-transparent hover:border-black'
               }`}
@@ -379,8 +425,67 @@ function DashboardContent() {
           ) : activeTab === 'analisis' ? (
             /* ANALISIS KEUANGAN & AKTIVITAS VIEW */
             <>
+              {/* MORNING BRIEFING BANNER AT VERY TOP (ITEM 4) */}
+              {!briefingDismissed && (
+                <div className="brutal-card p-6 bg-[#d2f000] text-black border-4 border-black shadow-[8px_8px_0px_0px_rgba(0,0,0,1)] relative transition-all">
+                  <div className="flex justify-between items-start border-b-4 border-black pb-3 mb-4">
+                    <div className="flex items-center gap-3">
+                      <span className="material-symbols-outlined text-3xl font-bold text-[#008080]">wb_sunny</span>
+                      <div>
+                        <h2 className="font-black text-xl uppercase tracking-tight">Morning Briefing Harian</h2>
+                        <p className="font-jetbrains text-xs font-bold text-black/80">Ringkasan Pagi Khusus Untukmu</p>
+                      </div>
+                    </div>
+
+                    {/* Small [X] Close Button */}
+                    <button
+                      onClick={() => setBriefingDismissed(true)}
+                      className="p-1 border-2 border-black bg-white hover:bg-[#ba1a1a] hover:text-white transition-all font-black text-sm active:translate-y-0.5 cursor-pointer"
+                      title="Tutup Briefing (Dapat dilihat lagi di ikon Notifikasi)"
+                    >
+                      ✕
+                    </button>
+                  </div>
+
+                  <div className="grid grid-cols-1 md:grid-cols-3 gap-4 font-jetbrains text-xs">
+                    <div className="bg-white p-3 border-2 border-black">
+                      <p className="font-bold uppercase text-[#008080] mb-2 flex items-center gap-1">
+                        <span className="material-symbols-outlined text-base">today</span> Yang Perlu Dilakukan Hari Ini:
+                      </p>
+                      <ul className="list-disc list-inside space-y-1">
+                        {briefingData.todayActs.map((act, i) => (
+                          <li key={i}>{act}</li>
+                        ))}
+                      </ul>
+                    </div>
+
+                    <div className="bg-white p-3 border-2 border-black">
+                      <p className="font-bold uppercase text-[#ba1a1a] mb-2 flex items-center gap-1">
+                        <span className="material-symbols-outlined text-base">warning</span> Yang Perlu Dilakukan Urgent:
+                      </p>
+                      <ul className="list-disc list-inside space-y-1">
+                        {briefingData.urgentActs.map((act, i) => (
+                          <li key={i}>{act}</li>
+                        ))}
+                      </ul>
+                    </div>
+
+                    <div className="bg-white p-3 border-2 border-black">
+                      <p className="font-bold uppercase text-[#536000] mb-2 flex items-center gap-1">
+                        <span className="material-symbols-outlined text-base">event</span> Yang Perlu Disiapkan (Mendatang):
+                      </p>
+                      <ul className="list-disc list-inside space-y-1">
+                        {briefingData.upcomingActs.map((act, i) => (
+                          <li key={i}>{act}</li>
+                        ))}
+                      </ul>
+                    </div>
+                  </div>
+                </div>
+              )}
+
               {/* Header */}
-              <header className="mb-4">
+              <header className="mb-2">
                 <h1 className="font-black text-4xl md:text-6xl uppercase tracking-tighter mb-2 leading-none">
                   Analisis <br /> Keuangan
                 </h1>
@@ -394,9 +499,17 @@ function DashboardContent() {
                 {/* SECTION 1: KEMARIN (Span 8 cols) */}
                 <section className="md:col-span-8 flex flex-col gap-6">
                   <div className="brutal-card flex flex-col h-full">
-                    <div className="brutal-header p-4 bg-[#008080] text-white border-b-4 border-black">
-                      <h2 className="font-bold text-xl uppercase tracking-tight">1. KEMARIN</h2>
-                      <p className="font-jetbrains text-xs opacity-90">Apa yang terjadi?</p>
+                    <div className="brutal-header p-4 bg-[#008080] text-white border-b-4 border-black flex justify-between items-center">
+                      <div>
+                        <h2 className="font-bold text-xl uppercase tracking-tight">1. KEMARIN</h2>
+                        <p className="font-jetbrains text-xs opacity-90">Apa yang terjadi?</p>
+                      </div>
+                      <button
+                        onClick={() => { setActiveTab('edit'); setEditSubTab('keuangan'); }}
+                        className="bg-[#d2f000] text-black border-2 border-black px-3 py-1 text-xs font-bold font-jetbrains uppercase hover:bg-white transition-all"
+                      >
+                        👁️ Quick Data
+                      </button>
                     </div>
 
                     <div className="p-6 grid grid-cols-1 lg:grid-cols-2 gap-8 flex-grow">
@@ -480,9 +593,17 @@ function DashboardContent() {
                 {/* SECTION 2: HARI INI (Span 4 cols) */}
                 <section className="md:col-span-4 flex flex-col gap-6">
                   <div className="brutal-card flex flex-col h-full bg-[#eeeeee]">
-                    <div className="brutal-header p-4 bg-[#536000] text-white border-b-4 border-black">
-                      <h2 className="font-bold text-xl uppercase tracking-tight">2. HARI INI</h2>
-                      <p className="font-jetbrains text-xs opacity-90">Harus ngapain?</p>
+                    <div className="brutal-header p-4 bg-[#536000] text-white border-b-4 border-black flex justify-between items-center">
+                      <div>
+                        <h2 className="font-bold text-xl uppercase tracking-tight">2. HARI INI</h2>
+                        <p className="font-jetbrains text-xs opacity-90">Harus ngapain?</p>
+                      </div>
+                      <button
+                        onClick={() => setShowAddModal(true)}
+                        className="bg-[#d2f000] text-black border-2 border-black px-2 py-1 text-xs font-bold font-jetbrains uppercase hover:bg-white transition-all"
+                      >
+                        ➕ Tambah
+                      </button>
                     </div>
 
                     <div className="p-6 flex flex-col gap-8 flex-grow">
@@ -540,6 +661,7 @@ function DashboardContent() {
                           {records.activities.slice(0, 3).map((act) => (
                             <li
                               key={act.id}
+                              onClick={() => setQuickViewRecord(act)}
                               className="flex items-center gap-3 p-3 border-2 border-black bg-white hover:translate-x-1 hover:-translate-y-1 hover:shadow-[4px_4px_0px_0px_rgba(0,0,0,1)] transition-all cursor-pointer"
                             >
                               <div className={`w-5 h-5 border-2 border-black ${act.status === 'completed' ? 'bg-[#d2f000]' : 'bg-white'}`}></div>
@@ -562,7 +684,7 @@ function DashboardContent() {
 
                 <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
                   {analytics.map((item) => (
-                    <div key={item.id} className="brutal-card flex flex-col justify-between p-5">
+                    <div key={item.id} className="brutal-card flex flex-col justify-between p-5 relative">
                       <div>
                         <div className="flex justify-between items-start mb-3 border-b-2 border-black pb-2">
                           <span className="font-jetbrains text-xs bg-black text-white px-2 py-1 font-bold">
@@ -589,22 +711,52 @@ function DashboardContent() {
                           </ResponsiveContainer>
                         </div>
                       )}
+
+                      {/* Quick Detail Shortcut Button */}
+                      <button
+                        onClick={() => setQuickViewRecord(item)}
+                        className="mt-4 w-full bg-[#f9f9f9] border-2 border-black hover:bg-[#d2f000] p-2 text-xs font-bold font-jetbrains uppercase transition-all"
+                      >
+                        👁️ Detail Analisis
+                      </button>
                     </div>
                   ))}
                 </div>
               </div>
             </>
           ) : (
-            /* EDIT DATA VIEW */
+            /* EDIT DATA VIEW (ITEM 2 FIX) */
             <>
-              {/* Header */}
+              {/* Header & Sub-Tabs */}
               <header className="mb-4">
-                <h1 className="font-black text-4xl md:text-6xl uppercase tracking-tighter mb-2 leading-none">
-                  Editor: Keuangan
+                <h1 className="font-black text-4xl md:text-6xl uppercase tracking-tighter mb-4 leading-none">
+                  Editor: Data Core
                 </h1>
-                <p className="text-sm text-black/70">
-                  Modify, append, or purge financial records. Ensure data integrity before committing changes.
-                </p>
+                
+                {/* Sub-tabs toggle */}
+                <div className="flex gap-4 border-b-4 border-black pb-4">
+                  <button
+                    onClick={() => setEditSubTab('keuangan')}
+                    className={`px-6 py-3 font-bold uppercase text-sm border-2 border-black transition-all ${
+                      editSubTab === 'keuangan'
+                        ? 'bg-[#008080] text-white shadow-[4px_4px_0px_0px_rgba(0,0,0,1)]'
+                        : 'bg-white text-black hover:bg-[#e2e2e2]'
+                    }`}
+                  >
+                    💳 Keuangan ({records.transactions.length})
+                  </button>
+
+                  <button
+                    onClick={() => setEditSubTab('aktifitas')}
+                    className={`px-6 py-3 font-bold uppercase text-sm border-2 border-black transition-all ${
+                      editSubTab === 'aktifitas'
+                        ? 'bg-[#536000] text-white shadow-[4px_4px_0px_0px_rgba(0,0,0,1)]'
+                        : 'bg-white text-black hover:bg-[#e2e2e2]'
+                    }`}
+                  >
+                    📅 Aktifitas ({records.activities.length})
+                  </button>
+                </div>
               </header>
 
               {/* Toolbar Search & Filters */}
@@ -623,84 +775,152 @@ function DashboardContent() {
                   </div>
                 </div>
 
-                <div className="flex gap-4 w-full md:w-auto">
-                  <div className="w-full md:w-40">
-                    <label className="block font-jetbrains text-xs uppercase mb-1 font-bold">Kategori</label>
-                    <select
-                      value={categoryFilter}
-                      onChange={(e) => setCategoryFilter(e.target.value)}
-                      className="w-full bg-[#f9f9f9] thin-border p-3 font-jetbrains text-sm appearance-none focus:outline-none focus:border-[#008080] transition-all"
-                    >
-                      <option value="all">All Categories</option>
-                      <option value="expense">Expense</option>
-                      <option value="income">Income</option>
-                    </select>
+                {editSubTab === 'keuangan' && (
+                  <div className="flex gap-4 w-full md:w-auto">
+                    <div className="w-full md:w-40">
+                      <label className="block font-jetbrains text-xs uppercase mb-1 font-bold">Kategori</label>
+                      <select
+                        value={categoryFilter}
+                        onChange={(e) => setCategoryFilter(e.target.value)}
+                        className="w-full bg-[#f9f9f9] thin-border p-3 font-jetbrains text-sm appearance-none focus:outline-none focus:border-[#008080] transition-all"
+                      >
+                        <option value="all">All Categories</option>
+                        <option value="expense">Expense</option>
+                        <option value="income">Income</option>
+                      </select>
+                    </div>
                   </div>
-                </div>
+                )}
               </div>
 
               {/* Data Table Container */}
-              <div className="bg-white brutalist-border brutalist-shadow-lg flex flex-col overflow-hidden">
-                <div className="bg-[#008080] text-white p-4 border-b-4 border-black flex justify-between items-center">
-                  <h2 className="font-bold text-lg uppercase">Financial Records</h2>
-                  <span className="font-jetbrains text-xs bg-black text-white px-2 py-1 font-bold">
-                    {filteredTxs.length} ROWS
-                  </span>
-                </div>
+              {editSubTab === 'keuangan' ? (
+                <div className="bg-white brutalist-border brutalist-shadow-lg flex flex-col overflow-hidden">
+                  <div className="bg-[#008080] text-white p-4 border-b-4 border-black flex justify-between items-center">
+                    <h2 className="font-bold text-lg uppercase">Financial Records</h2>
+                    <span className="font-jetbrains text-xs bg-black text-white px-2 py-1 font-bold">
+                      {filteredTxs.length} ROWS
+                    </span>
+                  </div>
 
-                <div className="overflow-x-auto">
-                  <table className="w-full text-left border-collapse min-w-[800px]">
-                    <thead>
-                      <tr className="bg-[#e2e2e2] font-bold text-xs uppercase">
-                        <th className="p-4 cell-border border-b-4 border-black w-32">Date</th>
-                        <th className="p-4 cell-border border-b-4 border-black">Description / Merchant</th>
-                        <th className="p-4 cell-border border-b-4 border-black w-40">Category</th>
-                        <th className="p-4 cell-border border-b-4 border-black w-40 text-right">Amount</th>
-                        <th className="p-4 cell-border border-b-4 border-black w-32 text-center">Action</th>
-                      </tr>
-                    </thead>
-                    <tbody className="font-jetbrains text-sm">
-                      {filteredTxs.length === 0 ? (
-                        <tr>
-                          <td colSpan={5} className="p-8 text-center font-bold uppercase text-black/60">
-                            Tidak ada catatan transaksi ditemukan.
-                          </td>
+                  <div className="overflow-x-auto">
+                    <table className="w-full text-left border-collapse min-w-[800px]">
+                      <thead>
+                        <tr className="bg-[#e2e2e2] font-bold text-xs uppercase">
+                          <th className="p-4 cell-border border-b-4 border-black w-32">Date</th>
+                          <th className="p-4 cell-border border-b-4 border-black">Description / Merchant</th>
+                          <th className="p-4 cell-border border-b-4 border-black w-40">Category</th>
+                          <th className="p-4 cell-border border-b-4 border-black w-40 text-right">Amount</th>
+                          <th className="p-4 cell-border border-b-4 border-black w-32 text-center">Action</th>
                         </tr>
-                      ) : (
-                        filteredTxs.map((t) => (
-                          <tr key={t.id} className="hover:bg-[#008080]/5 transition-colors group">
-                            <td className="p-4 cell-border font-bold">
-                              {new Date(t.occurred_at || t.created_at).toLocaleDateString('id-ID')}
-                            </td>
-                            <td className="p-4 cell-border font-bold">
-                              {t.merchant || t.description || 'Transaksi'}
-                            </td>
-                            <td className="p-4 cell-border">
-                              <span className="bg-[#e2e2e2] px-2 py-1 border border-black text-xs font-bold uppercase">
-                                {t.type || 'Expense'}
-                              </span>
-                            </td>
-                            <td className={`p-4 cell-border text-right font-bold text-base ${t.type === 'income' ? 'text-[#008080]' : 'text-[#ba1a1a]'}`}>
-                              {t.type === 'income' ? '+' : '-'}Rp {Number(t.amount).toLocaleString('id-ID')}
-                            </td>
-                            <td className="p-4 cell-border text-center">
-                              <div className="flex gap-2 justify-center">
-                                <button
-                                  onClick={() => handleDeleteRecord(t.id, 'transaction')}
-                                  className="p-2 border-2 border-black bg-white hover:bg-[#ba1a1a] hover:text-white active:translate-y-1 transition-all"
-                                  title="Delete Record"
-                                >
-                                  <span className="material-symbols-outlined text-sm">delete</span>
-                                </button>
-                              </div>
+                      </thead>
+                      <tbody className="font-jetbrains text-sm">
+                        {filteredTxs.length === 0 ? (
+                          <tr>
+                            <td colSpan={5} className="p-8 text-center font-bold uppercase text-black/60">
+                              Tidak ada catatan transaksi ditemukan.
                             </td>
                           </tr>
-                        ))
-                      )}
-                    </tbody>
-                  </table>
+                        ) : (
+                          filteredTxs.map((t) => (
+                            <tr key={t.id} className="hover:bg-[#008080]/5 transition-colors group">
+                              <td className="p-4 cell-border font-bold">
+                                {new Date(t.occurred_at || t.created_at).toLocaleDateString('id-ID')}
+                              </td>
+                              <td className="p-4 cell-border font-bold">
+                                {t.merchant || t.description || 'Transaksi'}
+                              </td>
+                              <td className="p-4 cell-border">
+                                <span className="bg-[#e2e2e2] px-2 py-1 border border-black text-xs font-bold uppercase">
+                                  {t.type || 'Expense'}
+                                </span>
+                              </td>
+                              <td className={`p-4 cell-border text-right font-bold text-base ${t.type === 'income' ? 'text-[#008080]' : 'text-[#ba1a1a]'}`}>
+                                {t.type === 'income' ? '+' : '-'}Rp {Number(t.amount).toLocaleString('id-ID')}
+                              </td>
+                              <td className="p-4 cell-border text-center">
+                                <div className="flex gap-2 justify-center">
+                                  <button
+                                    onClick={() => handleDeleteRecord(t.id, 'transaction')}
+                                    className="p-2 border-2 border-black bg-white hover:bg-[#ba1a1a] hover:text-white active:translate-y-1 transition-all"
+                                    title="Delete Record"
+                                  >
+                                    <span className="material-symbols-outlined text-sm">delete</span>
+                                  </button>
+                                </div>
+                              </td>
+                            </tr>
+                          ))
+                        )}
+                      </tbody>
+                    </table>
+                  </div>
                 </div>
-              </div>
+              ) : (
+                <div className="bg-white brutalist-border brutalist-shadow-lg flex flex-col overflow-hidden">
+                  <div className="bg-[#536000] text-white p-4 border-b-4 border-black flex justify-between items-center">
+                    <h2 className="font-bold text-lg uppercase">Activity Records</h2>
+                    <span className="font-jetbrains text-xs bg-black text-white px-2 py-1 font-bold">
+                      {filteredActs.length} ROWS
+                    </span>
+                  </div>
+
+                  <div className="overflow-x-auto">
+                    <table className="w-full text-left border-collapse min-w-[800px]">
+                      <thead>
+                        <tr className="bg-[#e2e2e2] font-bold text-xs uppercase">
+                          <th className="p-4 cell-border border-b-4 border-black w-32">Date</th>
+                          <th className="p-4 cell-border border-b-4 border-black">Judul Agenda</th>
+                          <th className="p-4 cell-border border-b-4 border-black w-32">Priority</th>
+                          <th className="p-4 cell-border border-b-4 border-black w-32">Status</th>
+                          <th className="p-4 cell-border border-b-4 border-black w-32 text-center">Action</th>
+                        </tr>
+                      </thead>
+                      <tbody className="font-jetbrains text-sm">
+                        {filteredActs.length === 0 ? (
+                          <tr>
+                            <td colSpan={5} className="p-8 text-center font-bold uppercase text-black/60">
+                              Tidak ada catatan aktivitas ditemukan.
+                            </td>
+                          </tr>
+                        ) : (
+                          filteredActs.map((a) => (
+                            <tr key={a.id} className="hover:bg-[#536000]/5 transition-colors group">
+                              <td className="p-4 cell-border font-bold">
+                                {new Date(a.occurred_at || a.created_at).toLocaleDateString('id-ID')}
+                              </td>
+                              <td className="p-4 cell-border font-bold">
+                                {a.title}
+                              </td>
+                              <td className="p-4 cell-border">
+                                <span className={`px-2 py-1 border border-black text-xs font-bold uppercase ${a.priority === 'urgent' ? 'bg-[#ba1a1a] text-white' : 'bg-[#e2e2e2]'}`}>
+                                  {a.priority || 'medium'}
+                                </span>
+                              </td>
+                              <td className="p-4 cell-border">
+                                <span className={`px-2 py-1 border border-black text-xs font-bold uppercase ${a.status === 'completed' ? 'bg-[#d2f000] text-black' : 'bg-[#e2e2e2]'}`}>
+                                  {a.status || 'scheduled'}
+                                </span>
+                              </td>
+                              <td className="p-4 cell-border text-center">
+                                <div className="flex gap-2 justify-center">
+                                  <button
+                                    onClick={() => handleDeleteRecord(a.id, 'activity')}
+                                    className="p-2 border-2 border-black bg-white hover:bg-[#ba1a1a] hover:text-white active:translate-y-1 transition-all"
+                                    title="Delete Record"
+                                  >
+                                    <span className="material-symbols-outlined text-sm">delete</span>
+                                  </button>
+                                </div>
+                              </td>
+                            </tr>
+                          ))
+                        )}
+                      </tbody>
+                    </table>
+                  </div>
+                </div>
+              )}
             </>
           )}
         </main>
@@ -718,10 +938,10 @@ function DashboardContent() {
       {/* Modal Add Record */}
       {showAddModal && (
         <div className="fixed inset-0 bg-black/60 z-50 flex items-center justify-center p-4">
-          <div className="bg-white brutalist-border brutalist-shadow-lg p-6 max-w-md w-full">
+          <div className="bg-white brutalist-border brutalist-shadow-lg p-6 max-w-md w-full relative">
             <div className="flex justify-between items-center border-b-4 border-black pb-3 mb-4">
               <h3 className="font-bold text-xl uppercase">Tambah Catatan Baru</h3>
-              <button onClick={() => setShowAddModal(false)} className="font-bold text-lg">✕</button>
+              <button onClick={() => setShowAddModal(false)} className="font-bold text-lg hover:text-[#ba1a1a]">✕</button>
             </div>
 
             <form onSubmit={handleAddRecord} className="flex flex-col gap-4">
@@ -769,18 +989,127 @@ function DashboardContent() {
                 <button
                   type="button"
                   onClick={() => setShowAddModal(false)}
-                  className="flex-1 bg-[#e2e2e2] text-black brutalist-border p-3 font-bold uppercase text-sm"
+                  className="flex-1 bg-[#e2e2e2] text-black brutalist-border p-3 font-bold uppercase text-sm active:translate-y-1"
                 >
                   Batal
                 </button>
                 <button
                   type="submit"
-                  className="flex-1 bg-[#008080] text-white brutalist-border p-3 font-bold uppercase text-sm"
+                  className="flex-1 bg-[#008080] text-white brutalist-border p-3 font-bold uppercase text-sm active:translate-y-1"
                 >
                   Simpan Data
                 </button>
               </div>
             </form>
+          </div>
+        </div>
+      )}
+
+      {/* Global Command Palette (Ctrl+K) */}
+      {showCommandPalette && (
+        <div className="fixed inset-0 bg-black/70 z-50 flex items-start justify-center pt-20 p-4">
+          <div className="bg-white brutalist-border brutalist-shadow-lg p-6 max-w-xl w-full">
+            <div className="flex justify-between items-center border-b-4 border-black pb-3 mb-4">
+              <h3 className="font-bold text-lg uppercase flex items-center gap-2">
+                <span className="material-symbols-outlined">terminal</span> Global Command Palette
+              </h3>
+              <span className="font-jetbrains text-xs bg-black text-white px-2 py-0.5 font-bold">ESC to Close</span>
+            </div>
+
+            <div className="flex flex-col gap-3 font-jetbrains text-xs">
+              <p className="font-bold uppercase text-black/70 mb-1">Pintasan Cepat (Shortcuts):</p>
+              <button
+                onClick={() => { setActiveTab('analisis'); setShowCommandPalette(false); }}
+                className="p-3 text-left border-2 border-black hover:bg-[#d2f000] font-bold flex justify-between items-center"
+              >
+                <span>📊 Buka Dashboard Analisis</span>
+                <span>[Switch Tab]</span>
+              </button>
+
+              <button
+                onClick={() => { setActiveTab('edit'); setEditSubTab('keuangan'); setShowCommandPalette(false); }}
+                className="p-3 text-left border-2 border-black hover:bg-[#d2f000] font-bold flex justify-between items-center"
+              >
+                <span>💳 Kelola Data Transaksi Keuangan</span>
+                <span>[Edit Keuangan]</span>
+              </button>
+
+              <button
+                onClick={() => { setActiveTab('edit'); setEditSubTab('aktifitas'); setShowCommandPalette(false); }}
+                className="p-3 text-left border-2 border-black hover:bg-[#d2f000] font-bold flex justify-between items-center"
+              >
+                <span>📅 Kelola Agenda & Aktivitas</span>
+                <span>[Edit Aktivitas]</span>
+              </button>
+
+              <button
+                onClick={() => { setShowAddModal(true); setShowCommandPalette(false); }}
+                className="p-3 text-left border-2 border-black hover:bg-[#008080] hover:text-white font-bold flex justify-between items-center"
+              >
+                <span>➕ Tambah Transaksi / Agenda Baru</span>
+                <span>[Quick Add]</span>
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Notifications Center Modal (Item 4 Fix) */}
+      {showNotificationsModal && (
+        <div className="fixed inset-0 bg-black/70 z-50 flex items-center justify-center p-4">
+          <div className="bg-white brutalist-border brutalist-shadow-lg p-6 max-w-lg w-full">
+            <div className="flex justify-between items-center border-b-4 border-black pb-3 mb-4">
+              <h3 className="font-bold text-xl uppercase flex items-center gap-2">
+                <span className="material-symbols-outlined text-[#008080]">notifications</span> Notification Center
+              </h3>
+              <button onClick={() => setShowNotificationsModal(false)} className="font-bold text-lg">✕</button>
+            </div>
+
+            <div className="flex flex-col gap-4 font-jetbrains text-xs">
+              <div className="p-4 border-2 border-black bg-[#d2f000]/30">
+                <p className="font-bold uppercase text-sm mb-1">☀️ Morning Briefing Hari Ini</p>
+                <p className="text-black/80 mb-3">Briefing pagi yang disusun khusus untukmu telah tersedia.</p>
+                <button
+                  onClick={() => { setBriefingDismissed(false); setShowNotificationsModal(false); setActiveTab('analisis'); }}
+                  className="bg-black text-white px-3 py-2 font-bold uppercase hover:bg-[#008080] transition-all"
+                >
+                  📖 Buka & Baca Briefing
+                </button>
+              </div>
+
+              <div className="p-4 border-2 border-black bg-white">
+                <p className="font-bold uppercase text-sm mb-1 text-[#ba1a1a]">🚨 Peringatan Overbudget</p>
+                <p className="text-black/80">Kategori Kopi & Nongkrong sudah melebihi 110% dari budget bulanan.</p>
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Quick View Item Detail Modal */}
+      {quickViewRecord && (
+        <div className="fixed inset-0 bg-black/70 z-50 flex items-center justify-center p-4">
+          <div className="bg-white brutalist-border brutalist-shadow-lg p-6 max-w-md w-full">
+            <div className="flex justify-between items-center border-b-4 border-black pb-3 mb-4">
+              <h3 className="font-bold text-lg uppercase">Detail Rekaman</h3>
+              <button onClick={() => setQuickViewRecord(null)} className="font-bold text-lg">✕</button>
+            </div>
+
+            <div className="font-jetbrains text-sm space-y-3">
+              <p><strong>Judul / Item:</strong> {quickViewRecord.title || quickViewRecord.merchant || quickViewRecord.description}</p>
+              {quickViewRecord.amount && <p><strong>Nominal:</strong> Rp {Number(quickViewRecord.amount).toLocaleString('id-ID')}</p>}
+              {quickViewRecord.insight && <p><strong>Insight:</strong> {quickViewRecord.insight}</p>}
+              {quickViewRecord.category && <p><strong>Kategori:</strong> {quickViewRecord.category}</p>}
+            </div>
+
+            <div className="mt-6 flex justify-end">
+              <button
+                onClick={() => setQuickViewRecord(null)}
+                className="bg-black text-white px-4 py-2 font-bold uppercase text-xs"
+              >
+                Tutup (ESC)
+              </button>
+            </div>
           </div>
         </div>
       )}
