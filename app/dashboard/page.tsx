@@ -1,8 +1,7 @@
 'use client';
 
-import { useEffect, useState, Suspense } from 'react';
+import { useEffect, useState, useMemo, Suspense } from 'react';
 import { useSearchParams } from 'next/navigation';
-import { supabase } from '@/lib/supabase/client';
 import {
   ResponsiveContainer,
   BarChart,
@@ -21,21 +20,12 @@ function DashboardContent() {
   const [activeTab, setActiveTab] = useState<'analisis' | 'edit'>('analisis');
   const [sideTab, setSideTab] = useState<'overview' | 'keuangan' | 'aktifitas' | 'anomali'>('overview');
   const [editSubTab, setEditSubTab] = useState<'keuangan' | 'aktifitas'>('keuangan');
-  const [userName, setUserName] = useState<string>('Mas Firman');
+  const [userName, setUserName] = useState<string>('');
   const [userId, setUserId] = useState<string>('demo-user');
 
   // Morning Briefing Banner & Notification Center state
   const [briefingDismissed, setBriefingDismissed] = useState(false);
   const [showNotificationsModal, setShowNotificationsModal] = useState(false);
-  const [briefingData, setBriefingData] = useState<{
-    todayActs: string[];
-    urgentActs: string[];
-    upcomingActs: string[];
-  }>({
-    todayActs: ['Sidang Skripsi (Persiapan hardfile & berkas)', 'Narik Gojek target harian'],
-    urgentActs: ['Pastikan berkas sidang lengkap', 'Ingatkan pacar untuk menjenguk ibunya'],
-    upcomingActs: ['Persiapan Sidang Skripsi (Dosen Penguji: Bu Sri & Bu Rafika)'],
-  });
 
   // Edit Data states
   const [records, setRecords] = useState<{ transactions: any[]; activities: any[] }>({
@@ -81,7 +71,7 @@ function DashboardContent() {
     const initAuthAndData = async () => {
       setLoading(true);
       let effectiveTelegramId = urlTelegramId;
-      let effectiveName = 'Mas Firman';
+      let effectiveName = '';
 
       if (typeof window !== 'undefined' && (window as any).Telegram?.WebApp) {
         const webApp = (window as any).Telegram.WebApp;
@@ -91,7 +81,7 @@ function DashboardContent() {
         const tgUser = webApp.initDataUnsafe?.user;
         if (tgUser?.id) {
           effectiveTelegramId = String(tgUser.id);
-          effectiveName = tgUser.first_name || 'Mas Firman';
+          effectiveName = tgUser.first_name || '';
           setUserName(effectiveName);
         }
       }
@@ -131,6 +121,9 @@ function DashboardContent() {
           if (recData.userId) {
             targetUserId = recData.userId;
             setUserId(recData.userId);
+          }
+          if (recData.userName) {
+            setUserName(recData.userName);
           }
         }
       } catch (err) {
@@ -234,9 +227,35 @@ function DashboardContent() {
     .filter((t) => t.type === 'income')
     .reduce((sum, t) => sum + Number(t.amount || 0), 0);
 
-  const safeDailyLimit = analytics.find((a) => a.id === 3)?.metrics?.dailyLimit || 120000;
+  const safeDailyLimit = analytics.find((a: any) => a.id === 19)?.data?.safeDailyLimit || 100000;
   const completedActsCount = records.activities.filter((a) => a.status === 'completed').length;
-  const totalActsCount = records.activities.length || 4;
+  const totalActsCount = records.activities.length;
+
+  // Derive briefing data from real activities (not hardcoded)
+  const briefingData = useMemo(() => {
+    const today = new Date();
+    const todayStr = today.toISOString().split('T')[0];
+    const tomorrow = new Date(today);
+    tomorrow.setDate(tomorrow.getDate() + 7);
+
+    const todayActs = records.activities
+      .filter((a) => a.occurred_at?.startsWith(todayStr) && a.status !== 'completed')
+      .map((a) => a.title);
+
+    const urgentActs = records.activities
+      .filter((a) => (a.priority === 'urgent' || a.priority === 'high') && a.status !== 'completed')
+      .map((a) => a.title);
+
+    const upcomingActs = records.activities
+      .filter((a) => {
+        if (!a.occurred_at || a.status === 'completed') return false;
+        const actDate = new Date(a.occurred_at);
+        return actDate > today && actDate <= tomorrow;
+      })
+      .map((a) => a.title);
+
+    return { todayActs, urgentActs, upcomingActs };
+  }, [records.activities]);
 
   // Filtered transactions & activities for Edit Data
   const filteredTxs = records.transactions.filter((t) => {
@@ -457,9 +476,9 @@ function DashboardContent() {
                         <span className="material-symbols-outlined text-base">today</span> Yang Perlu Dilakukan Hari Ini:
                       </p>
                       <ul className="list-disc list-inside space-y-1">
-                        {briefingData.todayActs.map((act, i) => (
+                        {briefingData.todayActs.length > 0 ? briefingData.todayActs.map((act, i) => (
                           <li key={i}>{act}</li>
-                        ))}
+                        )) : <li className="text-black/50">Tidak ada agenda hari ini.</li>}
                       </ul>
                     </div>
 
@@ -468,9 +487,9 @@ function DashboardContent() {
                         <span className="material-symbols-outlined text-base">warning</span> Yang Perlu Dilakukan Urgent:
                       </p>
                       <ul className="list-disc list-inside space-y-1">
-                        {briefingData.urgentActs.map((act, i) => (
+                        {briefingData.urgentActs.length > 0 ? briefingData.urgentActs.map((act, i) => (
                           <li key={i}>{act}</li>
-                        ))}
+                        )) : <li className="text-black/50">Tidak ada tugas urgent saat ini.</li>}
                       </ul>
                     </div>
 
@@ -479,9 +498,9 @@ function DashboardContent() {
                         <span className="material-symbols-outlined text-base">event</span> Yang Perlu Disiapkan (Mendatang):
                       </p>
                       <ul className="list-disc list-inside space-y-1">
-                        {briefingData.upcomingActs.map((act, i) => (
+                        {briefingData.upcomingActs.length > 0 ? briefingData.upcomingActs.map((act, i) => (
                           <li key={i}>{act}</li>
-                        ))}
+                        )) : <li className="text-black/50">Tidak ada agenda mendatang.</li>}
                       </ul>
                     </div>
                   </div>
@@ -591,7 +610,7 @@ function DashboardContent() {
                         </h3>
                         <ul className="flex flex-col gap-2 font-jetbrains text-xs">
                           {records.activities.filter((a) => a.priority === 'urgent' || a.priority === 'high').length === 0 ? (
-                            <li className="p-2 border-2 border-black bg-white">📌 Sidang Skripsi (Persiapan berkas)</li>
+                            <li className="p-2 border-2 border-black bg-white text-black/50 italic">Tidak ada tugas urgent saat ini.</li>
                           ) : (
                             records.activities.filter((a) => a.priority === 'urgent' || a.priority === 'high').map((a) => (
                               <li key={a.id} className="p-2 border-2 border-black bg-white font-bold text-[#ba1a1a]">
@@ -635,7 +654,7 @@ function DashboardContent() {
                 <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
                   {analytics.map((item) => {
                     const hasValidChartData = item.chartData && Array.isArray(item.chartData) && item.chartData.length > 0;
-                    const hasInsightText = Boolean(item.insight && item.insight.trim().length > 0);
+                    const hasInsightText = Boolean(item.insight && String(item.insight).trim().length > 0);
 
                     return (
                       <div key={item.id} className="brutal-card flex flex-col justify-between p-5 relative">
@@ -1112,10 +1131,19 @@ function DashboardContent() {
                 </button>
               </div>
 
-              <div className="p-4 border-2 border-black bg-white">
-                <p className="font-bold uppercase text-sm mb-1 text-[#ba1a1a]">🚨 Peringatan Agenda Urgent</p>
-                <p className="text-black/80">Sidang Skripsi: Pastikan berkas dan kelengkapan sudah dipersiapkan.</p>
-              </div>
+              {briefingData.urgentActs.length > 0 ? (
+                <div className="p-4 border-2 border-black bg-white">
+                  <p className="font-bold uppercase text-sm mb-1 text-[#ba1a1a]">🚨 Peringatan Agenda Urgent</p>
+                  <ul className="text-black/80 font-jetbrains text-xs space-y-1 list-disc list-inside">
+                    {briefingData.urgentActs.map((act, i) => <li key={i}>{act}</li>)}
+                  </ul>
+                </div>
+              ) : (
+                <div className="p-4 border-2 border-black bg-white">
+                  <p className="font-bold uppercase text-sm mb-1 text-[#008080]">✅ Tidak Ada Agenda Urgent</p>
+                  <p className="text-black/60">Semua tugas berjalan lancar, tidak ada yang mendesak.</p>
+                </div>
+              )}
             </div>
           </div>
         </div>

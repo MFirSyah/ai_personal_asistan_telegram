@@ -161,13 +161,10 @@ export async function POST(req: NextRequest) {
     summaryMsg += `🛡️ **Skor Kesehatan Finansial**: ${healthScore}\n\n`;
 
     // Category breakdown
-    if (catItem?.chart_config?.labels?.length && catItem.chart_config.labels[0] !== 'Belum Ada Data') {
+    if (catItem?.chartData?.length) {
       summaryMsg += `🏷️ **Rincian Per Kategori**:\n`;
-      const labels = catItem.chart_config.labels as string[];
-      const dataVals = catItem.chart_config.datasets[0].data as number[];
-      labels.slice(0, 5).forEach((label, idx) => {
-        const val = dataVals[idx] || 0;
-        summaryMsg += `• **${label}**: Rp ${Number(val).toLocaleString('id-ID')}\n`;
+      catItem.chartData.slice(0, 5).forEach((entry: any) => {
+        summaryMsg += `• **${entry.name}**: Rp ${Number(entry.value).toLocaleString('id-ID')}\n`;
       });
       summaryMsg += `\n`;
     }

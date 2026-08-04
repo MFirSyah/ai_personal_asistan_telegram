@@ -1,12 +1,8 @@
 import type { Metadata } from 'next';
-import { Inter, Outfit } from 'next/font/google';
 import './globals.css';
 
-const inter = Inter({ subsets: ['latin'], variable: '--font-inter' });
-const outfit = Outfit({ subsets: ['latin'], variable: '--font-outfit' });
-
 export const metadata: Metadata = {
-  title: 'Personal Finance & Activity Dashboard',
+  title: 'DATA_CORE_V1 - Personal Finance & Activity Dashboard',
   description: 'Asisten Keuangan & Personal Insights Dashboard',
 };
 
@@ -16,7 +12,7 @@ export default function RootLayout({
   children: React.ReactNode;
 }>) {
   return (
-    <html lang="id" className={`${inter.variable} ${outfit.variable}`}>
+    <html lang="id">
       <head>
         <script src="https://telegram.org/js/telegram-web-app.js" async />
         <link href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;500;600;700;800&family=Montserrat:wght@400;500;600;700;800;900&display=swap" rel="stylesheet" />

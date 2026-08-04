@@ -6,8 +6,8 @@ export interface InsightItem {
   title: string;
   category: 'reflection' | 'current' | 'projection';
   data?: any;
-  chart_config?: any;
-  insight_text: string;
+  chartData?: { name: string; value: number }[];
+  insight: string;
 }
 
 export async function calculate20Analytics(userId: string): Promise<InsightItem[]> {
@@ -22,7 +22,7 @@ export async function calculate20Analytics(userId: string): Promise<InsightItem[
 
   const { data: acts } = await supabaseAdmin
     .from('activities')
-    .select('id, title, description, occurred_at')
+    .select('id, title, description, occurred_at, status, priority')
     .eq('user_id', userId)
     .is('deleted_at', null)
     .order('occurred_at', { ascending: false })
@@ -119,6 +119,22 @@ export async function calculate20Analytics(userId: string): Promise<InsightItem[
     healthInsight = 'Belum ada data pemasukan yang dicatat untuk menghitung rasio kesehatan secara akurat.';
   }
 
+  // Build Recharts-compatible chart data arrays
+  const categoryChartData = catLabels.map((label, i) => ({ name: label, value: catData[i] }));
+  const trendChartData = transactions.slice(0, 7).reverse().map((t) => ({
+    name: new Date(t.occurred_at).toLocaleDateString('id-ID', { day: '2-digit', month: 'short' }),
+    value: Number(t.amount),
+  }));
+  const merchantChartData = topMerchants.map(([m, val]) => ({ name: m, value: val }));
+
+  const completedActs = activities.filter((a) => (a as any).status === 'completed').length;
+  const pendingActs = activities.filter((a) => (a as any).status === 'scheduled' || (a as any).status === 'in_progress').length;
+  const activityStatusChartData = completedActs + pendingActs > 0
+    ? [{ name: 'Selesai', value: completedActs }, { name: 'Pending', value: pendingActs }]
+    : [];
+
+  const safeDailyLimitValue = Math.round(totalIncome > 0 ? (totalIncome * 0.7) / 30 : 100000);
+
   // 20 Analytics List Construction
   const insights: InsightItem[] = [
     // --- Group 1: Refleksi & Tren Historis ---
@@ -128,7 +144,7 @@ export async function calculate20Analytics(userId: string): Promise<InsightItem[
       title: 'Total Pengeluaran Akumulasi',
       category: 'reflection',
       data: { amount: totalExpense },
-      insight_text: `Total pengeluaran yang tercatat saat ini adalah Rp ${totalExpense.toLocaleString('id-ID')}.`,
+      insight: `Total pengeluaran yang tercatat saat ini adalah Rp ${totalExpense.toLocaleString('id-ID')}.`,
     },
     {
       id: 2,
@@ -136,7 +152,7 @@ export async function calculate20Analytics(userId: string): Promise<InsightItem[
       title: 'Total Pemasukan Akumulasi',
       category: 'reflection',
       data: { amount: totalIncome },
-      insight_text: `Total pemasukan tercatat adalah Rp ${totalIncome.toLocaleString('id-ID')}.`,
+      insight: `Total pemasukan tercatat adalah Rp ${totalIncome.toLocaleString('id-ID')}.`,
     },
     {
       id: 3,
@@ -144,7 +160,7 @@ export async function calculate20Analytics(userId: string): Promise<InsightItem[
       title: 'Net Tabungan & Surplus',
       category: 'reflection',
       data: { amount: netSavings },
-      insight_text: netSavings >= 0
+      insight: netSavings >= 0
         ? `Surplus arus kas kamu positif sebesar Rp ${netSavings.toLocaleString('id-ID')}.`
         : `Defisit arus kas sebesar Rp ${Math.abs(netSavings).toLocaleString('id-ID')}.`,
     },
@@ -153,12 +169,8 @@ export async function calculate20Analytics(userId: string): Promise<InsightItem[
       type: 'chart',
       title: 'Distribusi Pengeluaran Per Kategori',
       category: 'reflection',
-      chart_config: {
-        type: 'pie',
-        labels: catLabels.length ? catLabels : ['Belum Ada Data'],
-        datasets: [{ label: 'Pengeluaran (Rp)', data: catData.length ? catData : [0] }],
-      },
-      insight_text: 'Visualisasi porsi alokasi pengeluaran keuangan kamu berdasarkan kategori.',
+      chartData: categoryChartData.length > 0 ? categoryChartData : undefined,
+      insight: 'Visualisasi porsi alokasi pengeluaran keuangan kamu berdasarkan kategori.',
     },
     {
       id: 5,
@@ -168,27 +180,29 @@ export async function calculate20Analytics(userId: string): Promise<InsightItem[
       data: {
         avg: transactions.length ? Math.round(totalExpense / Math.max(1, transactions.length)) : 0,
       },
-      insight_text: `Rata-rata nominal per transaksi adalah Rp ${Math.round(
+      insight: `Rata-rata nominal per transaksi adalah Rp ${Math.round(
         totalExpense / Math.max(1, transactions.length)
       ).toLocaleString('id-ID')}.`,
     },
     {
       id: 6,
-      type: 'text',
+      type: 'chart',
       title: 'Merchant Terfavorit / Tersering Dituju',
       category: 'reflection',
       data: { topMerchants },
-      insight_text: topMerchants.length
+      chartData: merchantChartData.length > 0 ? merchantChartData : undefined,
+      insight: topMerchants.length
         ? `Merchant utama kamu: ${topMerchants.map(([m, val]) => `${m} (Rp ${val.toLocaleString('id-ID')})`).join(', ')}.`
         : 'Belum ada merchant yang sering dicatat.',
     },
     {
       id: 7,
-      type: 'stat',
-      title: 'Frekuensi Aktivitas Personal',
+      type: 'chart',
+      title: 'Frekuensi & Status Aktivitas Personal',
       category: 'reflection',
-      data: { count: activities.length },
-      insight_text: `Kamu telah mencatat total ${activities.length} aktivitas personal sejauh ini.`,
+      data: { count: activities.length, completed: completedActs, pending: pendingActs },
+      chartData: activityStatusChartData.length > 0 ? activityStatusChartData : undefined,
+      insight: `Kamu telah mencatat total ${activities.length} aktivitas personal (${completedActs} selesai, ${pendingActs} pending).`,
     },
 
     // --- Group 2: Kondisi Keuangan & Aktivitas Saat Ini ---
@@ -198,7 +212,7 @@ export async function calculate20Analytics(userId: string): Promise<InsightItem[
       title: 'Rasio Pemasukan vs Pengeluaran',
       category: 'current',
       data: { ratio: totalIncome > 0 ? ((totalExpense / totalIncome) * 100).toFixed(1) : 0 },
-      insight_text: totalIncome > 0
+      insight: totalIncome > 0
         ? `Kamu membelanjakan ${((totalExpense / totalIncome) * 100).toFixed(1)}% dari total pemasukan.`
         : 'Belum ada data pemasukan untuk menghitung rasio.',
     },
@@ -207,17 +221,8 @@ export async function calculate20Analytics(userId: string): Promise<InsightItem[
       type: 'chart',
       title: 'Tren Transaksi Terakhir',
       category: 'current',
-      chart_config: {
-        type: 'bar',
-        labels: transactions.slice(0, 7).map((t) => new Date(t.occurred_at).toLocaleDateString('id-ID')),
-        datasets: [
-          {
-            label: 'Nominal (Rp)',
-            data: transactions.slice(0, 7).map((t) => Number(t.amount)),
-          },
-        ],
-      },
-      insight_text: 'Grafik riwayat 7 transaksi terakhir kamu.',
+      chartData: trendChartData.length > 0 ? trendChartData : undefined,
+      insight: 'Grafik riwayat 7 transaksi terakhir kamu.',
     },
     {
       id: 10,
@@ -225,7 +230,7 @@ export async function calculate20Analytics(userId: string): Promise<InsightItem[
       title: 'Kategori Pengeluaran Terbesar',
       category: 'current',
       data: { topCategory: catLabels[0] || 'N/A' },
-      insight_text: catLabels.length
+      insight: catLabels.length
         ? `Kategori pengeluaran tertinggi kamu adalah "${catLabels[0]}".`
         : 'Belum ada kategori terdeteksi.',
     },
@@ -238,7 +243,7 @@ export async function calculate20Analytics(userId: string): Promise<InsightItem[
         manual: transactions.filter((t) => t.source === 'chat_manual').length,
         ocr: transactions.filter((t) => t.source === 'receipt_ocr').length,
       },
-      insight_text: `Pencatatan manual: ${transactions.filter((t) => t.source === 'chat_manual').length}, OCR Struk: ${transactions.filter((t) => t.source === 'receipt_ocr').length}.`,
+      insight: `Pencatatan manual: ${transactions.filter((t) => t.source === 'chat_manual').length}, OCR Struk: ${transactions.filter((t) => t.source === 'receipt_ocr').length}.`,
     },
     {
       id: 12,
@@ -246,7 +251,7 @@ export async function calculate20Analytics(userId: string): Promise<InsightItem[
       title: 'Aktivitas Personal Terbaru',
       category: 'current',
       data: { latestActivity: activities[0]?.title || 'Belum Ada' },
-      insight_text: activities.length
+      insight: activities.length
         ? `Aktivitas terbaru kamu: "${activities[0].title}".`
         : 'Belum ada aktivitas personal yang dicatat.',
     },
@@ -256,7 +261,7 @@ export async function calculate20Analytics(userId: string): Promise<InsightItem[
       title: 'Tingkat Kelancaran Pencatatan',
       category: 'current',
       data: { totalRecords: transactions.length + activities.length },
-      insight_text: `Total ${transactions.length + activities.length} entri berhasil tersimpan di sistem.`,
+      insight: `Total ${transactions.length + activities.length} entri berhasil tersimpan di sistem.`,
     },
     {
       id: 14,
@@ -264,7 +269,7 @@ export async function calculate20Analytics(userId: string): Promise<InsightItem[
       title: 'Pencapaian Rencana Aktif',
       category: 'current',
       data: { activePlansCount: 0 },
-      insight_text: 'Pantau kemajuan rencana keuangan dan aktivitas yang telah kamu buat.',
+      insight: 'Pantau kemajuan rencana keuangan dan aktivitas yang telah kamu buat.',
     },
 
     // --- Group 3: Proyeksi Linear & Rekomendasi ---
@@ -274,7 +279,7 @@ export async function calculate20Analytics(userId: string): Promise<InsightItem[
       title: 'Proyeksi Pengeluaran Akhir Bulan',
       category: 'projection',
       data: { projectedExpense: projectedMonthEndExpense },
-      insight_text: `Berdasarkan rata-rata harian Rp ${Math.round(dailyBurnRate).toLocaleString('id-ID')}/hari (hari ke-${currentDayOfMonth}), estimasi total pengeluaran bulan ini mencapai Rp ${projectedMonthEndExpense.toLocaleString('id-ID')}.`,
+      insight: `Berdasarkan rata-rata harian Rp ${Math.round(dailyBurnRate).toLocaleString('id-ID')}/hari (hari ke-${currentDayOfMonth}), estimasi total pengeluaran bulan ini mencapai Rp ${projectedMonthEndExpense.toLocaleString('id-ID')}.`,
     },
     {
       id: 16,
@@ -282,31 +287,29 @@ export async function calculate20Analytics(userId: string): Promise<InsightItem[
       title: 'Estimasi Potensi Tabungan Bulanan',
       category: 'projection',
       data: { projectedSavings: Math.max(0, netSavings) },
-      insight_text: `Potensi dana tersisa yang dapat disimpankan ke tabungan: Rp ${Math.max(0, netSavings).toLocaleString('id-ID')}.`,
+      insight: `Potensi dana tersisa yang dapat disimpankan ke tabungan: Rp ${Math.max(0, netSavings).toLocaleString('id-ID')}.`,
     },
     {
       id: 17,
       type: 'text',
       title: 'Rekomendasi Hemat Kategori Operasional',
       category: 'projection',
-      insight_text: 'Pertimbangkan untuk mengevaluasi kembali pos pengeluaran sekunder atau impulsif.',
+      insight: 'Pertimbangkan untuk mengevaluasi kembali pos pengeluaran sekunder atau impulsif.',
     },
     {
       id: 18,
       type: 'text',
       title: 'Saran Keseimbangan Gaya Hidup & Aktivitas',
       category: 'projection',
-      insight_text: 'Seimbangkan alokasi dana harian dengan aktivitas kesehatan & olahraga rutin.',
+      insight: 'Seimbangkan alokasi dana harian dengan aktivitas kesehatan & olahraga rutin.',
     },
     {
       id: 19,
       type: 'stat',
       title: 'Batas Maksimum Pengeluaran Harian Aman',
       category: 'projection',
-      data: { safeDailyLimit: Math.round(totalIncome > 0 ? (totalIncome * 0.7) / 30 : 100000) },
-      insight_text: `Batas pengeluaran harian aman yang direkomendasikan adalah Rp ${Math.round(
-        totalIncome > 0 ? (totalIncome * 0.7) / 30 : 100000
-      ).toLocaleString('id-ID')}/hari.`,
+      data: { safeDailyLimit: safeDailyLimitValue },
+      insight: `Batas pengeluaran harian aman yang direkomendasikan adalah Rp ${safeDailyLimitValue.toLocaleString('id-ID')}/hari.`,
     },
     {
       id: 20,
@@ -314,9 +317,10 @@ export async function calculate20Analytics(userId: string): Promise<InsightItem[
       title: 'Skor Kesehatan Keuangan Personal',
       category: 'projection',
       data: { score: `${healthScore}/100 (${healthStatus})` },
-      insight_text: healthInsight,
+      insight: healthInsight,
     },
   ];
 
   return insights;
 }
+

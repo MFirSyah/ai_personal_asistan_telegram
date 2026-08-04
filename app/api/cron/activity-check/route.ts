@@ -12,7 +12,7 @@ export async function GET(req: NextRequest) {
     // Fetch activities scheduled or in_progress whose occurred_at time has arrived
     const { data: activeAgendas, error } = await supabaseAdmin
       .from('activities')
-      .select('id, title, status, priority, occurred_at, user_id, notification_sent, users(telegram_id)')
+      .select('id, title, status, priority, occurred_at, user_id, notification_sent')
       .in('status', ['scheduled', 'in_progress'])
       .gte('occurred_at', fourHoursAgo)
       .lte('occurred_at', nowIso)
@@ -29,7 +29,14 @@ export async function GET(req: NextRequest) {
       // Skip if notification already sent
       if (act.notification_sent) continue;
 
-      const telegramId = (act.users as any)?.telegram_id;
+      // Separate query for telegram_id (avoids FK dependency)
+      const { data: userRow } = await supabaseAdmin
+        .from('users')
+        .select('telegram_id')
+        .eq('id', act.user_id)
+        .maybeSingle();
+
+      const telegramId = userRow?.telegram_id;
       if (!telegramId) continue;
 
       const priorityIcon = act.priority === 'urgent' ? '🚨' : act.priority === 'high' ? '⚠️' : '⏰';

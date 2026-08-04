@@ -7,6 +7,7 @@ export async function GET(req: NextRequest) {
 
   try {
     // Single-Account Auto Resolution: Fallback to primary registered Telegram user if userId is demo-user or missing
+    let resolvedUserName = '';
     if (!userId || userId === 'demo-user') {
       const { data: primaryUser } = await supabaseAdmin
         .from('users')
@@ -18,7 +19,16 @@ export async function GET(req: NextRequest) {
 
       if (primaryUser) {
         userId = primaryUser.id;
+        resolvedUserName = primaryUser.name || '';
       }
+    } else {
+      // Fetch name for explicit userId
+      const { data: userRow } = await supabaseAdmin
+        .from('users')
+        .select('name')
+        .eq('id', userId)
+        .maybeSingle();
+      resolvedUserName = userRow?.name || '';
     }
 
     if (!userId) {
@@ -54,6 +64,7 @@ export async function GET(req: NextRequest) {
     return NextResponse.json({
       ok: true,
       userId,
+      userName: resolvedUserName,
       transactions: transactions || [],
       activities: activities || [],
       categories: categories || [],
