@@ -327,14 +327,6 @@ function DashboardContent() {
                 <span className="absolute top-1 right-1 w-3 h-3 bg-[#d2f000] border-2 border-black rounded-full"></span>
               )}
             </button>
-
-            <button
-              onClick={() => setShowCommandPalette(true)}
-              className="hover:bg-white/10 p-2 brutalist-active flex items-center cursor-pointer"
-              title="Pengaturan"
-            >
-              <span className="material-symbols-outlined">settings</span>
-            </button>
           </div>
         </div>
 
@@ -730,7 +722,7 @@ function DashboardContent() {
               {/* Header & Sub-Tabs */}
               <header className="mb-4">
                 <h1 className="font-black text-3xl md:text-6xl uppercase tracking-tighter mb-4 leading-none">
-                  Editor: Data Core
+                  Editor: {editSubTab === 'keuangan' ? 'Keuangan' : 'Aktifitas & Agenda'}
                 </h1>
 
                 {/* Sub-tabs toggle */}
