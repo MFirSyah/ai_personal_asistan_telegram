@@ -4,19 +4,26 @@ import { calculate20Analytics } from '@/lib/analytics/calculators';
 
 export async function GET(req: NextRequest) {
   const { searchParams } = new URL(req.url);
-  const userId = searchParams.get('userId');
+  let userId = searchParams.get('userId');
+
+  // Single-Account Auto Resolution: Fallback to primary registered Telegram user if userId is demo-user or missing
+  if (!userId || userId === 'demo-user') {
+    const { data: primaryUser } = await supabaseAdmin
+      .from('users')
+      .select('id, name')
+      .not('telegram_id', 'is', null)
+      .order('created_at', { ascending: false })
+      .limit(1)
+      .maybeSingle();
+
+    if (primaryUser) {
+      userId = primaryUser.id;
+    }
+  }
 
   if (!userId) {
     return NextResponse.json({ error: 'Missing userId parameter' }, { status: 400 });
   }
-
-  // Basic validation of userId format
-  const isUuid = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(userId);
-  if (!isUuid && userId !== 'demo-user') {
-    return NextResponse.json({ error: 'Invalid userId format' }, { status: 400 });
-  }
-
-  const forceRefresh = searchParams.get('forceRefresh') === 'true';
 
   try {
     // Calculate live analytics directly to guarantee real-time accuracy matching Telegram
@@ -40,6 +47,7 @@ export async function GET(req: NextRequest) {
     return NextResponse.json({
       cached: false,
       date: today,
+      userId,
       insights: liveAnalytics,
     });
   } catch (error: any) {

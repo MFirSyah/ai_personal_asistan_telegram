@@ -3,13 +3,28 @@ import { supabaseAdmin } from '@/lib/supabase/client';
 
 export async function GET(req: NextRequest) {
   const { searchParams } = new URL(req.url);
-  const userId = searchParams.get('userId');
-
-  if (!userId) {
-    return NextResponse.json({ error: 'Missing userId parameter' }, { status: 400 });
-  }
+  let userId = searchParams.get('userId');
 
   try {
+    // Single-Account Auto Resolution: Fallback to primary registered Telegram user if userId is demo-user or missing
+    if (!userId || userId === 'demo-user') {
+      const { data: primaryUser } = await supabaseAdmin
+        .from('users')
+        .select('id, name')
+        .not('telegram_id', 'is', null)
+        .order('created_at', { ascending: false })
+        .limit(1)
+        .maybeSingle();
+
+      if (primaryUser) {
+        userId = primaryUser.id;
+      }
+    }
+
+    if (!userId) {
+      return NextResponse.json({ ok: true, transactions: [], activities: [], categories: [] });
+    }
+
     // 1. Fetch transactions
     const { data: transactions, error: txError } = await supabaseAdmin
       .from('transactions')
@@ -38,6 +53,7 @@ export async function GET(req: NextRequest) {
 
     return NextResponse.json({
       ok: true,
+      userId,
       transactions: transactions || [],
       activities: activities || [],
       categories: categories || [],
@@ -51,10 +67,21 @@ export async function GET(req: NextRequest) {
 export async function DELETE(req: NextRequest) {
   try {
     const body = await req.json();
-    const { userId, recordId, type } = body; // type: 'transaction' | 'activity'
+    let { userId, recordId, type } = body; // type: 'transaction' | 'activity'
 
-    if (!userId || !recordId || !type) {
+    if (!recordId || !type) {
       return NextResponse.json({ error: 'Missing required parameters' }, { status: 400 });
+    }
+
+    if (!userId || userId === 'demo-user') {
+      const { data: primaryUser } = await supabaseAdmin
+        .from('users')
+        .select('id')
+        .not('telegram_id', 'is', null)
+        .order('created_at', { ascending: false })
+        .limit(1)
+        .maybeSingle();
+      if (primaryUser) userId = primaryUser.id;
     }
 
     const table = type === 'transaction' ? 'transactions' : 'activities';
@@ -78,10 +105,21 @@ export async function DELETE(req: NextRequest) {
 export async function POST(req: NextRequest) {
   try {
     const body = await req.json();
-    const { userId, type, data } = body; // type: 'transaction' | 'activity'
+    let { userId, type, data } = body;
 
-    if (!userId || !type || !data) {
+    if (!type || !data) {
       return NextResponse.json({ error: 'Missing required parameters' }, { status: 400 });
+    }
+
+    if (!userId || userId === 'demo-user') {
+      const { data: primaryUser } = await supabaseAdmin
+        .from('users')
+        .select('id')
+        .not('telegram_id', 'is', null)
+        .order('created_at', { ascending: false })
+        .limit(1)
+        .maybeSingle();
+      if (primaryUser) userId = primaryUser.id;
     }
 
     if (type === 'transaction') {
