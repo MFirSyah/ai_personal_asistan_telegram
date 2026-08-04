@@ -137,17 +137,96 @@ function cleanAndParseJSON(rawText: string): any {
     cleaned = cleaned.substring(startIdx, endIdx + 1);
   }
 
+  let parsedObj: any = null;
+
+  // Attempt 1: Standard JSON parse
   try {
-    return JSON.parse(cleaned);
-  } catch (err) {
+    parsedObj = JSON.parse(cleaned);
+  } catch (err1) {
+    // Attempt 2: Fix unescaped control characters and newlines in JSON strings
     try {
-      const sanitized = cleaned.replace(/[\u0000-\u001F\u007F-\u009F]/g, '');
-      return JSON.parse(sanitized);
-    } catch (secondErr) {
-      console.error('Failed to parse clean JSON from AI output:', rawText);
-      return { messages: [rawText] };
+      const sanitized = cleaned
+        .replace(/[\r\n\t]/g, (match) => (match === '\r' ? '' : match === '\n' ? '\\n' : '\\t'))
+        .replace(/[\u0000-\u001F\u007F-\u009F]/g, '');
+      parsedObj = JSON.parse(sanitized);
+    } catch (err2) {
+      // Attempt 3: Regex extraction of messages and fields
+      console.warn('JSON.parse failed on AI output. Using regex extraction fallback.');
+      
+      const msgMatch = cleaned.match(/"messages"\s*:\s*(?:\[([\s\S]*?)\]|"([\s\S]*?)"(?=\s*,\s*"|\s*\}))/i);
+      let messagesArr: string[] = [];
+
+      if (msgMatch) {
+        if (msgMatch[1]) {
+          // Matched an array format
+          const rawItems = msgMatch[1].match(/"([^"\\]*(?:\\.[^"\\]*)*)"/g);
+          if (rawItems) {
+            messagesArr = rawItems.map((item) =>
+              item
+                .replace(/^"/, '')
+                .replace(/"$/, '')
+                .replace(/\\n/g, '\n')
+                .replace(/\\"/g, '"')
+                .replace(/\\\\/g, '\\')
+            );
+          }
+        } else if (msgMatch[2]) {
+          // Matched a single string format
+          messagesArr = [
+            msgMatch[2]
+              .replace(/\\n/g, '\n')
+              .replace(/\\"/g, '"')
+              .replace(/\\\\/g, '\\'),
+          ];
+        }
+      }
+
+      const followUpMatch = cleaned.match(/"follow_?up_?question"\s*:\s*"([\s\S]*?)"(?=\s*,\s*"|\s*\})/i);
+      const followUpStr = followUpMatch ? followUpMatch[1].replace(/\\n/g, '\n').replace(/\\"/g, '"') : '';
+
+      if (messagesArr.length > 0) {
+        return {
+          messages: messagesArr,
+          follow_up_question: followUpStr,
+          extracted_data: null,
+        };
+      }
+
+      // Final emergency fallback: strip JSON braces/keys and return plain text
+      const plainText = cleaned
+        .replace(/"(messages|follow_up_question|extracted_data|reasoning|chart|location|sources)"\s*:\s*/gi, '')
+        .replace(/[{}\[\]"]/g, '')
+        .trim();
+
+      return { messages: [plainText || 'Maaf, terjadi masalah format balasan. Silakan coba lagi.'] };
     }
   }
+
+  // Normalize key names (handle lowercase / variations like followupquestion, extracteddata)
+  if (parsedObj && typeof parsedObj === 'object') {
+    const normalized: any = {};
+    for (const key of Object.keys(parsedObj)) {
+      const lowerKey = key.toLowerCase().replace(/_/g, '');
+      if (lowerKey === 'messages') normalized.messages = parsedObj[key];
+      else if (lowerKey === 'followupquestion') normalized.follow_up_question = parsedObj[key];
+      else if (lowerKey === 'extracteddata') normalized.extracted_data = parsedObj[key];
+      else if (lowerKey === 'reasoning') normalized.reasoning = parsedObj[key];
+      else if (lowerKey === 'chart') normalized.chart = parsedObj[key];
+      else if (lowerKey === 'location') normalized.location = parsedObj[key];
+      else normalized[key] = parsedObj[key];
+    }
+
+    // Convert single string "messages" to string array
+    if (typeof normalized.messages === 'string') {
+      // Decode escaped newlines \n in string if any
+      const cleanedMsg = normalized.messages.replace(/\\n/g, '\n');
+      normalized.messages = [cleanedMsg];
+    }
+
+    return normalized;
+  }
+
+  return parsedObj || {};
 }
 
 // Simple intent classifier — runs locally, no API call needed
@@ -364,10 +443,34 @@ export async function runChatOrchestration(
     const text = response.text || '';
     const parsed = cleanAndParseJSON(text);
 
+    let finalMessages: string[] = [];
+    if (Array.isArray(parsed.messages) && parsed.messages.length > 0) {
+      finalMessages = parsed.messages.map((m: any) => String(m || ''));
+    } else if (typeof parsed.messages === 'string') {
+      finalMessages = [parsed.messages];
+    } else {
+      finalMessages = ['Selesai.'];
+    }
+
+    // Safety filter: If any message still looks like raw JSON, extract text
+    finalMessages = finalMessages.map((msgStr) => {
+      let str = msgStr.trim();
+      if (str.startsWith('{') && str.endsWith('}')) {
+        const matchMsg = str.match(/"messages"\s*:\s*(?:"([\s\S]*?)"|\[([\s\S]*?)\])/i);
+        if (matchMsg) {
+          const rawContent = matchMsg[1] || matchMsg[2] || '';
+          str = rawContent
+            .replace(/^"/, '')
+            .replace(/"$/, '')
+            .replace(/\\n/g, '\n')
+            .replace(/\\"/g, '"');
+        }
+      }
+      return str;
+    });
+
     return {
-      messages: Array.isArray(parsed.messages)
-        ? parsed.messages
-        : [typeof parsed.messages === 'string' ? parsed.messages : text || 'Selesai.'],
+      messages: finalMessages,
       follow_up_question: parsed.follow_up_question || '',
       extracted_data: parsed.extracted_data || null,
       reasoning: parsed.reasoning || '',
