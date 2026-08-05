@@ -301,6 +301,52 @@ export async function POST(req: NextRequest) {
     return NextResponse.json({ ok: true });
   }
 
+  if (text.startsWith('/patungan')) {
+    const rawArgs = text.replace('/patungan', '').trim();
+    if (!rawArgs) {
+      await sendTelegramMessage(
+        chatId,
+        `🧾 **KALKULATOR PATUNGAN BAYAR (SPLIT BILL)**\n\nCara pakai:\n\`/patungan 150000 Budi, Andi, Caca\`\n*(contoh: total Rp 150.000 dibagi untuk 3 orang)*`
+      );
+      return NextResponse.json({ ok: true });
+    }
+
+    const parts = rawArgs.split(' ');
+    const amount = parseFloat(parts[0].replace(/[^0-9]/g, '')) || 0;
+    const peopleStr = parts.slice(1).join(' ');
+    const people = peopleStr ? peopleStr.split(',').map((s: string) => s.trim()).filter(Boolean) : ['Saya'];
+
+    const result = calculateSplitBill({
+      totalBill: amount,
+      people: people.length ? people : ['Saya', 'Teman'],
+    });
+
+    await sendTelegramMessage(chatId, result.formattedSummary);
+    return NextResponse.json({ ok: true });
+  }
+
+  if (text.startsWith('/pasangan')) {
+    const partnerNameOrId = text.replace('/pasangan', '').trim();
+    if (!partnerNameOrId) {
+      const { data: userRow } = await supabaseAdmin.from('users').select('partner_user_id').eq('id', user.id).single();
+      let partnerInfo = 'Belum terhubung';
+      if (userRow?.partner_user_id) {
+        const { data: partnerRow } = await supabaseAdmin.from('users').select('name').eq('id', userRow.partner_user_id).single();
+        partnerInfo = partnerRow?.name || 'Terhubung';
+      }
+
+      await sendTelegramMessage(
+        chatId,
+        `💖 **HUBUNGKAN AKUN PASANGAN**\n\nStatus: **${partnerInfo}**\n\nUntuk menghubungkan akun dengan pasangan, ketik:\n\`/pasangan [Nama_Atau_TelegramID_Pasangan]\``
+      );
+      return NextResponse.json({ ok: true });
+    }
+
+    const res = await linkPartnerAccounts(user.id, partnerNameOrId);
+    await sendTelegramMessage(chatId, res.message);
+    return NextResponse.json({ ok: true });
+  }
+
   if (text.startsWith('/utang')) {
     const debts = await getUserDebts(user.id);
     if (!debts.length) {

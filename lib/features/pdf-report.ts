@@ -1,6 +1,6 @@
+import PDFDocument from 'pdfkit';
 import { calculate20Analytics } from '../analytics/calculators';
 import { getRecentTransactions } from '../supabase/queries/transactions';
-import { getUserPreferences } from '../supabase/queries/preferences';
 import { supabaseAdmin } from '../supabase/client';
 
 export async function generateMonthlyPdfReport(userId: string): Promise<{
@@ -28,42 +28,64 @@ export async function generateMonthlyPdfReport(userId: string): Promise<{
 
   const todayStr = new Date().toLocaleDateString('id-ID', { month: 'long', year: 'numeric' });
 
-  // Generate clean text-based report formatted as a document
-  let reportText = `====================================================\n`;
-  reportText += `     LAPORAN EKSKUTIF KEUANGAN BULANAN              \n`;
-  reportText += `     Periode: ${todayStr}                          \n`;
-  reportText += `====================================================\n\n`;
+  return new Promise((resolve, reject) => {
+    const doc = new PDFDocument({ margin: 40, size: 'A4' });
+    const buffers: Buffer[] = [];
 
-  reportText += `PEMILIK AKUN: ${userName}\n`;
-  reportText += `SKOR KESEHATAN FINANSIAL: ${healthScore} / 100\n\n`;
+    doc.on('data', (chunk) => buffers.push(chunk));
+    doc.on('end', () => {
+      const buffer = Buffer.concat(buffers);
+      const filename = `Laporan_Keuangan_${userName.replace(/[^a-zA-Z0-9]/g, '_')}_${new Date().toISOString().split('T')[0]}.pdf`;
+      resolve({
+        buffer,
+        filename,
+        caption: `📄 **LAPORAN EKSKUTIF BULANAN (PDF)**\n\nBerikut adalah dokumen resmi PDF laporan keuangan bulanan untuk **${userName}** yang disusun oleh AI.`,
+      });
+    });
+    doc.on('error', (err) => reject(err));
 
-  reportText += `----------------------------------------------------\n`;
-  reportText += `RINGKASAN ARUS KAS (CASH FLOW SUMMARY)\n`;
-  reportText += `----------------------------------------------------\n`;
-  reportText += `• Total Pemasukan  : Rp ${Number(totalIncome).toLocaleString('id-ID')}\n`;
-  reportText += `• Total Pengeluaran: Rp ${Number(totalExpense).toLocaleString('id-ID')}\n`;
-  reportText += `• Surplus Tabungan : Rp ${Number(netSavings).toLocaleString('id-ID')}\n\n`;
+    // Header styling
+    doc.fillColor('#6366f1').fontSize(20).text('LAPORAN EKSKUTIF KEUANGAN BULANAN', { align: 'center' });
+    doc.fillColor('#6b7280').fontSize(11).text(`Periode: ${todayStr}`, { align: 'center' });
+    doc.moveDown(1.5);
 
-  reportText += `----------------------------------------------------\n`;
-  reportText += `CATATAN TRANSAKSI TERAKHIR (LAST 20 TRANSACTIONS)\n`;
-  reportText += `----------------------------------------------------\n`;
+    // Summary Box
+    doc.fillColor('#1e293b').fontSize(13).text(`Pemilik Akun: ${userName}`);
+    doc.fillColor('#059669').fontSize(12).text(`Skor Kesehatan Finansial: ${healthScore} / 100`);
+    doc.moveDown(1);
 
-  txs.forEach((t, idx) => {
-    const d = new Date(t.occurred_at).toLocaleDateString('id-ID');
-    const typeStr = t.type === 'income' ? '[PEMASUKAN] ' : '[PENGELUARAN]';
-    reportText += `${idx + 1}. ${d} | ${typeStr} ${t.merchant || t.description || 'Transaksi'}: Rp ${Number(t.amount).toLocaleString('id-ID')}\n`;
+    // Financial Metrics
+    doc.fillColor('#475569').fontSize(12).text('Ringkasan Arus Kas (Cash Flow Summary):', { underline: true });
+    doc.moveDown(0.5);
+    doc.fontSize(10).fillColor('#334155');
+    doc.text(`• Total Pemasukan  : Rp ${Number(totalIncome).toLocaleString('id-ID')}`);
+    doc.text(`• Total Pengeluaran: Rp ${Number(totalExpense).toLocaleString('id-ID')}`);
+    doc.text(`• Surplus Tabungan : Rp ${Number(netSavings).toLocaleString('id-ID')}`);
+    doc.moveDown(1.5);
+
+    // Transaction Table Header
+    doc.fillColor('#475569').fontSize(12).text('Catatan 20 Transaksi Terakhir:', { underline: true });
+    doc.moveDown(0.5);
+
+    if (txs.length === 0) {
+      doc.fillColor('#94a3b8').fontSize(10).text('Belum ada catatan transaksi keuangan.');
+    } else {
+      txs.forEach((t, idx) => {
+        const d = new Date(t.occurred_at || t.created_at).toLocaleDateString('id-ID');
+        const typeStr = t.type === 'income' ? '[PEMASUKAN]' : '[PENGELUARAN]';
+        const color = t.type === 'income' ? '#059669' : '#e11d48';
+        doc
+          .fillColor(color)
+          .fontSize(9)
+          .text(
+            `${idx + 1}. ${d} | ${typeStr} ${t.merchant || t.description || 'Transaksi'}: Rp ${Number(t.amount).toLocaleString('id-ID')}`
+          );
+      });
+    }
+
+    doc.moveDown(2);
+    doc.fillColor('#94a3b8').fontSize(8).text('Diterbitkan Otomatis Oleh AI Personal Assistant', { align: 'center' });
+
+    doc.end();
   });
-
-  reportText += `\n====================================================\n`;
-  reportText += `  Diterbitkan Otomatis Oleh AI Personal Assistant    \n`;
-  reportText += `====================================================\n`;
-
-  const filename = `Laporan_Keuangan_${userName.replace(/[^a-zA-Z0-9]/g, '_')}_${new Date().toISOString().split('T')[0]}.txt`;
-  const buffer = Buffer.from(reportText, 'utf-8');
-
-  return {
-    buffer,
-    filename,
-    caption: `📄 **LAPORAN EKSKUTIF BULANAN**\n\nBerikut adalah laporan resmi keuangan bulanan untuk **${userName}** yang telah disusun oleh AI.`,
-  };
 }
