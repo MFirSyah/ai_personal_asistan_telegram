@@ -70,21 +70,17 @@ export async function GET(req: NextRequest) {
 export async function DELETE(req: NextRequest) {
   try {
     const body = await req.json();
-    let { userId, recordId, type } = body; // type: 'transaction' | 'activity'
+    let { userId, telegram_id: rawTelegramId, recordId, type } = body;
 
     if (!recordId || !type) {
       return NextResponse.json({ error: 'Missing required parameters' }, { status: 400 });
     }
 
-    if (!userId || userId === 'demo-user') {
-      const { data: primaryUser } = await supabaseAdmin
-        .from('users')
-        .select('id')
-        .not('telegram_id', 'is', null)
-        .order('created_at', { ascending: false })
-        .limit(1)
-        .maybeSingle();
-      if (primaryUser) userId = primaryUser.id;
+    const resolvedUser = await resolveUserForApi(userId, rawTelegramId);
+    userId = resolvedUser?.id;
+
+    if (!userId) {
+      return NextResponse.json({ error: 'User not found' }, { status: 404 });
     }
 
     const table = type === 'transaction' ? 'transactions' : 'activities';
@@ -108,21 +104,17 @@ export async function DELETE(req: NextRequest) {
 export async function POST(req: NextRequest) {
   try {
     const body = await req.json();
-    let { userId, type, data } = body;
+    let { userId, telegram_id: rawTelegramId, type, data } = body;
 
     if (!type || !data) {
       return NextResponse.json({ error: 'Missing required parameters' }, { status: 400 });
     }
 
-    if (!userId || userId === 'demo-user') {
-      const { data: primaryUser } = await supabaseAdmin
-        .from('users')
-        .select('id')
-        .not('telegram_id', 'is', null)
-        .order('created_at', { ascending: false })
-        .limit(1)
-        .maybeSingle();
-      if (primaryUser) userId = primaryUser.id;
+    const resolvedUser = await resolveUserForApi(userId, rawTelegramId);
+    userId = resolvedUser?.id;
+
+    if (!userId) {
+      return NextResponse.json({ error: 'User not found' }, { status: 404 });
     }
 
     if (type === 'transaction') {

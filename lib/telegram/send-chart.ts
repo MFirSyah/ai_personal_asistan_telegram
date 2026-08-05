@@ -38,13 +38,17 @@ export function generateQuickChartUrl(config: ChartConfig): string {
   const isPie = config.type === 'pie';
   const isLine = config.type === 'line';
 
-  const formattedDatasets = config.datasets.map((ds, dsIndex) => {
+  // Cap to top 8 items max to guarantee URL stays under 2000 chars for Telegram
+  const safeLabels = (config.labels || []).slice(0, 8);
+
+  const formattedDatasets = (config.datasets || []).map((ds, dsIndex) => {
+    const safeData = (ds.data || []).slice(0, 8);
     let bgColors: string | string[];
     let borderColors: string | string[];
 
-    if (isPie || config.labels.length > 1) {
-      bgColors = config.labels.map((_, i) => MODERN_PALETTE[i % MODERN_PALETTE.length]);
-      borderColors = config.labels.map((_, i) => BORDER_PALETTE[i % BORDER_PALETTE.length]);
+    if (isPie || safeLabels.length > 1) {
+      bgColors = safeLabels.map((_, i) => MODERN_PALETTE[i % MODERN_PALETTE.length]);
+      borderColors = safeLabels.map((_, i) => BORDER_PALETTE[i % BORDER_PALETTE.length]);
     } else {
       bgColors = MODERN_PALETTE[dsIndex % MODERN_PALETTE.length];
       borderColors = BORDER_PALETTE[dsIndex % BORDER_PALETTE.length];
@@ -57,7 +61,7 @@ export function generateQuickChartUrl(config: ChartConfig): string {
 
     return {
       label: ds.label,
-      data: ds.data,
+      data: safeData,
       backgroundColor: bgColors,
       borderColor: borderColors,
       borderWidth: 2,
@@ -69,7 +73,7 @@ export function generateQuickChartUrl(config: ChartConfig): string {
   const chartJsConfig = {
     type: config.type,
     data: {
-      labels: config.labels,
+      labels: safeLabels,
       datasets: formattedDatasets,
     },
     options: {

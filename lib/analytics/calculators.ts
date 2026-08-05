@@ -31,15 +31,15 @@ export async function calculate20Analytics(userId: string): Promise<InsightItem[
   const transactions = txs || [];
   const activities = acts || [];
 
-  const totalExpense = transactions
-    .filter((t) => t.type === 'expense')
-    .reduce((sum, t) => sum + Number(t.amount || 0), 0);
+  const expenseTxs = transactions.filter((t) => t.type === 'expense');
+  const totalExpense = expenseTxs.reduce((sum, t) => sum + Number(t.amount || 0), 0);
 
   const totalIncome = transactions
     .filter((t) => t.type === 'income')
     .reduce((sum, t) => sum + Number(t.amount || 0), 0);
 
   const netSavings = totalIncome - totalExpense;
+  const avgExpensePerTx = expenseTxs.length ? Math.round(totalExpense / expenseTxs.length) : 0;
 
   const { data: userCats } = await supabaseAdmin
     .from('categories')
@@ -51,15 +51,14 @@ export async function calculate20Analytics(userId: string): Promise<InsightItem[
 
   // Category breakdown
   const categoryTotals: Record<string, number> = {};
-  transactions
-    .filter((t) => t.type === 'expense')
-    .forEach((t) => {
-      const catName = (t.category_id && catMap.get(t.category_id)) || t.merchant || 'Lain-lain';
-      categoryTotals[catName] = (categoryTotals[catName] || 0) + Number(t.amount || 0);
-    });
+  expenseTxs.forEach((t) => {
+    const catName = (t.category_id && catMap.get(t.category_id)) || t.merchant || 'Lain-lain';
+    categoryTotals[catName] = (categoryTotals[catName] || 0) + Number(t.amount || 0);
+  });
 
-  const catLabels = Object.keys(categoryTotals);
-  const catData = Object.values(categoryTotals);
+  const sortedCatEntries = Object.entries(categoryTotals).sort((a, b) => b[1] - a[1]);
+  const catLabels = sortedCatEntries.map(([name]) => name);
+  const catData = sortedCatEntries.map(([, val]) => val);
 
   // Top Merchants
   const merchantTotals: Record<string, number> = {};
@@ -178,11 +177,9 @@ export async function calculate20Analytics(userId: string): Promise<InsightItem[
       title: 'Rata-rata Pengeluaran Per Transaksi',
       category: 'reflection',
       data: {
-        avg: transactions.length ? Math.round(totalExpense / Math.max(1, transactions.length)) : 0,
+        avg: avgExpensePerTx,
       },
-      insight: `Rata-rata nominal per transaksi adalah Rp ${Math.round(
-        totalExpense / Math.max(1, transactions.length)
-      ).toLocaleString('id-ID')}.`,
+      insight: `Rata-rata nominal per pengeluaran adalah Rp ${avgExpensePerTx.toLocaleString('id-ID')}.`,
     },
     {
       id: 6,
