@@ -92,3 +92,43 @@ export async function touchOrStartSession(userId: string): Promise<UserSession> 
 
   return newSession as UserSession;
 }
+
+export async function resolveUserForApi(
+  userId?: string | null,
+  telegramId?: string | null
+): Promise<{ id: string; name: string | null; telegramId: number | null } | null> {
+  if (telegramId && !isNaN(Number(telegramId))) {
+    const { data: userByTg } = await supabaseAdmin
+      .from('users')
+      .select('*')
+      .eq('telegram_id', Number(telegramId))
+      .maybeSingle();
+
+    if (userByTg) return { id: userByTg.id, name: userByTg.name, telegramId: userByTg.telegram_id };
+  }
+
+  if (userId && userId !== 'demo-user' && userId.length === 36) {
+    const { data: userById } = await supabaseAdmin
+      .from('users')
+      .select('*')
+      .eq('id', userId)
+      .maybeSingle();
+
+    if (userById) return { id: userById.id, name: userById.name, telegramId: userById.telegram_id };
+  }
+
+  // Fallback: Primary registered owner (ascending created_at to pick original owner, e.g. Firman)
+  const { data: primaryUser } = await supabaseAdmin
+    .from('users')
+    .select('*')
+    .not('telegram_id', 'is', null)
+    .order('created_at', { ascending: true })
+    .limit(1)
+    .maybeSingle();
+
+  if (primaryUser) {
+    return { id: primaryUser.id, name: primaryUser.name, telegramId: primaryUser.telegram_id };
+  }
+
+  return null;
+}

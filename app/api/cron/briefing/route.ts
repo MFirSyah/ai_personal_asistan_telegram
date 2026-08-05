@@ -43,8 +43,8 @@ export async function GET(req: NextRequest) {
         continue;
       }
 
-      // If hours don't match and not force, skip
-      if (!isForce && targetHour !== currentHour) {
+      // If target hour hasn't been reached yet and not force, skip
+      if (!isForce && targetHour > currentHour) {
         continue;
       }
 

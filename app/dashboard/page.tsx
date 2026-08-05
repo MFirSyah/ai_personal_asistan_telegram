@@ -73,20 +73,26 @@ function DashboardContent() {
       let effectiveTelegramId = urlTelegramId;
       let effectiveName = '';
 
-      if (typeof window !== 'undefined' && (window as any).Telegram?.WebApp) {
-        const webApp = (window as any).Telegram.WebApp;
-        webApp.ready();
-        webApp.expand();
+      if (typeof window !== 'undefined') {
+        if (!effectiveTelegramId) {
+          effectiveTelegramId = localStorage.getItem('saved_telegram_id');
+        }
 
-        const tgUser = webApp.initDataUnsafe?.user;
-        if (tgUser?.id) {
-          effectiveTelegramId = String(tgUser.id);
-          effectiveName = tgUser.first_name || '';
-          setUserName(effectiveName);
+        if ((window as any).Telegram?.WebApp) {
+          const webApp = (window as any).Telegram.WebApp;
+          webApp.ready();
+          webApp.expand();
+
+          const tgUser = webApp.initDataUnsafe?.user;
+          if (tgUser?.id) {
+            effectiveTelegramId = String(tgUser.id);
+            effectiveName = tgUser.first_name || '';
+            setUserName(effectiveName);
+          }
         }
       }
 
-      let targetUserId = 'demo-user';
+      let targetUserId = (typeof window !== 'undefined' && localStorage.getItem('saved_user_id')) || 'demo-user';
 
       if (effectiveTelegramId) {
         try {
@@ -103,15 +109,23 @@ function DashboardContent() {
           if (tgData.ok && tgData.user) {
             targetUserId = tgData.user.id;
             setUserName(tgData.user.name || effectiveName);
+            if (typeof window !== 'undefined') {
+              localStorage.setItem('saved_telegram_id', effectiveTelegramId);
+              localStorage.setItem('saved_user_id', tgData.user.id);
+            }
           }
         } catch (err) {
           console.error('Failed to resolve Telegram user:', err);
         }
       }
 
-      // Fetch Records (API auto-resolves to primary user if demo-user)
+      // Fetch Records (with telegram_id and userId)
       try {
-        const recRes = await fetch(`/api/data/records?userId=${targetUserId}`);
+        const queryParams = new URLSearchParams();
+        if (targetUserId) queryParams.set('userId', targetUserId);
+        if (effectiveTelegramId) queryParams.set('telegram_id', effectiveTelegramId);
+
+        const recRes = await fetch(`/api/data/records?${queryParams.toString()}`);
         const recData = await recRes.json();
         if (recData.ok) {
           setRecords({
@@ -121,6 +135,9 @@ function DashboardContent() {
           if (recData.userId) {
             targetUserId = recData.userId;
             setUserId(recData.userId);
+            if (typeof window !== 'undefined') {
+              localStorage.setItem('saved_user_id', recData.userId);
+            }
           }
           if (recData.userName) {
             setUserName(recData.userName);
@@ -132,7 +149,11 @@ function DashboardContent() {
 
       // Fetch Analytics Summary
       try {
-        const res = await fetch(`/api/analytics/summary?userId=${targetUserId}`);
+        const queryParams = new URLSearchParams();
+        if (targetUserId) queryParams.set('userId', targetUserId);
+        if (effectiveTelegramId) queryParams.set('telegram_id', effectiveTelegramId);
+
+        const res = await fetch(`/api/analytics/summary?${queryParams.toString()}`);
         const data = await res.json();
         if (data.insights && Array.isArray(data.insights)) {
           setAnalytics(data.insights);

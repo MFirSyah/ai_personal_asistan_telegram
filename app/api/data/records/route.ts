@@ -1,35 +1,16 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { supabaseAdmin } from '@/lib/supabase/client';
+import { resolveUserForApi } from '@/lib/supabase/queries/sessions';
 
 export async function GET(req: NextRequest) {
   const { searchParams } = new URL(req.url);
-  let userId = searchParams.get('userId');
+  const rawUserId = searchParams.get('userId');
+  const rawTelegramId = searchParams.get('telegram_id');
 
   try {
-    // Single-Account Auto Resolution: Fallback to primary registered Telegram user if userId is demo-user or missing
-    let resolvedUserName = '';
-    if (!userId || userId === 'demo-user') {
-      const { data: primaryUser } = await supabaseAdmin
-        .from('users')
-        .select('id, name')
-        .not('telegram_id', 'is', null)
-        .order('created_at', { ascending: false })
-        .limit(1)
-        .maybeSingle();
-
-      if (primaryUser) {
-        userId = primaryUser.id;
-        resolvedUserName = primaryUser.name || '';
-      }
-    } else {
-      // Fetch name for explicit userId
-      const { data: userRow } = await supabaseAdmin
-        .from('users')
-        .select('name')
-        .eq('id', userId)
-        .maybeSingle();
-      resolvedUserName = userRow?.name || '';
-    }
+    const resolvedUser = await resolveUserForApi(rawUserId, rawTelegramId);
+    const userId = resolvedUser?.id;
+    const resolvedUserName = resolvedUser?.name || '';
 
     if (!userId) {
       return NextResponse.json({ ok: true, transactions: [], activities: [], categories: [] });
