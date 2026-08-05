@@ -8,26 +8,106 @@ export interface ChartConfig {
   datasets: { label: string; data: number[] }[];
 }
 
+const MODERN_PALETTE = [
+  '#6366f1', // Indigo / Electric Royal Blue
+  '#10b981', // Emerald Green
+  '#f43f5e', // Vibrant Rose Pink
+  '#f59e0b', // Warm Amber Gold
+  '#06b6d4', // Bright Cyan Teal
+  '#8b5cf6', // Deep Violet
+  '#ec4899', // Hot Pink
+  '#3b82f6', // Ocean Blue
+  '#14b8a6', // Mint Turquoise
+  '#f97316', // Coral Orange
+];
+
+const BORDER_PALETTE = [
+  '#4f46e5',
+  '#059669',
+  '#e11d48',
+  '#d97706',
+  '#0891b2',
+  '#7c3aed',
+  '#db2777',
+  '#2563eb',
+  '#0d9488',
+  '#ea580c',
+];
+
 export function generateQuickChartUrl(config: ChartConfig): string {
+  const isPie = config.type === 'pie';
+  const isLine = config.type === 'line';
+
+  const formattedDatasets = config.datasets.map((ds, dsIndex) => {
+    let bgColors: string | string[];
+    let borderColors: string | string[];
+
+    if (isPie || config.labels.length > 1) {
+      bgColors = config.labels.map((_, i) => MODERN_PALETTE[i % MODERN_PALETTE.length]);
+      borderColors = config.labels.map((_, i) => BORDER_PALETTE[i % BORDER_PALETTE.length]);
+    } else {
+      bgColors = MODERN_PALETTE[dsIndex % MODERN_PALETTE.length];
+      borderColors = BORDER_PALETTE[dsIndex % BORDER_PALETTE.length];
+    }
+
+    if (isLine) {
+      bgColors = 'rgba(99, 102, 241, 0.2)';
+      borderColors = '#6366f1';
+    }
+
+    return {
+      label: ds.label,
+      data: ds.data,
+      backgroundColor: bgColors,
+      borderColor: borderColors,
+      borderWidth: 2,
+      fill: isLine,
+      tension: 0.35,
+    };
+  });
+
   const chartJsConfig = {
     type: config.type,
     data: {
       labels: config.labels,
-      datasets: config.datasets.map((ds) => ({
-        label: ds.label,
-        data: ds.data,
-      })),
+      datasets: formattedDatasets,
     },
     options: {
-      title: {
-        display: Boolean(config.title),
-        text: config.title || '',
+      responsive: true,
+      plugins: {
+        legend: {
+          display: true,
+          position: isPie ? 'bottom' : 'top',
+          labels: {
+            font: { family: 'sans-serif', size: 12, weight: 'bold' },
+            padding: 15,
+          },
+        },
+        title: {
+          display: Boolean(config.title),
+          text: config.title || '',
+          font: { family: 'sans-serif', size: 16, weight: 'bold' },
+          padding: { top: 10, bottom: 20 },
+        },
       },
+      scales: isPie
+        ? undefined
+        : {
+            x: {
+              grid: { display: false },
+              ticks: { font: { family: 'sans-serif', size: 11 } },
+            },
+            y: {
+              grid: { color: 'rgba(0, 0, 0, 0.05)' },
+              ticks: { font: { family: 'sans-serif', size: 11 } },
+              beginAtZero: true,
+            },
+          },
     },
   };
 
   const encodedConfig = encodeURIComponent(JSON.stringify(chartJsConfig));
-  return `https://quickchart.io/chart?c=${encodedConfig}&w=500&h=300&bkg=white`;
+  return `https://quickchart.io/chart?c=${encodedConfig}&w=600&h=380&bkg=white&devicePixelRatio=2`;
 }
 
 export async function sendTelegramChart(
