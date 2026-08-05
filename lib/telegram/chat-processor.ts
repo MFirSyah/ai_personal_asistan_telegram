@@ -21,6 +21,7 @@ import { sendTelegramLocation } from '@/lib/telegram/send-location';
 import { buildConfirmationInlineKeyboard } from '@/lib/telegram/inline-keyboard';
 import { runChatOrchestration } from '@/lib/gemini/prompts/chat';
 import { generateExportFile } from '@/lib/export/export-data';
+import { checkTransactionAnomaly, checkActivityCollision } from '@/lib/analytics/anomalies';
 import { supabaseAdmin } from '@/lib/supabase/client';
 
 function parseSafeIsoDate(dateStr?: string): string {
@@ -119,6 +120,17 @@ export async function processChatRespondDirect(
               tags: tx.tags || [],
               occurred_at: parseSafeIsoDate(tx.occurred_at),
             });
+
+            // Real-time Financial Anomaly Detection
+            const anomalyAlert = await checkTransactionAnomaly(userId, {
+              amount: tx.amount,
+              type: tx.type || 'expense',
+              merchant: tx.merchant,
+              occurred_at: tx.occurred_at,
+            });
+            if (anomalyAlert && chatId) {
+              await sendTelegramMessage(chatId, `${anomalyAlert.title}\n\n${anomalyAlert.message}`);
+            }
           } catch (txErr) {
             console.error('Error inserting individual transaction:', txErr);
           }
@@ -139,6 +151,15 @@ export async function processChatRespondDirect(
               tags: act.tags || [],
               occurred_at: parseSafeIsoDate(act.occurred_at),
             });
+
+            // Real-time Schedule Collision Detection
+            const collisionAlert = await checkActivityCollision(userId, {
+              title: act.title,
+              occurred_at: act.occurred_at,
+            });
+            if (collisionAlert && chatId) {
+              await sendTelegramMessage(chatId, `${collisionAlert.title}\n\n${collisionAlert.message}`);
+            }
           } catch (actErr) {
             console.error('Error inserting individual activity:', actErr);
           }
