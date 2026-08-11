@@ -10,6 +10,9 @@ export async function POST(req: NextRequest) {
     }
 
     const numericTelegramId = Number(telegramId);
+    if (isNaN(numericTelegramId)) {
+      return NextResponse.json({ error: 'Invalid telegramId format' }, { status: 400 });
+    }
 
     // Upsert into public.users table linking email and telegram_id
     const { data: existingUser } = await supabaseAdmin

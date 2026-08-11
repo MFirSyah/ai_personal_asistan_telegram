@@ -5,17 +5,18 @@ import { sendTelegramMessage } from '@/lib/telegram/send-message';
 export async function GET(req: NextRequest) {
   try {
     const now = new Date();
-    // Broad window: check items scheduled in the last 4 hours up to now
+    // Broad window: check items scheduled between 4 hours ago and 30 minutes in the future
     const fourHoursAgo = new Date(now.getTime() - 4 * 60 * 60 * 1000).toISOString();
+    const thirtyMinsAhead = new Date(now.getTime() + 30 * 60 * 1000).toISOString();
     const nowIso = now.toISOString();
 
-    // Fetch activities scheduled or in_progress whose occurred_at time has arrived
+    // Fetch activities scheduled or in_progress whose occurred_at time has arrived or is arriving soon
     const { data: activeAgendas, error } = await supabaseAdmin
       .from('activities')
       .select('id, title, status, priority, occurred_at, user_id, notification_sent')
       .in('status', ['scheduled', 'in_progress'])
       .gte('occurred_at', fourHoursAgo)
-      .lte('occurred_at', nowIso)
+      .lte('occurred_at', thirtyMinsAhead)
       .is('deleted_at', null);
 
     if (error) {

@@ -65,8 +65,9 @@ export async function setTelegramBotCommands(): Promise<any> {
 function sanitizeMarkdown(text: string): string {
   const openAsterisks = (text.match(/\*/g) || []).length % 2 !== 0;
   const openUnderscores = (text.match(/_/g) || []).length % 2 !== 0;
-  
-  if (openAsterisks || openUnderscores) {
+  const openBackticks = (text.match(/`/g) || []).length % 2 !== 0;
+
+  if (openAsterisks || openUnderscores || openBackticks) {
     return text.replace(/[*_`]/g, '');
   }
   return text;

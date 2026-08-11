@@ -23,11 +23,17 @@ export interface Anniversary {
 }
 
 export async function linkPartnerAccounts(userId: string, partnerTelegramIdOrName: string): Promise<{ ok: boolean; message: string }> {
-  const { data: partner } = await supabaseAdmin
-    .from('users')
-    .select('id, name')
-    .or(`name.ilike.%${partnerTelegramIdOrName}%,telegram_id.eq.${partnerTelegramIdOrName}`)
-    .maybeSingle();
+  const cleanTerm = partnerTelegramIdOrName.trim();
+  const isNumeric = !isNaN(Number(cleanTerm));
+
+  let partnerQuery = supabaseAdmin.from('users').select('id, name');
+  if (isNumeric) {
+    partnerQuery = partnerQuery.or(`name.ilike.%${cleanTerm}%,telegram_id.eq.${cleanTerm}`);
+  } else {
+    partnerQuery = partnerQuery.ilike('name', `%${cleanTerm}%`);
+  }
+
+  const { data: partner } = await partnerQuery.maybeSingle();
 
   if (!partner) {
     return { ok: false, message: `❌ Akun pasangan dengan identifier "${partnerTelegramIdOrName}" tidak ditemukan. Pastikan pasangan kamu sudah registrasi & klik /start di bot ini!` };

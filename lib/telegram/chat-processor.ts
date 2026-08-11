@@ -190,7 +190,10 @@ export async function processChatRespondDirect(
           // Sync name preference directly to users.name column in database
           const keyLower = pref.key.toLowerCase();
           if (keyLower.includes('nama') || keyLower.includes('name') || keyLower.includes('panggilan')) {
-            await updateUserName(userId, pref.value);
+            const cleanName = String(pref.value || '').trim().replace(/^["']|["']$/g, '');
+            if (cleanName) {
+              await updateUserName(userId, cleanName);
+            }
           }
         }
       }

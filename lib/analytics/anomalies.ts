@@ -92,7 +92,10 @@ export async function checkActivityCollision(
   newAct: { title: string; occurred_at?: string }
 ): Promise<ActivityCollisionAlert | null> {
   try {
-    const actTime = newAct.occurred_at ? new Date(newAct.occurred_at) : new Date();
+    let actTime = newAct.occurred_at ? new Date(newAct.occurred_at) : new Date();
+    if (isNaN(actTime.getTime())) {
+      actTime = new Date();
+    }
     const windowStart = new Date(actTime.getTime() - 60 * 60 * 1000).toISOString();
     const windowEnd = new Date(actTime.getTime() + 60 * 60 * 1000).toISOString();
 

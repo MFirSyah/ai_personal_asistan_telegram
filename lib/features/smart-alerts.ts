@@ -57,7 +57,7 @@ export async function addDebt(userId: string, debt: Partial<Debt>): Promise<Debt
       person_name: debt.person_name,
       amount: debt.amount,
       type: debt.type || 'they_owe',
-      due_date: debt.due_date || null,
+      due_date: debt.due_date?.trim() ? debt.due_date.trim() : null,
       notes: debt.notes || null,
       status: 'unpaid',
     })

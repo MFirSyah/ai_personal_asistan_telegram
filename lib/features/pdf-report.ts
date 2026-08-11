@@ -71,7 +71,9 @@ export async function generateMonthlyPdfReport(userId: string): Promise<{
       doc.fillColor('#94a3b8').fontSize(10).text('Belum ada catatan transaksi keuangan.');
     } else {
       txs.forEach((t, idx) => {
-        const d = new Date(t.occurred_at || t.created_at).toLocaleDateString('id-ID');
+        const rawDate = t.occurred_at || t.created_at;
+        const dt = new Date(rawDate);
+        const d = isNaN(dt.getTime()) ? '-' : dt.toLocaleDateString('id-ID');
         const typeStr = t.type === 'income' ? '[PEMASUKAN]' : '[PENGELUARAN]';
         const color = t.type === 'income' ? '#059669' : '#e11d48';
         doc

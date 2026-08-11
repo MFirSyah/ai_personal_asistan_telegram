@@ -1,306 +1,197 @@
-# 🔍 AUDIT MENYELURUH & SARAN PERBAIKAN
+# 🔍 AUDIT MENYELURUH & SARAN PERBAIKAN (GELOMBANG 2)
 
 **Tanggal Audit**: 11 Agustus 2026  
 **Auditor**: AI Code Auditor  
-**Cakupan**: Seluruh source code project `ai-personal-assistant-telegram`
+**Status Audit Gelombang 1**: 26/26 Temuan Telah Diperbaiki & Live di Vercel Production  
+**Cakupan Audit Gelombang 2**: Re-Audit Seluruh File API Routes, Feature Modules, Export, PDF, Telegram Handlers, dan Supabase Queries
 
 ---
 
 ## 📋 DAFTAR ISI
 
-1. [🚨 KRITIS — Harus Segera Diperbaiki](#1--kritis--harus-segera-diperbaiki)
-2. [⚠️ PENTING — Risiko Bug & Data Loss](#2-️-penting--risiko-bug--data-loss)
-3. [🔧 SEDANG — Inefisiensi & Kode Tidak Optimal](#3--sedang--inefisiensi--kode-tidak-optimal)
-4. [💡 RENDAH — Saran Peningkatan & Best Practice](#4--rendah--saran-peningkatan--best-practice)
-5. [📊 RINGKASAN METRIK AUDIT](#5--ringkasan-metrik-audit)
+1. [🚨 KRITIS — PostgREST Syntax Error & Invalid Date Risk](#1--kritis--postgrest-syntax-error--invalid-date-risk)
+2. [⚠️ PENTING — CSV Formatting & Unclosed Markdown Sanitize](#2-️-penting--csv-formatting--unclosed-markdown-sanitize)
+3. [🔧 SEDANG — Direct Live Query vs Caching & Invalid Date Guards](#3--sedang--direct-live-query-vs-caching--invalid-date-guards)
+4. [💡 RENDAH — Cron Reminder Window & Input Validation](#4--rendah--cron-reminder-window--input-validation)
+5. [📊 RINGKASAN TEMUAN GELOMBANG 2](#5--ringkasan-temuan-gelombang-2)
 
 ---
 
-## 1. 🚨 KRITIS — Harus Segera Diperbaiki
+## 1. 🚨 KRITIS — PostgREST Syntax Error & Invalid Date Risk
 
-### K-01: Handler `/pasangan` Terdaftar Dua Kali (Dead Code / Unreachable)
+### G2-01: PostgREST Syntax Error pada Perintah `/pasangan` dengan Nama Non-Angka
 
-**File**: `app/api/telegram/webhook/route.ts` — Baris 234-246 dan Baris 328-348  
-**Masalah**: Perintah `/pasangan` memiliki DUA blok handler yang identik. Handler kedua (baris 328-348) **tidak akan pernah dieksekusi** karena handler pertama (baris 234-246) sudah `return` terlebih dahulu. Handler kedua sebenarnya berisi logika tambahan untuk menampilkan status pasangan saat ini jika tanpa argumen, yang **tidak pernah tercapai**.  
-**Dampak**: User yang mengetik `/pasangan` (tanpa nama) akan mendapatkan respons generik dari handler pertama, bukan info status terhubung/belum terhubung dari handler kedua.  
+**File**: `lib/features/couples.ts` — Baris 29  
+**Kode**:
+```ts
+.or(`name.ilike.%${partnerTelegramIdOrName}%,telegram_id.eq.${partnerTelegramIdOrName}`)
+```
+**Masalah**: Kolom `telegram_id` di PostgreSQL/Supabase bertipe **BIGINT (Integer)**. Ketika user mengetik `/pasangan Firman`, ekspresi `telegram_id.eq.Firman` dikirim ke PostgREST API. Supabase menolak request ini dengan HTTP 400 Error (`invalid input syntax for type bigint: "Firman"`), sehingga pencarian nama pasangan gagal total.  
+**Dampak**: Menghubungkan pasangan menggunakan nama panggilan selalu gagal dengan error database.  
 **Saran**:
-- Hapus handler pertama (baris 234-246) yang lebih sederhana
-- Pertahankan handler kedua (baris 328-348) yang lebih lengkap karena menampilkan status partner saat ini
+- Cek terlebih dahulu apakah input bernilai numerik (`!isNaN(Number(partnerTelegramIdOrName))`)
+- Jika numerik, query menggunakan `.or('name.ilike.%,telegram_id.eq...')`
+- Jika bukan numerik, query cukup menggunakan `.ilike('name', `%${partnerTelegramIdOrName}%`)`
 
 ---
 
-### K-02: Race Condition pada Rate Limiter (Tidak Benar-benar Atomik)
+### G2-02: String Kosong `due_date: ""` Menyebabkan Error PostgreSQL Syntax pada `addDebt`
 
-**File**: `lib/gemini/rate-limiter.ts` — Baris 12-87  
-**Masalah**: Meski komentar menyebutkan "Atomic fetch & window check" dan "Atomic update", operasinya sebenarnya **TIDAK atomik**. Ada dua operasi Supabase terpisah:
-1. `SELECT` untuk membaca counter saat ini
-2. `UPSERT` untuk menulis counter baru
-
-Jika dua request masuk hampir bersamaan (misalnya user mengirim 2 pesan cepat), keduanya bisa membaca counter yang sama (misal `minute_count = 6`), dan keduanya lolos pengecekan `< 7`, lalu keduanya menulis `minute_count = 7` — sehingga satu request bocor melampaui limit.  
-**Dampak**: Rate limit bisa di-bypass pada concurrency tinggi.  
+**File**: `lib/features/smart-alerts.ts` — Baris 60  
+**Kode**:
+```ts
+due_date: debt.due_date || null,
+```
+**Masalah**: Jika form/AI mengirimkan `debt.due_date` berupa string kosong (`""` atau `"   "`), ekspresi `"" || null` tetap bernilai `""`. Saat dimasukkan ke kolom database bertipe `DATE`, PostgreSQL akan melemparkan error: `invalid input syntax for type date: ""`.  
+**Dampak**: Gagal menyimpan catatan hutang baru saat tanggal jatuh tempo kosong.  
 **Saran**:
-- Gunakan Supabase RPC (stored function PostgreSQL) dengan `UPDATE ... RETURNING` dalam satu transaksi atomik
-- Atau gunakan `UPDATE ... SET minute_count = minute_count + 1 WHERE minute_count < 7` dan cek apakah ada baris yang terupdate
+- Gunakan `due_date: debt.due_date?.trim() ? debt.due_date.trim() : null`
 
 ---
 
-### K-03: `sendTelegramDocument` Selalu Hardcode MIME Type `text/csv`
+## 2. ⚠️ PENTING — CSV Formatting & Unclosed Markdown Sanitize
 
-**File**: `lib/telegram/send-message.ts` — Baris 159  
-**Masalah**: Fungsi `sendTelegramDocument` selalu menggunakan `{ type: 'text/csv' }` untuk semua file yang dikirim, termasuk file **PDF** (dari fitur `/pdf`).  
-**Dampak**: File PDF yang dikirim ke Telegram mungkin tidak dikenali browser/Telegram sebagai PDF karena MIME type salah. Beberapa client Telegram mungkin menampilkan file PDF sebagai teks mentah.  
+### G2-03: Kolom Tanggal Tanpa Kutip Memecah Kolom CSV pada `export-data.ts`
+
+**File**: `lib/export/export-data.ts` — Baris 48, 81, 126, 137  
+**Kode**:
+```ts
+a.occurred_at ? new Date(a.occurred_at).toLocaleString('id-ID') : ''
+```
+**Masalah**: Fungsi `toLocaleString('id-ID')` menghasilkan format string dengan koma, contohnya: `"11/8/2026, 17:00:00"`. Karena CSV dipisahkan oleh tanda koma (`,`), nilai tanggal tanpa tanda kutip ganda akan dianggap sebagai **dua kolom terpisah**, merusak seluruh susunan header dan tata letak tabel di Microsoft Excel / Google Sheets.  
+**Dampak**: File `.csv` hasil export berantakan di Excel.  
 **Saran**:
-- Tambahkan parameter `mimeType` pada fungsi `sendTelegramDocument`
-- Deteksi otomatis berdasarkan ekstensi filename (`.pdf` -> `application/pdf`, `.csv` -> `text/csv`, `.ics` -> `text/calendar`)
+- Bungkus nilai tanggal dalam tanda kutip ganda: `"${a.occurred_at ? new Date(a.occurred_at).toLocaleString('id-ID') : ''}"`
 
 ---
 
-### K-04: `export_request` dengan `target: 'all'` Tidak Benar-benar Export Semua
+### G2-04: `sanitizeMarkdown` Tidak Memeriksa Unclosed Backticks (``` ` ```)
 
-**File**: `lib/export/export-data.ts` — Baris 62-101  
-**Masalah**: Ketika user meminta export "semua data" (`target: 'all'`), fungsi `generateExportFile` jatuh ke blok default yang **hanya meng-export transaksi keuangan saja**, bukan gabungan transaksi + aktivitas. Perilaku ini kontradiktif dengan label `target: 'all'`.  
-**Dampak**: User mengira mendapat export lengkap padahal aktivitas/agenda tidak ikut di-export.  
+**File**: `lib/telegram/send-message.ts` — Baris 65-73  
+**Kode**:
+```ts
+function sanitizeMarkdown(text: string): string {
+  const openAsterisks = (text.match(/\*/g) || []).length % 2 !== 0;
+  const openUnderscores = (text.match(/_/g) || []).length % 2 !== 0;
+  if (openAsterisks || openUnderscores) {
+    return text.replace(/[*_`]/g, '');
+  }
+  return text;
+}
+```
+**Masalah**: Fungsi `sanitizeMarkdown` hanya mengecek apakah jumlah asterisk (`*`) atau underscore (`_`) ganjil. Jika AI menghasilkan backtick ganjil (misal 1 backtick ` ` ` tanpa pasangan tutup), `sanitizeMarkdown` meloloskannya. Telegram API akan gagal memarsing entity dan mengembalikan error `can't parse entities`.  
+**Dampak**: Pesan Telegram berisi potongan kode/ID gagal dikirim dalam format Markdown dan terpaksa fallback ke plain text tanpa cetak tebal.  
 **Saran**:
-- Tambahkan percabangan khusus `if (target === 'all')` yang menggabungkan kedua sheet/CSV (transaksi + aktivitas) menjadi satu file, atau mengirim dua file terpisah
+- Tambahkan `const openBackticks = (text.match(/`/g) || []).length % 2 !== 0;` ke dalam kondisi sanitasi
 
 ---
 
-## 2. ⚠️ PENTING — Risiko Bug & Data Loss
+## 3. 🔧 SEDANG — Direct Live Query vs Caching & Invalid Date Guards
 
-### P-01: `parseSafeIsoDate` Memotong String di Karakter Dash (`-`)
+### G2-05: Tanpa Cache pada `GET /api/analytics/summary` (Setiap Buka Dashboard Memicu 3 Query Besar)
 
-**File**: `lib/telegram/chat-processor.ts` — Baris 30  
-**Masalah**: Baris `const cleanStr = dateStr.split(/[-–—]/)[0].trim()` memecah string di karakter dash (`-`). Ini berarti tanggal ISO format `2026-08-11T10:00:00Z` akan terpotong menjadi **hanya `2026`**, yang gagal diparsing atau menghasilkan tanggal 1 Januari 2026 (tahun saja).  
-**Dampak**: Semua tanggal ISO valid yang mengandung dash (yaitu semua tanggal) berpotensi dikorupsi jadi tanggal salah. Beruntung, `new Date("2026")` masih menghasilkan objek Date valid (1 Jan 2026), yang kemudian terdeteksi oleh guard `2026-01-01` dan fallback ke `new Date()`. Jadi secara *de facto* semua tanggal dari AI yang sudah format ISO benar justru di-override ke waktu sekarang.  
+**File**: `app/api/analytics/summary/route.ts` — Baris 20-43  
+**Masalah**: Setiap kali Telegram Mini App Dashboard dibuka oleh user, `GET /api/analytics/summary` selalu menghitung `calculate20Analytics(userId)` secara live dari 500 transaksi dan 200 aktivitas Supabase, lalu menimpa `daily_insights`.  
+**Dampak**: Beban query Supabase tinggi dan waktu muat Dashboard terasa lambat (1.5 - 3 detik).  
 **Saran**:
-- Ubah regex split menjadi `split(/[–—]/)` (hanya em-dash dan en-dash, BUKAN hyphen `-`)
-- Atau lebih baik: coba `new Date(dateStr)` langsung terlebih dahulu sebelum melakukan cleaning apa pun
+- Cek terlebih dahulu apakah sudah ada `daily_insights` untuk tanggal hari ini (`insight_date = today`).
+- Jika ada dan `searchParams.get('force') !== 'true'`, langsung kembalikan payload cache tersebut.
 
 ---
 
-### P-02: `findRecordIdByShortOrFull` Memuat Seluruh Tabel untuk Mencocokkan Short ID
+### G2-06: Potensi `RangeError: Invalid time value` pada Penjumlahan PDF Report
 
-**File**: `lib/supabase/queries/transactions.ts` — Baris 269-286  
-**Masalah**: Untuk menemukan record berdasarkan short ID (misal `TX-8F3A`), fungsi ini mengambil **SEMUA record non-deleted** milik user, kemudian melakukan loop satu per satu di sisi aplikasi. Jika user memiliki ribuan transaksi, ini sangat boros.  
-**Dampak**: Performa lambat, konsumsi bandwidth Supabase tinggi.  
+**File**: `lib/features/pdf-report.ts` — Baris 74  
+**Kode**:
+```ts
+const d = new Date(t.occurred_at || t.created_at).toLocaleDateString('id-ID');
+```
+**Masalah**: Jika `occurred_at` berisi format tidak valid, `new Date(...)` menghasilkan `Invalid Date`. Memanggil `.toLocaleDateString()` pada `Invalid Date` akan melempar unhandled exception `RangeError: Invalid time value`, membatalkan seluruh pembuatan PDF.  
+**Dampak**: Penggenerasian laporan PDF bulanan gagal total jika ada 1 transaksi ber-tanggal corrupt.  
 **Saran**:
-- Gunakan SQL `LIKE` filter di sisi server
-- Atau simpan kolom `short_id` yang sudah di-generate saat insert, sehingga bisa langsung di-query
+- Bungkus dengan pembacaan tanggal aman: `const rawDate = t.occurred_at || t.created_at; const dt = new Date(rawDate); const d = isNaN(dt.getTime()) ? '-' : dt.toLocaleDateString('id-ID');`
 
 ---
 
-### P-03: Short ID Collision (4 Karakter Hex Tidak Unik)
+### G2-07: Potential `NaN` Window Date pada `checkActivityCollision` & `checkTransactionAnomaly`
 
-**File**: `lib/gemini/prompts/chat.ts` — Baris 282, 298  
-**Masalah**: Short ID dibuat dari 4 karakter pertama UUID tanpa dash. Dengan hanya 4 hex char (65.536 kombinasi), probabilitas collision cukup tinggi untuk user yang aktif. Dua transaksi berbeda bisa memiliki Short ID `TX-8F3A` yang sama.  
-**Dampak**: Ketika user mengetik "hapus TX-8F3A", sistem mungkin menghapus transaksi yang **salah**.  
+**File**: `lib/analytics/anomalies.ts` — Baris 95-97  
+**Kode**:
+```ts
+const actTime = newAct.occurred_at ? new Date(newAct.occurred_at) : new Date();
+```
+**Masalah**: Jika `newAct.occurred_at` bernilai string tidak valid, `actTime.getTime()` mengembalikan `NaN`. `new Date(NaN).toISOString()` melempar exception `RangeError: Invalid time value`.  
+**Dampak**: Menambah agenda baru dengan format tanggal tidak standar menyebabkan error 500 saat pengecekan bentrok jadwal.  
 **Saran**:
-- Perbesar ke 6 atau 8 karakter hex (misal `TX-8F3A2B`)
-- Atau gunakan counter incremental per user yang dijamin unik
+- Lakukan validasi `isNaN(actTime.getTime())` dan fallback ke `new Date()`
 
 ---
 
-### P-04: `completeAllActivities` Tidak Memfilter `deleted_at`
+## 4. 💡 RENDAH — Cron Reminder Window & Input Validation
 
-**File**: `lib/features/habits-and-tasks.ts` — Baris 80-90  
-**Masalah**: Fungsi `completeAllActivities` meng-update semua aktivitas yang belum completed, **termasuk aktivitas yang sudah di-soft-delete** (`deleted_at IS NOT NULL`).  
-**Dampak**: Aktivitas yang sudah dihapus user tiba-tiba statusnya berubah ke "completed".  
+### G2-08: Window Pengingat Agenda Cron Kurang Fleksibel (Hanya Pengecekan Waktu Lalu)
+
+**File**: `app/api/cron/activity-check/route.ts` — Baris 8-18  
+**Kode**:
+```ts
+const fourHoursAgo = new Date(now.getTime() - 4 * 60 * 60 * 1000).toISOString();
+const nowIso = now.toISOString();
+```
+**Masalah**: Cron mengecek agenda yang dijadwalkan antara 4 jam yang lalu hingga **detik ini saja** (`lte('occurred_at', nowIso)`). Karena Vercel Cron berjalan per jam (misal 08:00, 09:00), agenda yang dijadwalkan jam 08:15 baru terkirim pengingatnya pada jam 09:00 (45 menit terlambat).  
+**Dampak**: Pengingat jam agenda sering datang terlambat dari jam target.  
 **Saran**:
-- Tambahkan `.is('deleted_at', null)` pada query
+- Perluas batas atas query hingga 15-30 menit ke depan (`now.getTime() + 30 * 60 * 1000`), sehingga pengingat dikirim di awal jam sebelum agenda dimulai
 
 ---
 
-### P-05: `/split` Command Hardcoded Tidak Berguna
+### G2-09: Validasi Input Telegram ID pada `/api/auth/link-telegram`
 
-**File**: `app/api/telegram/webhook/route.ts` — Baris 284-288  
-**Masalah**: Command `/split` selalu membuatkan split bill dengan `totalBill: 100000` dan `people: ['Kamu', 'Pasangan']` yang di-hardcode. User tidak bisa memasukkan parameter apapun.  
-**Dampak**: Fitur `/split` tidak fungsional. User selalu mendapatkan output yang sama.  
+**File**: `app/api/auth/link-telegram/route.ts` — Baris 12  
+**Kode**:
+```ts
+const numericTelegramId = Number(telegramId);
+```
+**Masalah**: Tidak ada pengecekan `isNaN(numericTelegramId)`. Jika payload dikirim dengan `telegramId` bertipe string tidak valid, angka yang tersimpan di Supabase adalah `NaN` atau query gagal.  
 **Saran**:
-- Ubah handler `/split` agar menerima argumen seperti `/patungan` (yang sudah benar implementasinya)
-- Atau hapus `/split` dan arahkan user ke `/patungan`
+- Tambahkan guard: `if (isNaN(numericTelegramId)) return NextResponse.json({ error: 'Invalid telegramId' }, { status: 400 });`
 
 ---
 
-### P-06: `needs_review` Threshold OCR Terlalu Rendah (> 10 Rupiah)
+### G2-10: `updateUserName` Sanitasi Tanda Kutip dari AI Preference
 
-**File**: `lib/gemini/prompts/ocr-receipt.ts` — Baris 71  
-**Masalah**: Kondisi `Math.abs(calculatedSum - declaredTotal) > 10` artinya perbedaan **lebih dari Rp 10** sudah dianggap perlu review. Untuk transaksi Indonesia, perbedaan Rp 50-100 sangat umum akibat pembulatan PPN. Ini menyebabkan hampir SEMUA struk di-flag "needs_review".  
-**Dampak**: User selalu melihat peringatan yang jadi meaningless.  
+**File**: `lib/telegram/chat-processor.ts` — Baris 178  
+**Masalah**: Ketika AI mengekstrak nama user dari percakapan (misal `value: '"Firman"'`), string yang dikirim ke `updateUserName` terkadang masih terbawa tanda kutip ganda dari JSON output.  
+**Dampak**: Nama panggilan user tersimpan di database sebagai `"Firman"` (dengan tanda kutip).  
 **Saran**:
-- Gunakan threshold persentase, misal 5% deviasi
-- Atau absolute threshold yang lebih masuk akal: `> 1000` (Rp 1.000)
+- Bersihkan string nama: `pref.value.trim().replace(/^["']|["']$/g, '')`
 
 ---
 
-## 3. 🔧 SEDANG — Inefisiensi & Kode Tidak Optimal
-
-### S-01: `randomizeTransactionTimestamps` Melakukan UPDATE Satu Per Satu
-
-**File**: `lib/supabase/queries/transactions.ts` — Baris 185-218, 220-253  
-**Masalah**: Kedua fungsi `randomize*Timestamps` mengambil semua record, lalu melakukan `UPDATE` individual dalam loop `for`. Untuk 200 transaksi, berarti 200 request HTTP terpisah ke Supabase.  
-**Dampak**: Sangat lambat, bisa timeout pada Vercel (60s limit).  
-**Saran**:
-- Gunakan Supabase RPC (PostgreSQL function) yang melakukan update batch dalam satu transaksi database
-- Atau gunakan `Promise.all()` dengan batch 10-20 concurrent updates
-
----
-
-### S-02: Briefing Cron Memproses User Secara Sekuensial
-
-**File**: `app/api/cron/briefing/route.ts` — Baris 45-102  
-**Masalah**: Loop `for (const user of allUsers)` memproses setiap user satu per satu secara serial. Setiap user membutuhkan 4 query Supabase + 1 Gemini call + 2-3 Telegram call. Total sekitar 3-5 detik per user.  
-**Dampak**: Jika lebih dari ~12 user, cron akan timeout dan sebagian user tidak mendapat briefing.  
-**Saran**:
-- Proses user secara paralel dengan `Promise.allSettled()` dan batch 3-5 user sekaligus
-
----
-
-### S-03: `calculate20Analytics` Dipanggil Berulang Kali Tanpa Cache
-
-**File**: Digunakan di `daily-insight/route.ts`, `pdf-report.ts`, `webhook/route.ts`  
-**Masalah**: Fungsi ini melakukan 3 query besar ke Supabase setiap dipanggil. Tidak ada caching.  
-**Dampak**: Konsumsi quota Supabase berlebihan.  
-**Saran**:
-- Gunakan in-memory cache sederhana dengan TTL 5 menit
-- Atau manfaatkan tabel `daily_insights` yang sudah ada sebagai cache
-
----
-
-### S-04: Chat History Tidak Pernah Dibersihkan
-
-**File**: `lib/supabase/queries/transactions.ts` — `saveChatMessage` (Baris 177-183)  
-**Masalah**: Setiap pesan user dan assistant disimpan ke tabel `chat_history` tanpa batas. Tidak ada mekanisme pembersihan atau retensi.  
-**Dampak**: Tabel `chat_history` akan membengkak, memperlambat query, dan meningkatkan biaya Supabase.  
-**Saran**:
-- Tambahkan cleanup job di cron yang menghapus chat history lebih dari 30 hari
-- Atau gunakan sliding window: simpan hanya 200 pesan terakhir per user
-
----
-
-### S-05: `getOrCreateCategory` Upsert Mereset `usage_count` ke 1
-
-**File**: `lib/supabase/queries/categories.ts` — Baris 53-68  
-**Masalah**: Upsert dengan `usage_count: 1` akan **mereset** usage_count ke 1 setiap kali kategori yang sudah ada di-upsert. Seharusnya usage_count di-increment.  
-**Dampak**: Statistik "kategori tersering digunakan" tidak akurat karena counter selalu ter-reset.  
-**Saran**:
-- Pisahkan logik: cek dulu apakah ada, jika ada lakukan `UPDATE ... SET usage_count = usage_count + 1`, jika tidak ada baru `INSERT`
-
----
-
-### S-06: `@types/pdfkit` di `dependencies` (Bukan `devDependencies`)
-
-**File**: `package.json` — Baris 14  
-**Masalah**: Package `@types/pdfkit` adalah type definition yang hanya dibutuhkan saat development/build, bukan runtime. Seharusnya berada di `devDependencies`.  
-**Saran**:
-- Pindahkan `@types/pdfkit` dari `dependencies` ke `devDependencies`
-
----
-
-## 4. 💡 RENDAH — Saran Peningkatan & Best Practice
-
-### R-01: Tidak Ada Logging Terstruktur
-
-**Masalah**: Seluruh project menggunakan `console.log/warn/error` mentah tanpa structured logging.  
-**Saran**: Gunakan library logging ringan seperti `pino` dengan format JSON.
-
----
-
-### R-02: Tidak Ada Unit Test
-
-**Masalah**: Tidak ada folder `__tests__`, `*.test.ts`, atau `*.spec.ts`. Tidak ada konfigurasi test runner.  
-**Saran**: Tambahkan minimal unit test untuk modul kritis: `cleanAndParseJSON`, `parseSafeIsoDate`, `calculateSplitBill`.
-
----
-
-### R-03: Hardcoded Tahun 2026 di Guard `parseSafeIsoDate`
-
-**File**: `lib/telegram/chat-processor.ts` — Baris 28, 33, 47  
-**Masalah**: Guard di-hardcode ke tahun 2026. Saat pergantian tahun ke 2027, guard tidak lagi melindungi.  
-**Saran**: Gunakan tahun dinamis: `const currentYear = new Date().getFullYear()`.
-
----
-
-### R-04: File Chat WhatsApp Pribadi Ter-commit di Repository
-
-**File**: Root project — `WhatsApp Chat with +62 856-0893-7930.txt` (438 KB)  
-**Masalah**: File berisi percakapan pribadi dan nomor telepon. Risiko kebocoran data.  
-**Saran**: Hapus dari repo dan tambahkan ke `.gitignore`.
-
----
-
-### R-05: `CLAUDE.md` Berisi Hanya 12 Bytes
-
-**File**: `CLAUDE.md`  
-**Masalah**: File placeholder kosong/minimal.  
-**Saran**: Hapus jika tidak dibutuhkan, atau isi dengan instruksi bermakna.
-
----
-
-### R-06: Tidak Ada Validasi Input pada API POST `/api/data/records`
-
-**File**: `app/api/data/records/route.ts` — Baris 104-158  
-**Masalah**: API POST menerima `data.amount` langsung tanpa validasi tipe numerik, range, atau sanitisasi.  
-**Saran**: Validasi tipe dan range. Gunakan library validasi seperti `zod` untuk schema validation.
-
----
-
-### R-07: `sendTelegramDocument` Tidak Memiliki Retry Logic
-
-**File**: `lib/telegram/send-message.ts` — Baris 147-176  
-**Masalah**: Tidak ada retry apapun untuk pengiriman document.  
-**Saran**: Tambahkan retry sederhana (1-2 kali) dengan exponential backoff.
-
----
-
-### R-08: `import` Statement di Tengah File
-
-**File**: `lib/gemini/prompts/chat.ts` — Baris 436  
-**Masalah**: `import { generateContentWithFallback }` ditempatkan di tengah file, bukan di bagian atas.  
-**Saran**: Pindahkan import ke bagian atas file bersama import lainnya.
-
----
-
-### R-09: Variabel `currentHour` Tidak Digunakan di Briefing Cron
-
-**File**: `app/api/cron/briefing/route.ts` — Baris 22  
-**Masalah**: Variabel `currentHour` dihitung tapi hanya dikembalikan di response JSON, tidak digunakan untuk logika.  
-**Saran**: Tidak kritikal, boleh dipertahankan untuk debugging response.
-
----
-
-### R-10: `getRecentActivities` di Context Chat Hanya 5, Terlalu Sedikit
-
-**File**: `lib/telegram/chat-processor.ts` — Baris 74  
-**Masalah**: Hanya memuat 5 aktivitas terakhir untuk konteks AI. Jika user bertanya agenda minggu depan dan ada 10 agenda, AI hanya melihat 5.  
-**Saran**: Naikkan ke `getRecentActivities(userId, 20)`.
-
----
-
-## 5. 📊 RINGKASAN METRIK AUDIT
+## 5. 📊 RINGKASAN TEMUAN GELOMBANG 2
 
 | Kategori | Jumlah Temuan |
 |----------|:------------:|
-| 🚨 **KRITIS** | 4 |
-| ⚠️ **PENTING** | 6 |
-| 🔧 **SEDANG** | 6 |
-| 💡 **RENDAH** | 10 |
-| **TOTAL** | **26** |
+| 🚨 **KRITIS** | 2 |
+| ⚠️ **PENTING** | 2 |
+| 🔧 **SEDANG** | 3 |
+| 💡 **RENDAH** | 3 |
+| **TOTAL GELOMBANG 2** | **10** |
 
-### Prioritas Perbaikan yang Direkomendasikan
+### Tabel Prioritas Eksekusi Perbaikan
 
 | Urutan | ID | Ringkasan | Estimasi |
 |:------:|------|-----------|----------|
-| 1 | K-01 | Hapus duplicate `/pasangan` handler | 5 menit |
-| 2 | K-03 | Fix MIME type `sendTelegramDocument` | 10 menit |
-| 3 | K-04 | Fix export `target: 'all'` | 20 menit |
-| 4 | P-01 | Fix `parseSafeIsoDate` regex dash | 10 menit |
-| 5 | P-04 | Fix `completeAllActivities` filter | 2 menit |
-| 6 | P-05 | Hapus/redirect `/split` ke `/patungan` | 5 menit |
-| 7 | P-06 | Fix OCR `needs_review` threshold | 5 menit |
-| 8 | S-05 | Fix `usage_count` reset di categories | 15 menit |
-| 9 | K-02 | Atomic rate limiter via RPC | 30 menit |
-| 10 | S-01 | Batch update timestamps via RPC | 30 menit |
+| 1 | G2-01 | Fix PostgREST syntax error `/pasangan` nama non-angka | 5 menit |
+| 2 | G2-02 | Fix `due_date: ""` string kosong di `addDebt` | 3 menit |
+| 3 | G2-03 | Quote tanggal pada CSV export `export-data.ts` | 5 menit |
+| 4 | G2-04 | Add unclosed backtick check di `sanitizeMarkdown` | 5 menit |
+| 5 | G2-05 | Add cache check pada `GET /api/analytics/summary` | 10 menit |
+| 6 | G2-06 | Guard `Invalid Date` pada PDF report generation | 5 menit |
+| 7 | G2-07 | Guard `Invalid Date` pada `checkActivityCollision` | 5 menit |
+| 8 | G2-08 | Perluas window look-ahead cron `activity-check` (+30 mnt) | 5 menit |
+| 9 | G2-09 | Add `isNaN` guard pada `/api/auth/link-telegram` | 2 menit |
+| 10 | G2-10 | Trim quotes dari AI preference name | 3 menit |
 
 ---
 
-> **Catatan**: Audit ini bersifat **non-destruktif** dan hanya berisi analisis serta rekomendasi. Tidak ada kode yang diubah dalam proses audit ini. Semua perubahan memerlukan persetujuan eksplisit dari pemilik project.
+> **Catatan**: Seluruh 26 perbaikan dari Gelombang 1 sebelumnya telah terverifikasi stabil. Dokumen Gelombang 2 ini mencatat 10 temuan penyempurnaan tambahan untuk menjamin ketahanan sistem 100%.
