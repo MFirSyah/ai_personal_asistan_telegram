@@ -34,9 +34,9 @@ export default function ExportModal({ isOpen, onClose, userId }: ExportModalProp
 
         <div className="flex flex-col gap-4">
           <div>
-            <label className="block font-bold uppercase mb-2">Pilih Target Data Export</label>
+            <label className="block font-bold uppercase mb-2 text-black dark:text-white">Pilih Target Data Export</label>
             <div className="flex flex-col gap-2">
-              <label className="flex items-center gap-2 p-3 border-2 border-black bg-[#f9f9f9] dark:bg-[#2a2d2d] cursor-pointer hover:bg-[#d2f000] hover:text-black transition-colors font-bold">
+              <label className="flex items-center gap-2 p-3 border-2 border-black dark:border-white/20 bg-[#f9f9f9] dark:bg-[#2a2d2d] text-black dark:text-white cursor-pointer hover:bg-[#d2f000] hover:text-black transition-colors font-bold">
                 <input
                   type="radio"
                   name="target"
@@ -47,7 +47,7 @@ export default function ExportModal({ isOpen, onClose, userId }: ExportModalProp
                 <span>📁 Semua Data (Keuangan & Aktifitas)</span>
               </label>
 
-              <label className="flex items-center gap-2 p-3 border-2 border-black bg-[#f9f9f9] dark:bg-[#2a2d2d] cursor-pointer hover:bg-[#d2f000] hover:text-black transition-colors font-bold">
+              <label className="flex items-center gap-2 p-3 border-2 border-black dark:border-white/20 bg-[#f9f9f9] dark:bg-[#2a2d2d] text-black dark:text-white cursor-pointer hover:bg-[#d2f000] hover:text-black transition-colors font-bold">
                 <input
                   type="radio"
                   name="target"
@@ -58,7 +58,7 @@ export default function ExportModal({ isOpen, onClose, userId }: ExportModalProp
                 <span>💳 Transaksi Keuangan Saja</span>
               </label>
 
-              <label className="flex items-center gap-2 p-3 border-2 border-black bg-[#f9f9f9] dark:bg-[#2a2d2d] cursor-pointer hover:bg-[#d2f000] hover:text-black transition-colors font-bold">
+              <label className="flex items-center gap-2 p-3 border-2 border-black dark:border-white/20 bg-[#f9f9f9] dark:bg-[#2a2d2d] text-black dark:text-white cursor-pointer hover:bg-[#d2f000] hover:text-black transition-colors font-bold">
                 <input
                   type="radio"
                   name="target"
@@ -71,7 +71,7 @@ export default function ExportModal({ isOpen, onClose, userId }: ExportModalProp
             </div>
           </div>
 
-          <div className="p-3 border-2 border-black bg-[#e2e2e2] dark:bg-white/10 opacity-90">
+          <div className="p-3 border-2 border-black dark:border-white/20 bg-[#e2e2e2] dark:bg-white/10 text-black dark:text-white opacity-90">
             <p className="font-bold">Format Output:</p>
             <p className="text-[10px]">File CSV (Excel-Compatible UTF-8 dengan BOM sanitasi quote ganda).</p>
           </div>

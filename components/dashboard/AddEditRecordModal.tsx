@@ -132,12 +132,12 @@ export default function AddEditRecordModal({
         <form onSubmit={handleSubmit} className="flex flex-col gap-3">
           {/* Record Type Selector (Disabled in Edit Mode) */}
           <div>
-            <label className="block font-bold uppercase mb-1">Tipe Data</label>
+            <label className="block font-bold uppercase mb-1 text-black dark:text-white">Tipe Data</label>
             <select
               disabled={isEdit}
               value={recordType}
               onChange={(e) => setRecordType(e.target.value as any)}
-              className="w-full bg-[#f9f9f9] dark:bg-[#2a2d2d] thin-border p-2.5 font-jetbrains text-xs disabled:opacity-60"
+              className="w-full bg-[#f9f9f9] dark:bg-[#2a2d2d] text-black dark:text-white thin-border p-2.5 font-jetbrains text-xs disabled:opacity-60"
             >
               <option value="transaction">Transaksi Keuangan</option>
               <option value="activity">Agenda / Aktivitas</option>
@@ -146,7 +146,7 @@ export default function AddEditRecordModal({
 
           {/* Title or Merchant */}
           <div>
-            <label className="block font-bold uppercase mb-1">
+            <label className="block font-bold uppercase mb-1 text-black dark:text-white">
               {recordType === 'transaction' ? 'Nama Toko / Tempat / Merchant' : 'Judul Agenda / Tugas'}
             </label>
             <input
@@ -155,7 +155,7 @@ export default function AddEditRecordModal({
               placeholder={recordType === 'transaction' ? 'Misal: Superindo, Kopi Janji Jiwa' : 'Misal: Meeting Projek Selesai'}
               value={formData.titleOrMerchant}
               onChange={(e) => setFormData({ ...formData, titleOrMerchant: e.target.value })}
-              className="w-full bg-[#f9f9f9] dark:bg-[#2a2d2d] thin-border p-2.5 font-jetbrains text-xs"
+              className="w-full bg-[#f9f9f9] dark:bg-[#2a2d2d] text-black dark:text-white thin-border p-2.5 font-jetbrains text-xs"
             />
           </div>
 
@@ -163,13 +163,13 @@ export default function AddEditRecordModal({
           {recordType === 'transaction' && (
             <>
               <div>
-                <label className="block font-bold uppercase mb-1">Jenis Transaksi</label>
+                <label className="block font-bold uppercase mb-1 text-black dark:text-white">Jenis Transaksi</label>
                 <div className="grid grid-cols-2 gap-2">
                   <button
                     type="button"
                     onClick={() => setFormData({ ...formData, type: 'expense' })}
                     className={`p-2 border-2 border-black font-bold uppercase ${
-                      formData.type === 'expense' ? 'bg-[#ba1a1a] text-white' : 'bg-[#e2e2e2] text-black'
+                      formData.type === 'expense' ? 'bg-[#ba1a1a] text-white' : 'bg-[#e2e2e2] dark:bg-[#2a2d2d] text-black dark:text-white'
                     }`}
                   >
                     💸 Pengeluaran
@@ -178,7 +178,7 @@ export default function AddEditRecordModal({
                     type="button"
                     onClick={() => setFormData({ ...formData, type: 'income' })}
                     className={`p-2 border-2 border-black font-bold uppercase ${
-                      formData.type === 'income' ? 'bg-[#008080] text-white' : 'bg-[#e2e2e2] text-black'
+                      formData.type === 'income' ? 'bg-[#008080] text-white' : 'bg-[#e2e2e2] dark:bg-[#2a2d2d] text-black dark:text-white'
                     }`}
                   >
                     💰 Pemasukan
@@ -187,7 +187,7 @@ export default function AddEditRecordModal({
               </div>
 
               <div>
-                <label className="block font-bold uppercase mb-1">Nominal (Rp)</label>
+                <label className="block font-bold uppercase mb-1 text-black dark:text-white">Nominal (Rp)</label>
                 <input
                   type="number"
                   required
@@ -195,16 +195,16 @@ export default function AddEditRecordModal({
                   placeholder="50000"
                   value={formData.amount}
                   onChange={(e) => setFormData({ ...formData, amount: e.target.value })}
-                  className="w-full bg-[#f9f9f9] dark:bg-[#2a2d2d] thin-border p-2.5 font-jetbrains text-xs"
+                  className="w-full bg-[#f9f9f9] dark:bg-[#2a2d2d] text-black dark:text-white thin-border p-2.5 font-jetbrains text-xs"
                 />
               </div>
 
               <div>
-                <label className="block font-bold uppercase mb-1">Kategori Transaksi</label>
+                <label className="block font-bold uppercase mb-1 text-black dark:text-white">Kategori Transaksi</label>
                 <select
                   value={formData.category_id}
                   onChange={(e) => setFormData({ ...formData, category_id: e.target.value })}
-                  className="w-full bg-[#f9f9f9] dark:bg-[#2a2d2d] thin-border p-2.5 font-jetbrains text-xs"
+                  className="w-full bg-[#f9f9f9] dark:bg-[#2a2d2d] text-black dark:text-white thin-border p-2.5 font-jetbrains text-xs"
                 >
                   <option value="">-- Pilih Kategori --</option>
                   {categories.map((cat) => (
@@ -221,11 +221,11 @@ export default function AddEditRecordModal({
           {recordType === 'activity' && (
             <>
               <div>
-                <label className="block font-bold uppercase mb-1">Tingkat Prioritas</label>
+                <label className="block font-bold uppercase mb-1 text-black dark:text-white">Tingkat Prioritas</label>
                 <select
                   value={formData.priority}
                   onChange={(e) => setFormData({ ...formData, priority: e.target.value as any })}
-                  className="w-full bg-[#f9f9f9] dark:bg-[#2a2d2d] thin-border p-2.5 font-jetbrains text-xs"
+                  className="w-full bg-[#f9f9f9] dark:bg-[#2a2d2d] text-black dark:text-white thin-border p-2.5 font-jetbrains text-xs"
                 >
                   <option value="low">Low (Rendah)</option>
                   <option value="medium">Medium (Sedang)</option>
@@ -235,11 +235,11 @@ export default function AddEditRecordModal({
               </div>
 
               <div>
-                <label className="block font-bold uppercase mb-1">Status Agenda</label>
+                <label className="block font-bold uppercase mb-1 text-black dark:text-white">Status Agenda</label>
                 <select
                   value={formData.status}
                   onChange={(e) => setFormData({ ...formData, status: e.target.value as any })}
-                  className="w-full bg-[#f9f9f9] dark:bg-[#2a2d2d] thin-border p-2.5 font-jetbrains text-xs"
+                  className="w-full bg-[#f9f9f9] dark:bg-[#2a2d2d] text-black dark:text-white thin-border p-2.5 font-jetbrains text-xs"
                 >
                   <option value="scheduled">Scheduled (Terjadwal)</option>
                   <option value="in_progress">In Progress (Sedang Berjalan)</option>
@@ -252,25 +252,25 @@ export default function AddEditRecordModal({
 
           {/* Date & Time Picker */}
           <div>
-            <label className="block font-bold uppercase mb-1">Waktu Wajib Kejadian</label>
+            <label className="block font-bold uppercase mb-1 text-black dark:text-white">Waktu Wajib Kejadian</label>
             <input
               type="datetime-local"
               required
               value={formData.occurred_at}
               onChange={(e) => setFormData({ ...formData, occurred_at: e.target.value })}
-              className="w-full bg-[#f9f9f9] dark:bg-[#2a2d2d] thin-border p-2.5 font-jetbrains text-xs"
+              className="w-full bg-[#f9f9f9] dark:bg-[#2a2d2d] text-black dark:text-white thin-border p-2.5 font-jetbrains text-xs"
             />
           </div>
 
           {/* Description */}
           <div>
-            <label className="block font-bold uppercase mb-1">Deskripsi Tambahan</label>
+            <label className="block font-bold uppercase mb-1 text-black dark:text-white">Deskripsi Tambahan</label>
             <textarea
               rows={2}
               placeholder="Catatan tambahan..."
               value={formData.description}
               onChange={(e) => setFormData({ ...formData, description: e.target.value })}
-              className="w-full bg-[#f9f9f9] dark:bg-[#2a2d2d] thin-border p-2.5 font-jetbrains text-xs resize-none"
+              className="w-full bg-[#f9f9f9] dark:bg-[#2a2d2d] text-black dark:text-white thin-border p-2.5 font-jetbrains text-xs resize-none"
             />
           </div>
 

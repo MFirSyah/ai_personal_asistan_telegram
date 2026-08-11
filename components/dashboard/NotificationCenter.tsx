@@ -33,9 +33,9 @@ export default function NotificationCenter({
         </div>
 
         <div className="flex flex-col gap-4">
-          <div className="p-4 border-2 border-black bg-[#d2f000]/30 text-black">
+          <div className="p-4 border-2 border-black bg-[#d2f000]/30 text-black dark:text-white">
             <p className="font-bold uppercase text-sm mb-1">☀️ Morning Briefing Hari Ini</p>
-            <p className="text-black/80 mb-3">Briefing pagi yang disusun khusus untukmu telah tersedia.</p>
+            <p className="text-black/80 dark:text-white/80 mb-3">Briefing pagi yang disusun khusus untukmu telah tersedia.</p>
             <button
               onClick={() => {
                 onOpenBriefing();

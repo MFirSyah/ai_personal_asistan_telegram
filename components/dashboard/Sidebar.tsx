@@ -39,7 +39,7 @@ export default function Sidebar({
           className={`flex items-center gap-3 p-3 font-bold text-sm text-left transition-all border-2 cursor-pointer ${
             activeTab === 'analisis'
               ? 'bg-[#d2f000] text-black border-black shadow-[4px_4px_0px_0px_rgba(0,0,0,1)] font-extrabold'
-              : 'text-black/80 dark:text-white/80 hover:bg-[#e2e2e2] dark:hover:bg-white/10 border-transparent hover:border-black'
+              : 'text-black/80 dark:text-white/80 hover:bg-[#e2e2e2] dark:hover:bg-white/10 border-transparent hover:border-black dark:hover:border-white/50'
           }`}
         >
           <span className="material-symbols-outlined">dashboard</span>
@@ -54,7 +54,7 @@ export default function Sidebar({
           className={`flex items-center gap-3 p-3 font-bold text-sm text-left transition-all border-2 cursor-pointer ${
             activeTab === 'edit'
               ? 'bg-[#d2f000] text-black border-black shadow-[4px_4px_0px_0px_rgba(0,0,0,1)] font-extrabold'
-              : 'text-black/80 dark:text-white/80 hover:bg-[#e2e2e2] dark:hover:bg-white/10 border-transparent hover:border-black'
+              : 'text-black/80 dark:text-white/80 hover:bg-[#e2e2e2] dark:hover:bg-white/10 border-transparent hover:border-black dark:hover:border-white/50'
           }`}
         >
           <span className="material-symbols-outlined">payments</span>
@@ -66,7 +66,7 @@ export default function Sidebar({
           className={`flex items-center gap-3 p-3 font-bold text-sm text-left transition-all border-2 cursor-pointer ${
             activeTab === 'anomali'
               ? 'bg-[#d2f000] text-black border-black shadow-[4px_4px_0px_0px_rgba(0,0,0,1)] font-extrabold'
-              : 'text-black/80 dark:text-white/80 hover:bg-[#e2e2e2] dark:hover:bg-white/10 border-transparent hover:border-black'
+              : 'text-black/80 dark:text-white/80 hover:bg-[#e2e2e2] dark:hover:bg-white/10 border-transparent hover:border-black dark:hover:border-white/50'
           }`}
         >
           <span className="material-symbols-outlined">warning</span>
@@ -75,7 +75,7 @@ export default function Sidebar({
 
         <Link
           href="/dashboard/settings"
-          className="flex items-center gap-3 p-3 font-bold text-sm text-left transition-all border-2 border-transparent hover:border-black text-black/80 dark:text-white/80 hover:bg-[#e2e2e2] dark:hover:bg-white/10"
+          className="flex items-center gap-3 p-3 font-bold text-sm text-left transition-all border-2 border-transparent hover:border-black dark:hover:border-white/50 text-black/80 dark:text-white/80 hover:bg-[#e2e2e2] dark:hover:bg-white/10"
         >
           <span className="material-symbols-outlined">settings</span>
           <span>Pengaturan</span>

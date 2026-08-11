@@ -79,24 +79,24 @@ export default function SettingsPage() {
         )}
 
         {/* Form Settings */}
-        <form onSubmit={handleSaveSettings} className="brutal-card p-6 space-y-4 font-jetbrains text-xs">
-          <h2 className="font-bold text-base uppercase border-b-2 border-black pb-2 text-[#008080]">
+        <form onSubmit={handleSaveSettings} className="brutal-card p-6 space-y-4 font-jetbrains text-xs bg-white dark:bg-[#1a1c1c] text-black dark:text-white">
+          <h2 className="font-bold text-base uppercase border-b-2 border-black pb-2 text-[#008080] dark:text-[#20b2aa]">
             1. Profil & Panggilan AI
           </h2>
 
           <div>
-            <label className="block font-bold uppercase mb-1">Nama Panggilan Kamu</label>
+            <label className="block font-bold uppercase mb-1 text-black dark:text-white">Nama Panggilan Kamu</label>
             <input
               type="text"
               placeholder="Misal: Firman"
               value={userName}
               onChange={(e) => setUserName(e.target.value)}
-              className="w-full bg-[#f9f9f9] dark:bg-[#2a2d2d] thin-border p-3 text-xs"
+              className="w-full bg-[#f9f9f9] dark:bg-[#2a2d2d] text-black dark:text-white thin-border p-3 text-xs"
             />
           </div>
 
           <div className="pt-4 border-t-2 border-black">
-            <h2 className="font-bold text-base uppercase border-b-2 border-black pb-2 text-[#536000] mb-3">
+            <h2 className="font-bold text-base uppercase border-b-2 border-black pb-2 text-[#536000] dark:text-[#d2f000] mb-3">
               2. Jadwal Morning Briefing Harian
             </h2>
 
@@ -108,18 +108,18 @@ export default function SettingsPage() {
                 onChange={(e) => setBriefingEnabled(e.target.checked)}
                 className="w-4 h-4"
               />
-              <label htmlFor="briefing-toggle" className="font-bold uppercase cursor-pointer">
+              <label htmlFor="briefing-toggle" className="font-bold uppercase cursor-pointer text-black dark:text-white">
                 Aktifkan Morning Briefing Pagi
               </label>
             </div>
 
             <div>
-              <label className="block font-bold uppercase mb-1">Waktu Pelaksanaan Briefing (WIB)</label>
+              <label className="block font-bold uppercase mb-1 text-black dark:text-white">Waktu Pelaksanaan Briefing (WIB)</label>
               <input
                 type="time"
                 value={briefingTime}
                 onChange={(e) => setBriefingTime(e.target.value)}
-                className="w-full bg-[#f9f9f9] dark:bg-[#2a2d2d] thin-border p-3 text-xs"
+                className="w-full bg-[#f9f9f9] dark:bg-[#2a2d2d] text-black dark:text-white thin-border p-3 text-xs"
               />
             </div>
           </div>
@@ -129,7 +129,7 @@ export default function SettingsPage() {
               3. Status Sesi & Integrasi
             </h2>
 
-            <div className="p-3 bg-[#e2e2e2] dark:bg-white/10 border-2 border-black space-y-1">
+            <div className="p-3 bg-[#e2e2e2] dark:bg-white/10 border-2 border-black space-y-1 text-black dark:text-white">
               <p><strong>User ID:</strong> {userId || 'Tidak Terhubung'}</p>
               <p><strong>Telegram ID:</strong> {telegramId || 'Tidak Terhubung'}</p>
             </div>

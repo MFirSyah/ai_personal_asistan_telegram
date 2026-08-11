@@ -73,14 +73,14 @@ export default function CommandPalette({
 
         {/* Live Search Input */}
         <div className="relative mb-4">
-          <span className="material-symbols-outlined absolute left-3 top-1/2 -translate-y-1/2">search</span>
+          <span className="material-symbols-outlined absolute left-3 top-1/2 -translate-y-1/2 text-black/60 dark:text-white/60">search</span>
           <input
             type="text"
             autoFocus
             placeholder="Cari transaksi, agenda, atau ketik perintah..."
             value={query}
             onChange={(e) => setQuery(e.target.value)}
-            className="w-full bg-[#f9f9f9] dark:bg-[#2a2d2d] thin-border p-3 pl-10 font-jetbrains text-xs focus:outline-none focus:border-[#008080]"
+            className="w-full bg-[#f9f9f9] dark:bg-[#2a2d2d] text-black dark:text-white thin-border p-3 pl-10 font-jetbrains text-xs focus:outline-none focus:border-[#008080]"
           />
         </div>
 
@@ -89,7 +89,7 @@ export default function CommandPalette({
           <div className="flex flex-col gap-2 font-jetbrains text-xs max-h-60 overflow-y-auto mb-4">
             <p className="font-bold uppercase text-black/60 dark:text-white/60 text-[10px]">Hasil Pencarian Data ({searchResults.length}):</p>
             {searchResults.length === 0 ? (
-              <p className="p-3 text-black/50 italic border-2 border-dashed border-black">Tidak ada data ditemukan untuk &quot;{query}&quot;</p>
+              <p className="p-3 text-black/70 dark:text-white/70 italic border-2 border-dashed border-black dark:border-white/20">Tidak ada data ditemukan untuk &quot;{query}&quot;</p>
             ) : (
               searchResults.map((item) => (
                 <button
@@ -98,7 +98,7 @@ export default function CommandPalette({
                     onSelectRecord(item);
                     onClose();
                   }}
-                  className="p-2.5 text-left border-2 border-black hover:bg-[#d2f000] hover:text-black font-bold flex justify-between items-center transition-colors cursor-pointer"
+                  className="p-2.5 text-left border-2 border-black dark:border-white/20 hover:bg-[#d2f000] hover:text-black font-bold flex justify-between items-center transition-colors cursor-pointer text-black dark:text-white"
                 >
                   <span className="truncate">
                     {item._kind === 'transaction'
@@ -121,7 +121,7 @@ export default function CommandPalette({
                 onNavigateTab('analisis');
                 onClose();
               }}
-              className="p-2.5 text-left border-2 border-black hover:bg-[#d2f000] hover:text-black font-bold flex justify-between items-center transition-colors cursor-pointer"
+              className="p-2.5 text-left border-2 border-black dark:border-white/20 hover:bg-[#d2f000] hover:text-black text-black dark:text-white font-bold flex justify-between items-center transition-colors cursor-pointer"
             >
               <span>📊 Buka Dashboard Overview Analisis</span>
               <span>[Tab Analisis]</span>
@@ -132,7 +132,7 @@ export default function CommandPalette({
                 onNavigateTab('edit');
                 onClose();
               }}
-              className="p-2.5 text-left border-2 border-black hover:bg-[#d2f000] hover:text-black font-bold flex justify-between items-center transition-colors cursor-pointer"
+              className="p-2.5 text-left border-2 border-black dark:border-white/20 hover:bg-[#d2f000] hover:text-black text-black dark:text-white font-bold flex justify-between items-center transition-colors cursor-pointer"
             >
               <span>💳 Kelola Data Keuangan & Aktivitas</span>
               <span>[Tab Edit]</span>
@@ -143,7 +143,7 @@ export default function CommandPalette({
                 onNavigateTab('anomali');
                 onClose();
               }}
-              className="p-2.5 text-left border-2 border-black hover:bg-[#d2f000] hover:text-black font-bold flex justify-between items-center transition-colors cursor-pointer"
+              className="p-2.5 text-left border-2 border-black dark:border-white/20 hover:bg-[#d2f000] hover:text-black text-black dark:text-white font-bold flex justify-between items-center transition-colors cursor-pointer"
             >
               <span>⚠️ Lihat Anomali & Peringatan Waktu</span>
               <span>[Tab Anomali]</span>
@@ -154,7 +154,7 @@ export default function CommandPalette({
                 onOpenAddModal();
                 onClose();
               }}
-              className="p-2.5 text-left border-2 border-black hover:bg-[#008080] hover:text-white font-bold flex justify-between items-center transition-colors cursor-pointer"
+              className="p-2.5 text-left border-2 border-black dark:border-white/20 hover:bg-[#008080] hover:text-white text-black dark:text-white font-bold flex justify-between items-center transition-colors cursor-pointer"
             >
               <span>➕ Tambah Transaksi / Agenda Baru</span>
               <span>[Quick Add]</span>
@@ -165,7 +165,7 @@ export default function CommandPalette({
                 onOpenExportModal();
                 onClose();
               }}
-              className="p-2.5 text-left border-2 border-black hover:bg-[#008080] hover:text-white font-bold flex justify-between items-center transition-colors cursor-pointer"
+              className="p-2.5 text-left border-2 border-black dark:border-white/20 hover:bg-[#008080] hover:text-white text-black dark:text-white font-bold flex justify-between items-center transition-colors cursor-pointer"
             >
               <span>📥 Export File CSV / Laporan Keuangan</span>
               <span>[Export Data]</span>

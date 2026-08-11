@@ -268,7 +268,7 @@ export default function AnalyticsView({
               </button>
             </div>
 
-            <div className="p-6 flex flex-col gap-6 flex-grow">
+            <div className="p-6 flex flex-col gap-6 flex-grow text-black dark:text-white">
               <div className="flex items-center justify-between bg-black text-[#d2f000] p-4 border-2 border-black">
                 <span className="font-black text-3xl">{completedActsCount}/{totalActsCount}</span>
                 <span className="font-jetbrains text-xs uppercase font-bold">Aktivitas Selesai</span>
@@ -296,7 +296,7 @@ export default function AnalyticsView({
               </div>
 
               <div className="mt-auto">
-                <h3 className="font-jetbrains text-xs uppercase mb-3 border-b-2 border-black pb-1 font-bold">
+                <h3 className="font-jetbrains text-xs uppercase mb-3 border-b-2 border-black pb-1 font-bold text-black dark:text-white">
                   Agenda Terjadwal:
                 </h3>
                 <ul className="flex flex-col gap-2 font-jetbrains text-xs">
@@ -304,9 +304,9 @@ export default function AnalyticsView({
                     <li
                       key={act.id}
                       onClick={() => onQuickView(act)}
-                      className="flex items-center gap-2 p-2 border-2 border-black bg-white dark:bg-[#1a1c1c] hover:translate-x-1 transition-all cursor-pointer"
+                      className="flex items-center gap-2 p-2 border-2 border-black bg-white dark:bg-[#1a1c1c] text-black dark:text-white hover:translate-x-1 transition-all cursor-pointer"
                     >
-                      <div className={`w-4 h-4 border-2 border-black ${act.status === 'completed' ? 'bg-[#d2f000]' : 'bg-white'}`}></div>
+                      <div className={`w-4 h-4 border-2 border-black ${act.status === 'completed' ? 'bg-[#d2f000]' : 'bg-white dark:bg-black'}`}></div>
                       <span className={act.status === 'completed' ? 'line-through opacity-60' : ''}>{act.title}</span>
                     </li>
                   ))}
@@ -319,7 +319,7 @@ export default function AnalyticsView({
 
       {/* 20 ANALYTICS CARDS GRID with Chart Variations (D-09) */}
       <div className="mt-8 border-t-4 border-black pt-8">
-        <h2 className="font-black text-2xl md:text-3xl uppercase tracking-tight mb-6 flex items-center gap-2">
+        <h2 className="font-black text-2xl md:text-3xl uppercase tracking-tight mb-6 flex items-center gap-2 text-black dark:text-white">
           <span className="material-symbols-outlined text-3xl">analytics</span>
           <span>20 Model Analisis Real-Time</span>
         </h2>
@@ -330,10 +330,6 @@ export default function AnalyticsView({
             const hasInsightText = Boolean(item.insight && String(item.insight).trim().length > 0);
 
             // Chart Type Variation Logic (D-09)
-            // PieChart for categories/breakdown (#5, #7)
-            // LineChart for trend/history (#4, #12)
-            // AreaChart for cashflow/projections (#11, #16)
-            // BarChart for default
             const chartType =
               item.id === 5 || item.id === 7 || item.id === 14
                 ? 'pie'
@@ -344,18 +340,18 @@ export default function AnalyticsView({
                 : 'bar';
 
             return (
-              <div key={item.id} className="brutal-card flex flex-col justify-between p-5 relative">
+              <div key={item.id} className="brutal-card flex flex-col justify-between p-5 relative bg-white dark:bg-[#1a1c1c] text-black dark:text-white">
                 <div>
                   <div className="flex justify-between items-start mb-3 border-b-2 border-black pb-2">
                     <span className="font-jetbrains text-xs bg-black text-white px-2 py-1 font-bold">
                       #{String(item.id).padStart(2, '0')}
                     </span>
-                    <span className="font-jetbrains text-xs uppercase font-bold text-[#008080]">
+                    <span className="font-jetbrains text-xs uppercase font-bold text-[#008080] dark:text-[#20b2aa]">
                       {item.category}
                     </span>
                   </div>
 
-                  <h3 className="font-bold text-lg mb-2">{item.title}</h3>
+                  <h3 className="font-bold text-lg mb-2 text-black dark:text-white">{item.title}</h3>
 
                   {hasInsightText ? (
                     <p className="font-jetbrains text-xs text-black/90 dark:text-white/90 mb-4">{item.insight}</p>
@@ -368,7 +364,7 @@ export default function AnalyticsView({
                         Model ini menganalisis tren, distribusi, serta kebiasaan {item.category === 'reflection' ? 'keuangan' : 'aktivitas'} kamu.
                       </p>
                       <div className="border-t border-black/30 pt-2">
-                        <p className="font-bold text-[#008080]">
+                        <p className="font-bold text-[#008080] dark:text-[#20b2aa]">
                           📊 Target Minimal Data: Butuh minimal 3 catatan untuk mengaktifkan grafik ini.
                         </p>
                       </div>
@@ -378,7 +374,7 @@ export default function AnalyticsView({
 
                 {/* Chart Display Variations (D-09) */}
                 {hasValidChartData ? (
-                  <div className="h-40 w-full mt-2 border-2 border-black bg-white dark:bg-[#1a1c1c] p-2">
+                  <div className="h-40 w-full mt-2 border-2 border-black bg-white dark:bg-[#2a2d2d] p-2">
                     <ResponsiveContainer width="100%" height="100%">
                       {chartType === 'pie' ? (
                         <PieChart>
@@ -394,27 +390,27 @@ export default function AnalyticsView({
                               <Cell key={`cell-${index}`} fill={PIE_COLORS[index % PIE_COLORS.length]} />
                             ))}
                           </Pie>
-                          <Tooltip contentStyle={{ background: '#fff', border: '2px solid #000', color: '#000' }} />
+                          <Tooltip contentStyle={{ background: '#333', border: '2px solid #000', color: '#fff' }} />
                         </PieChart>
                       ) : chartType === 'line' ? (
                         <LineChart data={item.chartData}>
-                          <XAxis dataKey="name" stroke="#000" fontSize={10} />
-                          <YAxis stroke="#000" fontSize={10} />
-                          <Tooltip contentStyle={{ background: '#fff', border: '2px solid #000', color: '#000' }} />
+                          <XAxis dataKey="name" stroke="#888888" fontSize={10} />
+                          <YAxis stroke="#888888" fontSize={10} />
+                          <Tooltip contentStyle={{ background: '#333', border: '2px solid #000', color: '#fff' }} />
                           <Line type="monotone" dataKey="value" stroke="#008080" strokeWidth={3} />
                         </LineChart>
                       ) : chartType === 'area' ? (
                         <AreaChart data={item.chartData}>
-                          <XAxis dataKey="name" stroke="#000" fontSize={10} />
-                          <YAxis stroke="#000" fontSize={10} />
-                          <Tooltip contentStyle={{ background: '#fff', border: '2px solid #000', color: '#000' }} />
+                          <XAxis dataKey="name" stroke="#888888" fontSize={10} />
+                          <YAxis stroke="#888888" fontSize={10} />
+                          <Tooltip contentStyle={{ background: '#333', border: '2px solid #000', color: '#fff' }} />
                           <Area type="monotone" dataKey="value" stroke="#536000" fill="#d2f000" />
                         </AreaChart>
                       ) : (
                         <BarChart data={item.chartData}>
-                          <XAxis dataKey="name" stroke="#000" fontSize={10} />
-                          <YAxis stroke="#000" fontSize={10} />
-                          <Tooltip contentStyle={{ background: '#fff', border: '2px solid #000', color: '#000' }} />
+                          <XAxis dataKey="name" stroke="#888888" fontSize={10} />
+                          <YAxis stroke="#888888" fontSize={10} />
+                          <Tooltip contentStyle={{ background: '#333', border: '2px solid #000', color: '#fff' }} />
                           <Bar dataKey="value" fill="#008080" />
                         </BarChart>
                       )}
@@ -423,7 +419,7 @@ export default function AnalyticsView({
                 ) : (
                   <button
                     onClick={onOpenAddModal}
-                    className="mt-2 w-full bg-[#d2f000] border-2 border-black hover:bg-black hover:text-white p-2 text-xs font-bold font-jetbrains uppercase transition-all cursor-pointer"
+                    className="mt-2 w-full bg-[#d2f000] text-black border-2 border-black hover:bg-black hover:text-white p-2 text-xs font-bold font-jetbrains uppercase transition-all cursor-pointer"
                   >
                     ⚡ ➕ Tambah Data Baru
                   </button>
@@ -431,7 +427,7 @@ export default function AnalyticsView({
 
                 <button
                   onClick={() => onQuickView(item)}
-                  className="mt-3 w-full bg-[#f9f9f9] dark:bg-[#2a2d2d] border-2 border-black hover:bg-[#008080] hover:text-white p-2 text-xs font-bold font-jetbrains uppercase transition-all cursor-pointer"
+                  className="mt-3 w-full bg-[#f9f9f9] dark:bg-[#2a2d2d] text-black dark:text-white border-2 border-black hover:bg-[#008080] hover:text-white p-2 text-xs font-bold font-jetbrains uppercase transition-all cursor-pointer"
                 >
                   👁️ Detail Model #{item.id}
                 </button>

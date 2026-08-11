@@ -205,9 +205,9 @@ export default function EditDataView({
       <div className="bg-white dark:bg-[#1a1c1c] p-4 brutalist-border brutalist-shadow flex flex-col md:flex-row gap-4 items-end">
         {/* Search */}
         <div className="flex-1 w-full">
-          <label className="block font-jetbrains text-xs uppercase mb-1 font-bold">Cari Data</label>
+          <label className="block font-jetbrains text-xs uppercase mb-1 font-bold text-black dark:text-white">Cari Data</label>
           <div className="relative">
-            <span className="material-symbols-outlined absolute left-3 top-1/2 -translate-y-1/2 text-sm">search</span>
+            <span className="material-symbols-outlined absolute left-3 top-1/2 -translate-y-1/2 text-sm text-black/60 dark:text-white/60">search</span>
             <input
               type="text"
               placeholder="Cari ID, Deskripsi, Toko, atau Nominal..."
@@ -216,21 +216,21 @@ export default function EditDataView({
                 setFilter({ ...filter, query: e.target.value });
                 setCurrentPage(1);
               }}
-              className="w-full bg-[#f9f9f9] dark:bg-[#2a2d2d] thin-border p-2.5 pl-9 font-jetbrains text-xs focus:outline-none focus:border-[#008080]"
+              className="w-full bg-[#f9f9f9] dark:bg-[#2a2d2d] text-black dark:text-white thin-border p-2.5 pl-9 font-jetbrains text-xs focus:outline-none focus:border-[#008080]"
             />
           </div>
         </div>
 
         {/* Date Range Filter (D-04) */}
         <div className="w-full md:w-48">
-          <label className="block font-jetbrains text-xs uppercase mb-1 font-bold">Rentang Waktu</label>
+          <label className="block font-jetbrains text-xs uppercase mb-1 font-bold text-black dark:text-white">Rentang Waktu</label>
           <select
             value={filter.dateRange}
             onChange={(e) => {
               setFilter({ ...filter, dateRange: e.target.value as any });
               setCurrentPage(1);
             }}
-            className="w-full bg-[#f9f9f9] dark:bg-[#2a2d2d] thin-border p-2.5 font-jetbrains text-xs appearance-none focus:outline-none focus:border-[#008080]"
+            className="w-full bg-[#f9f9f9] dark:bg-[#2a2d2d] text-black dark:text-white thin-border p-2.5 font-jetbrains text-xs appearance-none focus:outline-none focus:border-[#008080]"
           >
             <option value="all">Semua Waktu</option>
             <option value="today">Hari Ini</option>
@@ -243,14 +243,14 @@ export default function EditDataView({
         {/* Category Filter for Transactions */}
         {editSubTab === 'keuangan' && (
           <div className="w-full md:w-40">
-            <label className="block font-jetbrains text-xs uppercase mb-1 font-bold">Tipe Transaksi</label>
+            <label className="block font-jetbrains text-xs uppercase mb-1 font-bold text-black dark:text-white">Tipe Transaksi</label>
             <select
               value={filter.category}
               onChange={(e) => {
                 setFilter({ ...filter, category: e.target.value });
                 setCurrentPage(1);
               }}
-              className="w-full bg-[#f9f9f9] dark:bg-[#2a2d2d] thin-border p-2.5 font-jetbrains text-xs appearance-none focus:outline-none focus:border-[#008080]"
+              className="w-full bg-[#f9f9f9] dark:bg-[#2a2d2d] text-black dark:text-white thin-border p-2.5 font-jetbrains text-xs appearance-none focus:outline-none focus:border-[#008080]"
             >
               <option value="all">Semua Kategori</option>
               <option value="expense">Pengeluaran</option>
@@ -274,7 +274,7 @@ export default function EditDataView({
           <div className="hidden md:block overflow-x-auto">
             <table className="w-full text-left border-collapse min-w-[800px]">
               <thead>
-                <tr className="bg-[#e2e2e2] dark:bg-[#2a2d2d] font-bold text-xs uppercase">
+                <tr className="bg-[#e2e2e2] dark:bg-[#2a2d2d] text-black dark:text-white font-bold text-xs uppercase">
                   <th className="p-3 cell-border border-b-4 border-black w-32">Short ID</th>
                   <th
                     onClick={() => handleSort('occurred_at')}
@@ -298,7 +298,7 @@ export default function EditDataView({
                   <th className="p-3 cell-border border-b-4 border-black w-36 text-center">Aksi</th>
                 </tr>
               </thead>
-              <tbody className="font-jetbrains text-xs">
+              <tbody className="font-jetbrains text-xs text-black dark:text-white">
                 {paginatedList.length === 0 ? (
                   <tr>
                     <td colSpan={6} className="p-8 text-center font-bold uppercase text-black/60 dark:text-white/60">
@@ -307,7 +307,7 @@ export default function EditDataView({
                   </tr>
                 ) : (
                   (paginatedList as Transaction[]).map((t) => (
-                    <tr key={t.id} className="hover:bg-[#008080]/5 transition-colors">
+                    <tr key={t.id} className="hover:bg-[#008080]/10 transition-colors">
                       <td className="p-3 cell-border font-bold">
                         <span className="bg-black text-[#d2f000] px-2 py-0.5 border border-black font-mono text-[11px]">
                           {t.short_id || `TX-${t.id?.replace(/-/g, '').substring(0, 6).toUpperCase()}`}
@@ -320,18 +320,18 @@ export default function EditDataView({
                         {t.merchant || t.description || 'Transaksi'}
                       </td>
                       <td className="p-3 cell-border">
-                        <span className="bg-[#e2e2e2] dark:bg-white/20 px-2 py-0.5 border border-black text-[10px] font-bold uppercase">
+                        <span className="bg-[#e2e2e2] dark:bg-white/20 text-black dark:text-white px-2 py-0.5 border border-black text-[10px] font-bold uppercase">
                           {t.category_id ? categoryMap.get(t.category_id) || t.type : t.type}
                         </span>
                       </td>
-                      <td className={`p-3 cell-border text-right font-bold text-sm ${t.type === 'income' ? 'text-[#008080]' : 'text-[#ba1a1a]'}`}>
+                      <td className={`p-3 cell-border text-right font-bold text-sm ${t.type === 'income' ? 'text-[#008080] dark:text-[#20b2aa]' : 'text-[#ba1a1a] dark:text-[#ff6b6b]'}`}>
                         {t.type === 'income' ? '+' : '-'}Rp {Number(t.amount).toLocaleString('id-ID')}
                       </td>
                       <td className="p-3 cell-border text-center">
                         <div className="flex justify-center gap-2">
                           <button
                             onClick={() => onOpenEditModal(t, 'transaction')}
-                            className="p-1.5 border-2 border-black bg-white hover:bg-[#d2f000] text-black transition-all cursor-pointer"
+                            className="p-1.5 border-2 border-black bg-white dark:bg-black hover:bg-[#d2f000] hover:text-black text-black dark:text-white transition-all cursor-pointer"
                             title="Edit Record"
                             aria-label="Edit Transaksi"
                           >
@@ -339,7 +339,7 @@ export default function EditDataView({
                           </button>
                           <button
                             onClick={() => onDeleteRecord(t.id, 'transaction')}
-                            className="p-1.5 border-2 border-black bg-white hover:bg-[#ba1a1a] hover:text-white transition-all cursor-pointer"
+                            className="p-1.5 border-2 border-black bg-white dark:bg-black hover:bg-[#ba1a1a] hover:text-white text-black dark:text-white transition-all cursor-pointer"
                             title="Hapus Record"
                             aria-label="Hapus Transaksi"
                           >
@@ -355,7 +355,7 @@ export default function EditDataView({
           </div>
 
           {/* Mobile Card List View */}
-          <div className="block md:hidden p-4 space-y-3 font-jetbrains text-xs">
+          <div className="block md:hidden p-4 space-y-3 font-jetbrains text-xs text-black dark:text-white">
             {paginatedList.length === 0 ? (
               <p className="text-center font-bold p-4">Tidak ada catatan transaksi.</p>
             ) : (
@@ -369,19 +369,19 @@ export default function EditDataView({
                   </div>
                   <p className="font-bold text-sm">{t.merchant || t.description || 'Transaksi'}</p>
                   <div className="flex justify-between items-center pt-1">
-                    <span className={`font-black text-sm ${t.type === 'income' ? 'text-[#008080]' : 'text-[#ba1a1a]'}`}>
+                    <span className={`font-black text-sm ${t.type === 'income' ? 'text-[#008080] dark:text-[#20b2aa]' : 'text-[#ba1a1a] dark:text-[#ff6b6b]'}`}>
                       {t.type === 'income' ? '+' : '-'}Rp {Number(t.amount).toLocaleString('id-ID')}
                     </span>
                     <div className="flex gap-2">
                       <button
                         onClick={() => onOpenEditModal(t, 'transaction')}
-                        className="p-1 border-2 border-black bg-white hover:bg-[#d2f000] text-black"
+                        className="p-1 border-2 border-black bg-white dark:bg-black hover:bg-[#d2f000] text-black dark:text-white hover:text-black"
                       >
                         <span className="material-symbols-outlined text-sm">edit</span>
                       </button>
                       <button
                         onClick={() => onDeleteRecord(t.id, 'transaction')}
-                        className="p-1 border-2 border-black bg-white hover:bg-[#ba1a1a] hover:text-white"
+                        className="p-1 border-2 border-black bg-white dark:bg-black hover:bg-[#ba1a1a] text-black dark:text-white hover:text-white"
                       >
                         <span className="material-symbols-outlined text-sm">delete</span>
                       </button>
@@ -405,7 +405,7 @@ export default function EditDataView({
           <div className="hidden md:block overflow-x-auto">
             <table className="w-full text-left border-collapse min-w-[800px]">
               <thead>
-                <tr className="bg-[#e2e2e2] dark:bg-[#2a2d2d] font-bold text-xs uppercase">
+                <tr className="bg-[#e2e2e2] dark:bg-[#2a2d2d] text-black dark:text-white font-bold text-xs uppercase">
                   <th className="p-3 cell-border border-b-4 border-black w-32">Short ID</th>
                   <th
                     onClick={() => handleSort('occurred_at')}
@@ -434,7 +434,7 @@ export default function EditDataView({
                   <th className="p-3 cell-border border-b-4 border-black w-36 text-center">Aksi</th>
                 </tr>
               </thead>
-              <tbody className="font-jetbrains text-xs">
+              <tbody className="font-jetbrains text-xs text-black dark:text-white">
                 {paginatedList.length === 0 ? (
                   <tr>
                     <td colSpan={6} className="p-8 text-center font-bold uppercase text-black/60 dark:text-white/60">
@@ -443,7 +443,7 @@ export default function EditDataView({
                   </tr>
                 ) : (
                   (paginatedList as Activity[]).map((a) => (
-                    <tr key={a.id} className="hover:bg-[#536000]/5 transition-colors">
+                    <tr key={a.id} className="hover:bg-[#536000]/10 transition-colors">
                       <td className="p-3 cell-border font-bold">
                         <span className="bg-black text-[#d2f000] px-2 py-0.5 border border-black font-mono text-[11px]">
                           {a.short_id || `ACT-${a.id?.replace(/-/g, '').substring(0, 6).toUpperCase()}`}
@@ -460,7 +460,7 @@ export default function EditDataView({
                               ? 'bg-[#ba1a1a] text-white'
                               : a.priority === 'high'
                               ? 'bg-[#ff8c00] text-white'
-                              : 'bg-[#e2e2e2] dark:bg-white/20'
+                              : 'bg-[#e2e2e2] dark:bg-white/20 text-black dark:text-white'
                           }`}
                         >
                           {a.priority || 'medium'}
@@ -469,7 +469,7 @@ export default function EditDataView({
                       <td className="p-3 cell-border">
                         <span
                           className={`px-2 py-0.5 border border-black text-[10px] font-bold uppercase ${
-                            a.status === 'completed' ? 'bg-[#d2f000] text-black' : 'bg-[#e2e2e2] dark:bg-white/20'
+                            a.status === 'completed' ? 'bg-[#d2f000] text-black' : 'bg-[#e2e2e2] dark:bg-white/20 text-black dark:text-white'
                           }`}
                         >
                           {a.status || 'scheduled'}
@@ -479,7 +479,7 @@ export default function EditDataView({
                         <div className="flex justify-center gap-2">
                           <button
                             onClick={() => onOpenEditModal(a, 'activity')}
-                            className="p-1.5 border-2 border-black bg-white hover:bg-[#d2f000] text-black transition-all cursor-pointer"
+                            className="p-1.5 border-2 border-black bg-white dark:bg-black hover:bg-[#d2f000] text-black dark:text-white hover:text-black transition-all cursor-pointer"
                             title="Edit Record"
                             aria-label="Edit Aktivitas"
                           >
@@ -487,7 +487,7 @@ export default function EditDataView({
                           </button>
                           <button
                             onClick={() => onDeleteRecord(a.id, 'activity')}
-                            className="p-1.5 border-2 border-black bg-white hover:bg-[#ba1a1a] hover:text-white transition-all cursor-pointer"
+                            className="p-1.5 border-2 border-black bg-white dark:bg-black hover:bg-[#ba1a1a] text-black dark:text-white hover:text-white transition-all cursor-pointer"
                             title="Hapus Record"
                             aria-label="Hapus Aktivitas"
                           >
@@ -502,7 +502,7 @@ export default function EditDataView({
             </table>
           </div>
 
-          <div className="block md:hidden p-4 space-y-3 font-jetbrains text-xs">
+          <div className="block md:hidden p-4 space-y-3 font-jetbrains text-xs text-black dark:text-white">
             {paginatedList.length === 0 ? (
               <p className="text-center font-bold p-4">Tidak ada catatan aktivitas.</p>
             ) : (
@@ -516,19 +516,19 @@ export default function EditDataView({
                   </div>
                   <p className="font-bold text-sm">{a.title}</p>
                   <div className="flex justify-between items-center pt-1">
-                    <span className={`px-2 py-0.5 border border-black font-bold uppercase ${a.status === 'completed' ? 'bg-[#d2f000]' : 'bg-[#e2e2e2]'}`}>
+                    <span className={`px-2 py-0.5 border border-black font-bold uppercase ${a.status === 'completed' ? 'bg-[#d2f000] text-black' : 'bg-[#e2e2e2] dark:bg-white/20 text-black dark:text-white'}`}>
                       {a.status || 'scheduled'}
                     </span>
                     <div className="flex gap-2">
                       <button
                         onClick={() => onOpenEditModal(a, 'activity')}
-                        className="p-1 border-2 border-black bg-white hover:bg-[#d2f000] text-black"
+                        className="p-1 border-2 border-black bg-white dark:bg-black hover:bg-[#d2f000] text-black dark:text-white hover:text-black"
                       >
                         <span className="material-symbols-outlined text-sm">edit</span>
                       </button>
                       <button
                         onClick={() => onDeleteRecord(a.id, 'activity')}
-                        className="p-1 border-2 border-black bg-white hover:bg-[#ba1a1a] hover:text-white"
+                        className="p-1 border-2 border-black bg-white dark:bg-black hover:bg-[#ba1a1a] text-black dark:text-white hover:text-white"
                       >
                         <span className="material-symbols-outlined text-sm">delete</span>
                       </button>
@@ -543,11 +543,11 @@ export default function EditDataView({
 
       {/* Pagination Controls (D-02) */}
       {totalPages > 1 && (
-        <div className="flex justify-between items-center bg-white dark:bg-[#1a1c1c] p-4 brutalist-border font-jetbrains text-xs">
+        <div className="flex justify-between items-center bg-white dark:bg-[#1a1c1c] p-4 brutalist-border font-jetbrains text-xs text-black dark:text-white">
           <button
             disabled={currentPage === 1}
             onClick={() => setCurrentPage((p) => Math.max(1, p - 1))}
-            className="px-4 py-2 border-2 border-black bg-[#f9f9f9] dark:bg-[#2a2d2d] font-bold uppercase disabled:opacity-40 hover:bg-[#008080] hover:text-white transition-all cursor-pointer"
+            className="px-4 py-2 border-2 border-black bg-[#f9f9f9] dark:bg-[#2a2d2d] text-black dark:text-white font-bold uppercase disabled:opacity-40 hover:bg-[#008080] hover:text-white transition-all cursor-pointer"
           >
             ← Sebelumnya
           </button>
@@ -559,7 +559,7 @@ export default function EditDataView({
           <button
             disabled={currentPage === totalPages}
             onClick={() => setCurrentPage((p) => Math.min(totalPages, p + 1))}
-            className="px-4 py-2 border-2 border-black bg-[#f9f9f9] dark:bg-[#2a2d2d] font-bold uppercase disabled:opacity-40 hover:bg-[#008080] hover:text-white transition-all cursor-pointer"
+            className="px-4 py-2 border-2 border-black bg-[#f9f9f9] dark:bg-[#2a2d2d] text-black dark:text-white font-bold uppercase disabled:opacity-40 hover:bg-[#008080] hover:text-white transition-all cursor-pointer"
           >
             Selanjutnya →
           </button>
