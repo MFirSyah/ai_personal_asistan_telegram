@@ -60,7 +60,8 @@ Format JSON:
     );
     console.log(`[OCR Receipt] Processed successfully using model: ${usedModel}`);
 
-    const parsed = JSON.parse(response.text || '{}');
+    const rawText = (response.text || '').replace(/```json/gi, '').replace(/```/g, '').trim();
+    const parsed = JSON.parse(rawText || '{}');
 
     const items: ReceiptItem[] = Array.isArray(parsed.items) ? parsed.items : [];
     const calculatedSum = items.reduce((acc, item) => acc + (Number(item.price) || 0), 0);

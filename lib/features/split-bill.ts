@@ -45,11 +45,11 @@ export function calculateSplitBill(input: SplitBillInput): SplitBillResult {
     input.people.forEach((p) => {
       perPerson[p] = Math.round((perPerson[p] || 0) * multiplier);
     });
-  } else {
-    // Equal split calculation
-    const equalShare = Math.round(grandTotal / peopleCount);
-    input.people.forEach((p) => {
-      perPerson[p] = equalShare;
+    // Equal split calculation with exact Rupiah remainder balancing
+    const equalShare = Math.floor(grandTotal / peopleCount);
+    const remainder = grandTotal - equalShare * peopleCount;
+    input.people.forEach((p, idx) => {
+      perPerson[p] = equalShare + (idx === 0 ? remainder : 0);
     });
   }
 

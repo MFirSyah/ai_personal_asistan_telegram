@@ -28,7 +28,12 @@ export async function POST(req: NextRequest) {
       );
     }
 
-    return NextResponse.json({ ok: true, user: existingUser });
+    const sanitizedUser = {
+      ...existingUser,
+      name: existingUser.name ? existingUser.name.trim().replace(/^["']|["']$/g, '') : existingUser.name,
+    };
+
+    return NextResponse.json({ ok: true, user: sanitizedUser });
   } catch (error: any) {
     console.error('Error fetching Telegram user:', error);
     return NextResponse.json({ error: error.message }, { status: 500 });

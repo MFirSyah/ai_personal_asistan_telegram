@@ -26,8 +26,8 @@ export async function generateContentWithFallback(
   let lastError: any = null;
 
   for (const model of MODEL_FALLBACK_CHAIN) {
+    let timer: ReturnType<typeof setTimeout> | null = null;
     try {
-      let timer: ReturnType<typeof setTimeout>;
       const timeoutPromise = new Promise<never>((_, reject) => {
         timer = setTimeout(() => reject(new Error(`TIMEOUT model ${model}`)), timeoutMs);
       });
@@ -39,12 +39,13 @@ export async function generateContentWithFallback(
       });
 
       const response: any = await Promise.race([apiCall, timeoutPromise]);
-      clearTimeout(timer!);
       return { response, usedModel: model };
     } catch (err: any) {
       lastError = err;
       const errStr = String(err?.message || err || '');
       console.warn(`[Gemini API Multi-Model] Model ${model} mengalami kendala: ${errStr}. Mencoba model berikutnya...`);
+    } finally {
+      if (timer) clearTimeout(timer);
     }
   }
 

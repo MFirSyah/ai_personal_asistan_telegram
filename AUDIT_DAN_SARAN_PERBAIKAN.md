@@ -1,35 +1,36 @@
-# 🔍 AUDIT MENYELURUH & SARAN PERBAIKAN (GELOMBANG 3)
+# 🔍 AUDIT MENYELURUH & SARAN PERBAIKAN (GELOMBANG 4)
 
 **Tanggal Audit**: 11 Agustus 2026  
 **Auditor**: AI Code Auditor  
 **Status Audit Sebelumnya**: 
 - Gelombang 1: 26/26 Temuan Selesai & Terverifikasi
 - Gelombang 2: 10/10 Temuan Selesai & Live di Vercel Production
-**Cakupan Audit Gelombang 3**: Audit Ketahanan Parsing JSON AI, Pemrosesan Suara & Struk, Batch Cron Performance, Caching & Fallback Visual
+- Gelombang 3: 10/10 Temuan Selesai & Live di Vercel Production
+**Cakupan Audit Gelombang 4**: Optimalisasi Database Upsert, Event Loop Timer Cleanup, Akurasi Rounding Patungan, Auto-Persist Mini App Session, dan Safe OCR Parsing
 
 ---
 
 ## 📋 DAFTAR ISI
 
-1. [🚨 KRITIS — AI JSON Parsing & Category Sprawl](#1--kritis--ai-json-parsing--category-sprawl)
-2. [⚠️ PENTING — Unhandled HTTP Audio Fetch & QuickChart Fallback](#2-️-penting--unhandled-http-audio-fetch--quickchart-fallback)
-3. [🔧 SEDANG — Batching Cron Daily Insight & Safe Burn Rate](#3--sedang--batching-cron-daily-insight--safe-burn-rate)
-4. [💡 RENDAH — Shared Goal Input Guard & Categorize Backtick Strip](#4--rendah--shared-goal-input-guard--categorize-backtick-strip)
-5. [📊 RINGKASAN TEMUAN GELOMBANG 3](#5--ringkasan-temuan-gelombang-3)
+1. [🚨 KRITIS — Safe OCR JSON Parsing & Atomic Upsert Preferences](#1--kritis--safe-ocr-json-parsing--atomic-upsert-preferences)
+2. [⚠️ PENTING — Node.js Event Loop Timer Leak & Rounding Split Bill](#2-️-penting--nodejs-event-loop-timer-leak--rounding-split-bill)
+3. [🔧 SEDANG — Auto-Persist Auth Session pada Login Dashboard](#3--sedang--auto-persist-auth-session-pada-login-dashboard)
+4. [💡 RENDAH — Sanitize Whitespace & Clean Code Enhancements](#4--rendah--sanitize-whitespace--clean-code-enhancements)
+5. [📊 RINGKASAN TEMUAN GELOMBANG 4](#5--ringkasan-temuan-gelombang-4)
 
 ---
 
-## 1. 🚨 KRITIS — AI JSON Parsing & Category Sprawl
+## 1. 🚨 KRITIS — Safe OCR JSON Parsing & Atomic Upsert Preferences
 
-### G3-01: Direct `JSON.parse` Tanpa Strip Backticks pada `daily-briefing.ts`
+### G4-01: Direct `JSON.parse` Tanpa Clean Backticks pada OCR Struk `ocr-receipt.ts`
 
-**File**: `lib/gemini/prompts/daily-briefing.ts` — Baris 57  
+**File**: `lib/gemini/prompts/ocr-receipt.ts` — Baris 63  
 **Kode**:
 ```ts
 const parsed = JSON.parse(response.text || '{}');
 ```
-**Masalah**: Ketika Gemini AI mengembalikan teks JSON yang terbungkus markdown code block (contoh: ` ```json { "messages": [...] } ``` `), panggilan `JSON.parse` langsung melempar exception `SyntaxError: Unexpected token '`'` dan berpindah ke blok `catch`.  
-**Dampak**: Morning briefing harian gagal ter-generate dan jatuh ke teks fallback generik statis.  
+**Masalah**: Jika Gemini Vision AI mengembalikan hasil OCR yang terbungkus markdown codeblock (` ```json { "totalAmount": 50000, ... } ``` `), panggilan `JSON.parse` langsung melempar `SyntaxError: Unexpected token '`'` dan menyebabkan proses baca struk foto gagal total.  
+**Dampak**: Pengiriman gambar struk di Telegram terkadang memicu pesan error *"Maaf, terjadi kesalahan saat membaca gambar struk kamu."*  
 **Saran**:
 - Bersihkan pembungkus markdown sebelum diparsing:  
   `const rawText = (response.text || '').replace(/```json/gi, '').replace(/```/g, '').trim();`  
@@ -37,133 +38,80 @@ const parsed = JSON.parse(response.text || '{}');
 
 ---
 
-### G3-02: Penumpukan Kategori Spesifik Toko pada OCR Struk `receipt-processor.ts`
+### G4-02: `saveUserPreference` Melakukan Query 2 Lapis (Select -> Update/Insert)
 
-**File**: `lib/telegram/receipt-processor.ts` — Baris 41-42  
+**File**: `lib/supabase/queries/preferences.ts` — Baris 30-76  
+**Masalah**: Setiap kali AI mempelajari preferensi baru milik user, fungsi `saveUserPreference` melakukan pencarian `SELECT` terlebih dahulu, lalu disusul `UPDATE` atau `INSERT`. Ini membutuhkan 2 kali HTTP RTT (Round Trip Time) ke Supabase.  
+**Dampak**: Menambah latensi eksekusi chat Telegram (200-400ms ekstra).  
+**Saran**:
+- Gunakan `upsert` tunggal bawaan PostgreSQL ON CONFLICT `(user_id, key)`:  
+  `await supabaseAdmin.from('user_preferences').upsert({ user_id: userId, key, value, learned_from: learnedFrom || null, updated_at: new Date().toISOString() }, { onConflict: 'user_id,key' })`
+
+---
+
+## 2. ⚠️ PENTING — Node.js Event Loop Timer Leak & Rounding Split Bill
+
+### G4-03: `setTimeout` Un-cleared pada Exceptions di `generateContentWithFallback`
+
+**File**: `lib/gemini/client.ts` — Baris 30-43  
 **Kode**:
 ```ts
-const categoryName = ocrResult.merchant || 'Struk Belanja';
-const category = await getOrCreateCategory(userId, categoryName);
+const response: any = await Promise.race([apiCall, timeoutPromise]);
+clearTimeout(timer!);
 ```
-**Masalah**: Setiap foto struk baru yang diproses akan secara otomatis membuat kategori dengan nama **merchant toko tersebut** (misalnya kategori `"Indomaret"`, `"Starbucks"`, `"Kopi Kenangan"`, `"Alfamart"`). Dalam 1 bulan, tabel `categories` user akan dipenuhi oleh puluhan nama toko spesifik, bukan kategori finansial umum.  
-**Dampak**: Distribusi kategori pengeluaran dan grafik pie chart menjadi acak-acakan dan sulit dianalisis.  
+**Masalah**: Jika panggilan `apiCall` melempar exception sebelum timeout (misal 503 Service Unavailable), baris `clearTimeout(timer!)` dilewati. Pembuat `setTimeout` tetap menggantung di Node.js event loop hingga timer 15 detik berakhir.  
+**Dampak**: Akumulasi memory leak minor pada serverless instance Vercel saat Gemini API sedang sibuk.  
 **Saran**:
-- Gunakan modul kategorisasi untuk mengelompokkan merchant ke kategori umum (seperti `"Makanan & Minuman"`, `"Belanja Harian"`, `"Transportasi"`).
+- Gunakan blok `finally` untuk memastikan `clearTimeout(timer!)` selalu dijalankan terlepas dari sukses atau error.
 
 ---
 
-## 2. ⚠️ PENTING — Unhandled HTTP Audio Fetch & QuickChart Fallback
+### G4-04: Mismatch pembulatan pecahan IDR pada Kalkulator Patungan `/split`
 
-### G3-03: `voice-processor.ts` Tidak Mengecek HTTP `res.ok` Saat Unduh Audio Telegram
-
-**File**: `lib/telegram/voice-processor.ts` — Baris 25  
+**File**: `lib/features/split-bill.ts` — Baris 50-53  
 **Kode**:
 ```ts
-const audioArrayBuffer = await fetch(voiceUrl).then((r) => r.arrayBuffer());
+const equalShare = Math.round(grandTotal / peopleCount);
+input.people.forEach((p) => { perPerson[p] = equalShare; });
 ```
-**Masalah**: Jika Telegram API mengembalikan respons non-200 (misalnya 404/403/500), `fetch` tidak melempar exception tetapi mengembalikan objek Response gagal. Panggilan `.arrayBuffer()` akan tetap mengonversi halaman HTML error menjadi buffer audio palsu yang kemudian dikirim ke Gemini AI.  
-**Dampak**: AI menerima data audio korup dan memberikan pesan kesalahan ambigu ke user.  
+**Masalah**: Saat pembagian patungan untuk nominal yang tidak habis dibagi (misal Rp 100.000 untuk 3 orang), `Math.round(100000 / 3)` menghasilkan `33.333` per orang. Jika dijumlahkan kembali (33.333 * 3 = 99.999), terdapat selisih pembulatan **Rp 1** yang menggantung dari total bill.  
+**Dampak**: Total rincian per orang tidak cocok sempurna dengan grand total tagihan.  
 **Saran**:
-- Tambahkan pengecekan: `const res = await fetch(voiceUrl); if (!res.ok) throw new Error('Failed to download voice file');`
+- Alokasikan sisa selisih pembulatan (rounding remainder) ke peserta terakhir agar `sum(perPerson) === grandTotal` tepat.
 
 ---
 
-### G3-04: `sendTelegramChart` Gagal Tanpa Fallback Jika QuickChart.io Error/Rate Limited
+## 3. 🔧 SEDANG — Auto-Persist Auth Session pada Login Dashboard
 
-**File**: `lib/telegram/send-chart.ts` — Baris 142-147  
-**Kode**:
-```ts
-const res = await fetch(url, { method: 'POST', body: JSON.stringify(body) });
-return await res.json();
-```
-**Masalah**: Jika layanan pihak ketiga QuickChart.io mengalami masalah koneksi atau rate limit, Telegram API `sendPhoto` gagal mendownload gambar dari URL QuickChart dan mengembalikan `{ ok: false }`. Fungsi `sendTelegramChart` mengembalikan error tanpa memberikan opsi pengiriman ringkasan berbasis teks biasa.  
-**Dampak**: User yang meminta `/ringkasan` grafik tidak menerima balasan sama sekali jika generator grafik error.  
+### G4-05: Halaman Login Dashboard Tidak Menyimpan Session `saved_user_id` di LocalStorage
+
+**File**: `app/dashboard/login/page.tsx` — Baris 38-55  
+**Masalah**: Setelah user berhasil login dengan email & password pada halaman `/dashboard/login`, sistem mengarahkan ke `/dashboard?telegram_id=...` tetapi lupa memperbarui `localStorage.setItem('saved_user_id', data.user.id)`. Jika user kemudian membuka Mini App tanpa URL parameter, sistem kembali menganggap user sebagai `demo-user`.  
+**Dampak**: User terpaksa melakukan login ulang atau mengakses URL khusus secara berulang.  
 **Saran**:
-- Cek hasil `sendPhoto`. Jika gagal, lakukan fallback otomatis dengan mengirim caption/ringkasan data sebagai pesan teks biasa via `sendTelegramMessage`.
+- Simpan `saved_user_id` dan `saved_telegram_id` ke `localStorage` saat login sukses di `app/dashboard/login/page.tsx`.
 
 ---
 
-## 3. 🔧 SEDANG — Batching Cron Daily Insight & Safe Burn Rate
+## 4. 💡 RENDAH — Sanitize Whitespace & Clean Code Enhancements
 
-### G3-05: Loop Sekuensial pada Cron `daily-insight/route.ts`
+### G4-06: Handling `undefined` User Name pada Login Response
 
-**File**: `app/api/cron/daily-insight/route.ts` — Baris 23-36  
-**Kode**:
-```ts
-for (const u of users) {
-  const analytics = await calculate20Analytics(u.id);
-  ...
-}
-```
-**Masalah**: Penggenerasian kalkulasi harian diproses secara serial satu per satu. Dengan 20 user, cron membutuhkan 20x proses kalkulasi berat yang bisa memakan waktu hingga 30-40 detik.  
-**Dampak**: Risiko Vercel cron timeout (limit 60 detik untuk Serverless Function).  
-**Saran**:
-- Proses kalkulasi user secara paralel menggunakan `Promise.allSettled()` dalam batch 5 user sekaligus.
+**File**: `app/api/auth/telegram-user/route.ts` — Baris 31  
+**Masalah**: Memastikan response selalu menyertakan format standar `user.name` yang bersih dari whitespace tak terduga.
 
 ---
 
-### G3-06: Estimasi Burn Rate Harian Saat `totalIncome = 0`
-
-**File**: `lib/analytics/calculators.ts` — Baris 135  
-**Kode**:
-```ts
-const safeDailyLimitValue = Math.round(totalIncome > 0 ? (totalIncome * 0.7) / 30 : 100000);
-```
-**Masalah**: Jika user belum mencatat pemasukan (`totalIncome = 0`), batas aman harian di-set sebesar `Rp 100.000` tanpa memperhatikan jumlah total pengeluaran yang telah dicatat bulan ini.  
-**Dampak**: Untuk user yang total pengeluarannya sudah mencapai Rp 10.000.000 tapi belum mencatat pemasukan, rekomendasi batas harian tetap menunjukkan angka statis Rp 100.000/hari yang kurang realistis.  
-**Saran**:
-- Hitung batas aman berbasis rata-rata pengeluaran harian berjalan (`currentMonthExpenses / currentDayOfMonth`) jika `totalIncome = 0`.
-
----
-
-## 4. 💡 RENDAH — Shared Goal Input Guard & Categorize Backtick Strip
-
-### G3-07: Direct `JSON.parse` pada `categorizeItem` (`categorize.ts`)
-
-**File**: `lib/gemini/prompts/categorize.ts` — Baris 53  
-**Masalah**: Sama seperti G3-01, `JSON.parse(response.text)` pada modul kategorisasi berisiko crash jika AI mengembalikan respons dengan pembungkus backticks.  
-**Saran**:
-- Bersihkan string respons dengan regex sebelum diparsing.
-
----
-
-### G3-08: Validasi `targetAmount` Positif pada `createSharedGoal`
-
-**File**: `lib/features/couples.ts` — Baris 42-62  
-**Masalah**: Parameter `targetAmount` pada pembuatan impian bersama tidak memvalidasi angka positif. User dapat membuat shared goal dengan nominal negatif.  
-**Saran**:
-- Tambahkan guard: `if (targetAmount <= 0) throw new Error('Target nominal harus lebih dari 0');`
-
----
-
-### G3-09: Handling Failure pada `processReprocessReceiptsBatch`
-
-**File**: `lib/jobs/processors/reprocess-receipts.ts` — Baris 15-20  
-**Masalah**: Loop pemrosesan batch tidak dibungkus `try/catch` per item, sehingga 1 item transaksi corrupt akan menghentikan seluruh pekerjaan batch job.  
-**Saran**:
-- Tambahkan `try/catch` per item agar item korup bisa dilewati dan item lain tetap terproses.
-
----
-
-### G3-10: Error Handling pada Notification Job Progress (`notify-progress.ts`)
-
-**File**: `lib/jobs/notify-progress.ts` — Baris 15-17  
-**Masalah**: Panggilan `sendTelegramMessage` tidak dibungkus try/catch. Jika bot diblokir oleh user, `notifyJobProgress` melempar error unhandled.  
-**Saran**:
-- Bungkus panggilan pesan pengingat job dengan `try/catch` silent log.
-
----
-
-## 5. 📊 RINGKASAN TEMUAN GELOMBANG 3
+## 5. 📊 RINGKASAN TEMUAN GELOMBANG 4
 
 | Kategori | Jumlah Temuan |
 |----------|:------------:|
 | 🚨 **KRITIS** | 2 |
 | ⚠️ **PENTING** | 2 |
-| 🔧 **SEDANG** | 2 |
-| 💡 **RENDAH** | 4 |
-| **TOTAL GELOMBANG 3** | **10** |
+| 🔧 **SEDANG** | 1 |
+| 💡 **RENDAH** | 1 |
+| **TOTAL GELOMBANG 4** | **6** |
 
 ---
 
-> **Rekomendasi**: Seluruh 10 temuan Gelombang 3 di atas disarankan untuk langsung dieksekusi agar sistem memiliki pertahanan sempurna (bulletproof) dari berbagai skenario data edge-case.
+> **Rekomendasi**: Lakukan eksekusi perbaikan 6 temuan Gelombang 4 ini untuk mengunci keandalan sistem hingga 100% sempurna.

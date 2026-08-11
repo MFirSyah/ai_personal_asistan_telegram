@@ -35,6 +35,13 @@ function LoginFormContent() {
       }
 
       if (data.user) {
+        if (typeof window !== 'undefined') {
+          localStorage.setItem('saved_user_id', data.user.id);
+          if (telegramId) {
+            localStorage.setItem('saved_telegram_id', telegramId);
+          }
+        }
+
         // Link Telegram ID if provided
         if (telegramId) {
           try {

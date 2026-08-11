@@ -27,53 +27,24 @@ export async function saveUserPreference(
   value: string,
   learnedFrom?: string
 ): Promise<UserPreference> {
-  const { data: existing, error: findError } = await supabaseAdmin
+  const { data, error } = await supabaseAdmin
     .from('user_preferences')
-    .select('*')
-    .eq('user_id', userId)
-    .eq('key', key)
-    .maybeSingle();
-
-  if (findError) {
-    throw new Error(`Failed to query preference: ${findError.message}`);
-  }
-
-  let resultData;
-
-  if (existing) {
-    const { data: updated, error: updateError } = await supabaseAdmin
-      .from('user_preferences')
-      .update({
-        value,
-        learned_from: learnedFrom || null,
-        updated_at: new Date().toISOString(),
-      })
-      .eq('id', existing.id)
-      .select()
-      .single();
-
-    if (updateError || !updated) {
-      throw new Error(`Failed to update preference: ${updateError?.message}`);
-    }
-    resultData = updated;
-  } else {
-    const { data: inserted, error: insertError } = await supabaseAdmin
-      .from('user_preferences')
-      .insert({
+    .upsert(
+      {
         user_id: userId,
         key,
         value,
         learned_from: learnedFrom || null,
         updated_at: new Date().toISOString(),
-      })
-      .select()
-      .single();
+      },
+      { onConflict: 'user_id,key' }
+    )
+    .select()
+    .single();
 
-    if (insertError || !inserted) {
-      throw new Error(`Failed to insert preference: ${insertError?.message}`);
-    }
-    resultData = inserted;
+  if (error || !data) {
+    throw new Error(`Failed to save preference: ${error?.message}`);
   }
 
-  return resultData as UserPreference;
+  return data as UserPreference;
 }
