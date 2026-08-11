@@ -83,6 +83,7 @@ export async function completeAllActivities(userId: string): Promise<number> {
     .update({ status: 'completed' })
     .eq('user_id', userId)
     .neq('status', 'completed')
+    .is('deleted_at', null)
     .select('id');
 
   if (error) throw error;

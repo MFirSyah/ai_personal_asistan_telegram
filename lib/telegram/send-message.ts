@@ -148,29 +148,46 @@ export async function sendTelegramDocument(
   chatId: number | string,
   fileBuffer: Buffer | Uint8Array,
   filename: string,
-  caption?: string
+  caption?: string,
+  mimeType?: string
 ): Promise<any> {
   if (!TELEGRAM_BOT_TOKEN) return { ok: true, mock: true };
 
+  let detectedMime = mimeType;
+  if (!detectedMime) {
+    const ext = filename.split('.').pop()?.toLowerCase();
+    if (ext === 'pdf') detectedMime = 'application/pdf';
+    else if (ext === 'csv') detectedMime = 'text/csv';
+    else if (ext === 'ics') detectedMime = 'text/calendar';
+    else detectedMime = 'application/octet-stream';
+  }
+
   const url = `${TELEGRAM_API_BASE}/sendDocument`;
-  const formData = new FormData();
-  formData.append('chat_id', String(chatId));
 
-  const blob = new Blob([Buffer.from(fileBuffer)], { type: 'text/csv' });
-  formData.append('document', blob, filename);
+  for (let attempt = 1; attempt <= 2; attempt++) {
+    try {
+      const formData = new FormData();
+      formData.append('chat_id', String(chatId));
 
-  if (caption) {
-    formData.append('caption', caption);
+      const blob = new Blob([Buffer.from(fileBuffer)], { type: detectedMime });
+      formData.append('document', blob, filename);
+
+      if (caption) {
+        formData.append('caption', caption);
+      }
+
+      const res = await fetch(url, {
+        method: 'POST',
+        body: formData,
+      });
+      const data = await res.json();
+      if (data.ok) return data;
+
+      console.warn(`Telegram sendDocument attempt ${attempt} failed:`, data.description);
+    } catch (error) {
+      console.error(`Telegram sendDocument error (attempt ${attempt}):`, error);
+    }
   }
 
-  try {
-    const res = await fetch(url, {
-      method: 'POST',
-      body: formData,
-    });
-    return await res.json();
-  } catch (error) {
-    console.error('Failed to send Telegram document:', error);
-    return null;
-  }
+  return null;
 }

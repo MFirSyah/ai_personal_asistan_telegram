@@ -192,14 +192,13 @@ export async function randomizeTransactionTimestamps(
 
   const { data: txs, error } = await supabaseAdmin
     .from('transactions')
-    .select('id, occurred_at')
+    .select('id')
     .eq('user_id', userId)
     .is('deleted_at', null);
 
   if (error || !txs || !txs.length) return 0;
 
-  let updatedCount = 0;
-  for (const tx of txs) {
+  const updates = txs.map((tx) => {
     const randomHour = Math.floor(Math.random() * (endHour - startHour + 1)) + startHour;
     const randomMin = Math.floor(Math.random() * 60);
     const randomSec = Math.floor(Math.random() * 60);
@@ -207,13 +206,21 @@ export async function randomizeTransactionTimestamps(
     const newDate = new Date(targetDate);
     newDate.setHours(randomHour, randomMin, randomSec, 0);
 
-    const { error: updateErr } = await supabaseAdmin
+    return supabaseAdmin
       .from('transactions')
       .update({ occurred_at: newDate.toISOString() })
       .eq('id', tx.id);
+  });
 
-    if (!updateErr) updatedCount++;
+  // Batch process updates in parallel chunks of 15
+  const chunkSize = 15;
+  let updatedCount = 0;
+  for (let i = 0; i < updates.length; i += chunkSize) {
+    const chunk = updates.slice(i, i + chunkSize);
+    const results = await Promise.all(chunk);
+    updatedCount += results.filter((r) => !r.error).length;
   }
+
   return updatedCount;
 }
 
@@ -227,14 +234,13 @@ export async function randomizeActivityTimestamps(
 
   const { data: acts, error } = await supabaseAdmin
     .from('activities')
-    .select('id, occurred_at')
+    .select('id')
     .eq('user_id', userId)
     .is('deleted_at', null);
 
   if (error || !acts || !acts.length) return 0;
 
-  let updatedCount = 0;
-  for (const act of acts) {
+  const updates = acts.map((act) => {
     const randomHour = Math.floor(Math.random() * (endHour - startHour + 1)) + startHour;
     const randomMin = Math.floor(Math.random() * 60);
     const randomSec = Math.floor(Math.random() * 60);
@@ -242,13 +248,20 @@ export async function randomizeActivityTimestamps(
     const newDate = new Date(targetDate);
     newDate.setHours(randomHour, randomMin, randomSec, 0);
 
-    const { error: updateErr } = await supabaseAdmin
+    return supabaseAdmin
       .from('activities')
       .update({ occurred_at: newDate.toISOString() })
       .eq('id', act.id);
+  });
 
-    if (!updateErr) updatedCount++;
+  const chunkSize = 15;
+  let updatedCount = 0;
+  for (let i = 0; i < updates.length; i += chunkSize) {
+    const chunk = updates.slice(i, i + chunkSize);
+    const results = await Promise.all(chunk);
+    updatedCount += results.filter((r) => !r.error).length;
   }
+
   return updatedCount;
 }
 
@@ -265,16 +278,30 @@ export async function findRecordIdByShortOrFull(
     return cleanStr;
   }
 
-  // Fetch all non-deleted records for user and match by short ID or prefix
+  const hexPart = cleanStr.replace(/^(TX|ACT)-?/i, '').toLowerCase();
+
+  // Efficient server-side query using ILIKE
+  const { data: matches } = await supabaseAdmin
+    .from(table)
+    .select('id')
+    .eq('user_id', userId)
+    .is('deleted_at', null)
+    .ilike('id', `${hexPart}%`)
+    .limit(1);
+
+  if (matches && matches.length > 0) {
+    return matches[0].id;
+  }
+
+  // Fallback: If hexPart stripped hyphens, check against formatted UUIDs in limit 50
   const { data: records } = await supabaseAdmin
     .from(table)
     .select('id')
     .eq('user_id', userId)
-    .is('deleted_at', null);
+    .is('deleted_at', null)
+    .limit(50);
 
   if (!records || records.length === 0) return null;
-
-  const hexPart = cleanStr.replace(/^(TX|ACT)-?/i, '').toLowerCase();
 
   for (const r of records) {
     const rClean = r.id.replace(/-/g, '').toLowerCase();

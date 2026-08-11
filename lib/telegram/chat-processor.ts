@@ -25,16 +25,31 @@ import { checkTransactionAnomaly, checkActivityCollision } from '@/lib/analytics
 import { supabaseAdmin } from '@/lib/supabase/client';
 
 function parseSafeIsoDate(dateStr?: string): string {
-  if (!dateStr || dateStr.startsWith('2026-01-01')) return new Date().toISOString();
+  if (!dateStr || !dateStr.trim()) return new Date().toISOString();
+
+  const str = dateStr.trim();
+
+  // Try direct ISO / standard Date parsing first
+  let d = new Date(str);
+  if (!isNaN(d.getTime())) {
+    // Guard against AI returning Jan 1 00:00 dummy dates
+    if (d.getMonth() === 0 && d.getDate() === 1 && d.getHours() === 0 && d.getMinutes() === 0) {
+      return new Date().toISOString();
+    }
+    return d.toISOString();
+  }
+
   try {
-    const cleanStr = dateStr.split(/[-–—]/)[0].trim();
-    let d = new Date(cleanStr);
+    // Only clean em-dash / en-dash, DO NOT split on hyphen '-'
+    const cleanStr = str.split(/[–—]/)[0].trim();
+    d = new Date(cleanStr);
     if (!isNaN(d.getTime())) {
-      if (d.getFullYear() === 2026 && d.getMonth() === 0 && d.getDate() === 1) {
+      if (d.getMonth() === 0 && d.getDate() === 1 && d.getHours() === 0 && d.getMinutes() === 0) {
         return new Date().toISOString();
       }
       return d.toISOString();
     }
+
     const parts = cleanStr.split(/[\/\s:]/);
     if (parts.length >= 3) {
       const day = parseInt(parts[0], 10);
@@ -44,7 +59,7 @@ function parseSafeIsoDate(dateStr?: string): string {
       const min = parts[4] ? parseInt(parts[4], 10) : 0;
       d = new Date(Date.UTC(year < 100 ? 2000 + year : year, month, day, hour, min));
       if (!isNaN(d.getTime())) {
-        if (d.getFullYear() === 2026 && d.getMonth() === 0 && d.getDate() === 1) {
+        if (d.getMonth() === 0 && d.getDate() === 1 && d.getHours() === 0 && d.getMinutes() === 0) {
           return new Date().toISOString();
         }
         return d.toISOString();
@@ -71,7 +86,7 @@ export async function processChatRespondDirect(
     // 1. Fetch context in parallel (only fetch essential categories for context)
     const [transactions, activities, plans, preferences, history, categories] = await Promise.all([
       getRecentTransactions(userId, 10),
-      getRecentActivities(userId, 5),
+      getRecentActivities(userId, 20),
       getActivePlans(userId),
       getUserPreferences(userId, 20),
       getRecentChatHistory(userId, 24),

@@ -231,20 +231,6 @@ export async function POST(req: NextRequest) {
     return NextResponse.json({ ok: true });
   }
 
-  if (text.startsWith('/pasangan')) {
-    const partnerName = text.replace('/pasangan', '').trim();
-    if (!partnerName) {
-      await sendTelegramMessage(
-        chatId,
-        '💖 **HUBUNGKAN AKUN PASANGAN**\n\nUntuk menghubungkan akun kamu dengan pasanganmu, ketik:\n`/pasangan nama_atau_id` *(contoh: `/pasangan Firman`)*'
-      );
-      return NextResponse.json({ ok: true });
-    }
-    const res = await linkPartnerAccounts(user.id, partnerName);
-    await sendTelegramMessage(chatId, res.message);
-    return NextResponse.json({ ok: true });
-  }
-
   if (text.startsWith('/selesaikan_semua_aktivitas') || text.toLowerCase().includes('selesaikan semua aktivitas')) {
     const count = await completeAllActivities(user.id);
     await sendTelegramMessage(
@@ -281,12 +267,6 @@ export async function POST(req: NextRequest) {
     return NextResponse.json({ ok: true });
   }
 
-  if (text.startsWith('/split')) {
-    const splitResult = calculateSplitBill({ totalBill: 100000, people: ['Kamu', 'Pasangan'] });
-    await sendTelegramMessage(chatId, splitResult.formattedSummary);
-    return NextResponse.json({ ok: true });
-  }
-
   if (text.startsWith('/langganan')) {
     const subs = await getUserSubscriptions(user.id);
     if (!subs.length) {
@@ -301,12 +281,13 @@ export async function POST(req: NextRequest) {
     return NextResponse.json({ ok: true });
   }
 
-  if (text.startsWith('/patungan')) {
-    const rawArgs = text.replace('/patungan', '').trim();
+  if (text.startsWith('/patungan') || text.startsWith('/split')) {
+    const command = text.startsWith('/split') ? '/split' : '/patungan';
+    const rawArgs = text.replace(command, '').trim();
     if (!rawArgs) {
       await sendTelegramMessage(
         chatId,
-        `🧾 **KALKULATOR PATUNGAN BAYAR (SPLIT BILL)**\n\nCara pakai:\n\`/patungan 150000 Budi, Andi, Caca\`\n*(contoh: total Rp 150.000 dibagi untuk 3 orang)*`
+        `🧾 **KALKULATOR PATUNGAN BAYAR (SPLIT BILL)**\n\nCara pakai:\n\`${command} 150000 Budi, Andi, Caca\`\n*(contoh: total Rp 150.000 dibagi untuk 3 orang)*`
       );
       return NextResponse.json({ ok: true });
     }

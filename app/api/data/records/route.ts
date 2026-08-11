@@ -45,12 +45,12 @@ export async function GET(req: NextRequest) {
     // Attach short IDs
     const txWithShortIds = (transactions || []).map((t) => ({
       ...t,
-      short_id: `TX-${t.id.replace(/-/g, '').substring(0, 4).toUpperCase()}`,
+      short_id: `TX-${t.id.replace(/-/g, '').substring(0, 6).toUpperCase()}`,
     }));
 
     const actWithShortIds = (activities || []).map((a) => ({
       ...a,
-      short_id: `ACT-${a.id.replace(/-/g, '').substring(0, 4).toUpperCase()}`,
+      short_id: `ACT-${a.id.replace(/-/g, '').substring(0, 6).toUpperCase()}`,
     }));
 
     return NextResponse.json({
@@ -118,14 +118,19 @@ export async function POST(req: NextRequest) {
     }
 
     if (type === 'transaction') {
+      const parsedAmount = Number(data.amount);
+      if (isNaN(parsedAmount) || parsedAmount <= 0 || parsedAmount > 100_000_000_000) {
+        return NextResponse.json({ error: 'Nominal transaksi tidak valid (harus angka positif)' }, { status: 400 });
+      }
+
       const { data: newTx, error } = await supabaseAdmin
         .from('transactions')
         .insert({
           user_id: userId,
-          amount: data.amount,
-          type: data.type || 'expense',
-          merchant: data.merchant || 'Manual Dashboard',
-          description: data.description || '',
+          amount: parsedAmount,
+          type: data.type === 'income' ? 'income' : 'expense',
+          merchant: String(data.merchant || 'Manual Dashboard').trim(),
+          description: String(data.description || '').trim(),
           source: 'chat_manual',
           occurred_at: data.occurred_at || new Date().toISOString(),
         })
@@ -135,14 +140,19 @@ export async function POST(req: NextRequest) {
       if (error) throw error;
       return NextResponse.json({ ok: true, record: newTx });
     } else {
+      const titleStr = String(data.title || '').trim();
+      if (!titleStr) {
+        return NextResponse.json({ error: 'Judul aktivitas tidak boleh kosong' }, { status: 400 });
+      }
+
       const { data: newAct, error } = await supabaseAdmin
         .from('activities')
         .insert({
           user_id: userId,
-          title: data.title,
-          description: data.description || '',
-          priority: data.priority || 'medium',
-          status: data.status || 'scheduled',
+          title: titleStr,
+          description: String(data.description || '').trim(),
+          priority: ['low', 'medium', 'high', 'urgent'].includes(data.priority) ? data.priority : 'medium',
+          status: ['scheduled', 'in_progress', 'completed', 'cancelled'].includes(data.status) ? data.status : 'scheduled',
           occurred_at: data.occurred_at || new Date().toISOString(),
         })
         .select()

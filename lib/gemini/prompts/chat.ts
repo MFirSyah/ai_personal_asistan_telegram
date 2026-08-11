@@ -1,4 +1,4 @@
-import { ai } from '../client';
+import { ai, generateContentWithFallback } from '../client';
 
 export interface ChatOrchestrationContext {
   userMessage: string;
@@ -279,7 +279,7 @@ function buildFullPrompt(context: ChatOrchestrationContext): string {
 
   if (context.recentTransactions?.length) {
     const slimTxs = context.recentTransactions.slice(0, 15).map(t => {
-      const shortId = `TX-${t.id.replace(/-/g, '').substring(0, 4).toUpperCase()}`;
+      const shortId = `TX-${t.id.replace(/-/g, '').substring(0, 6).toUpperCase()}`;
       return {
         id: shortId,
         full_id: t.id,
@@ -295,7 +295,7 @@ function buildFullPrompt(context: ChatOrchestrationContext): string {
 
   if (context.recentActivities?.length) {
     const slimActs = context.recentActivities.slice(0, 10).map(a => {
-      const shortId = `ACT-${a.id.replace(/-/g, '').substring(0, 4).toUpperCase()}`;
+      const shortId = `ACT-${a.id.replace(/-/g, '').substring(0, 6).toUpperCase()}`;
       return {
         id: shortId,
         full_id: a.id,
@@ -432,8 +432,6 @@ async function withTimeout<T>(promise: Promise<T>, timeoutMs: number, fallbackMe
 }
 
 const GEMINI_TIMEOUT_MS = 15_000;
-
-import { generateContentWithFallback } from '../client';
 
 export async function runChatOrchestration(
   context: ChatOrchestrationContext

@@ -66,9 +66,10 @@ Format JSON:
     const calculatedSum = items.reduce((acc, item) => acc + (Number(item.price) || 0), 0);
     const declaredTotal = Number(parsed.totalAmount) || calculatedSum;
 
-    // Check mismatch (>5% deviation between item sum and total declared)
-    const needs_review =
-      calculatedSum > 0 && declaredTotal > 0 && Math.abs(calculatedSum - declaredTotal) > 10;
+    // Check mismatch (>5% deviation or >1000 IDR difference between item sum and total declared)
+    const diff = Math.abs(calculatedSum - declaredTotal);
+    const percentageDev = declaredTotal > 0 ? diff / declaredTotal : 0;
+    const needs_review = calculatedSum > 0 && declaredTotal > 0 && diff > 1000 && percentageDev > 0.05;
 
     return {
       merchant: parsed.merchant || 'Struk Belanja',

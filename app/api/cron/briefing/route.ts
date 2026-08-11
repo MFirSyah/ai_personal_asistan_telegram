@@ -40,24 +40,18 @@ export async function GET(req: NextRequest) {
     const settingsMap = new Map<string, any>();
     (allSettings || []).forEach((s) => settingsMap.set(s.user_id, s));
 
-    let processedCount = 0;
-
-    for (const user of allUsers) {
-      if (!user.telegram_id) continue;
-
-      const userSetting = settingsMap.get(user.id);
-      const isEnabled = userSetting ? Boolean(userSetting.briefing_enabled) : true; // Default enabled for all users
+    const eligibleUsers = allUsers.filter((u) => {
+      if (!u.telegram_id) return false;
+      const userSetting = settingsMap.get(u.id);
+      const isEnabled = userSetting ? Boolean(userSetting.briefing_enabled) : true;
       const lastSentDate = userSetting?.last_briefing_date;
+      if (!isEnabled) return false;
+      if (!isForce && lastSentDate === todayDateStr) return false;
+      return true;
+    });
 
-      // Skip if explicitly disabled
-      if (!isEnabled) continue;
-
-      // Skip if already sent today (unless forced)
-      if (!isForce && lastSentDate === todayDateStr) {
-        continue;
-      }
-
-      // Fetch context data for AI briefing
+    const processSingleUser = async (user: typeof allUsers[0]) => {
+      const userSetting = settingsMap.get(user.id);
       const { data: insight } = await supabaseAdmin
         .from('daily_insights')
         .select('payload')
@@ -82,14 +76,13 @@ export async function GET(req: NextRequest) {
         preferences,
       });
 
-      if (briefing.messages && briefing.messages.length > 0) {
+      if (briefing.messages && briefing.messages.length > 0 && user.telegram_id) {
         await sendTelegramMessageBubbles(user.telegram_id, briefing.messages);
       }
-      if (briefing.follow_up_question) {
+      if (briefing.follow_up_question && user.telegram_id) {
         await sendTelegramMessage(user.telegram_id, briefing.follow_up_question);
       }
 
-      // Update last_briefing_date in user_settings
       await supabaseAdmin.from('user_settings').upsert({
         user_id: user.id,
         briefing_enabled: true,
@@ -97,8 +90,16 @@ export async function GET(req: NextRequest) {
         last_briefing_date: todayDateStr,
         updated_at: new Date().toISOString(),
       });
+    };
 
-      processedCount++;
+    // Parallel batching in chunks of 4 users
+    const chunkSize = 4;
+    let processedCount = 0;
+
+    for (let i = 0; i < eligibleUsers.length; i += chunkSize) {
+      const chunk = eligibleUsers.slice(i, i + chunkSize);
+      const results = await Promise.allSettled(chunk.map((u) => processSingleUser(u)));
+      processedCount += results.filter((r) => r.status === 'fulfilled').length;
     }
 
     return NextResponse.json({

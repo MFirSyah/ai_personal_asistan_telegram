@@ -49,38 +49,41 @@ export async function getOrCreateCategory(
 ): Promise<Category> {
   const cleanName = categoryName.trim();
 
-  // Fix #12: Direct upsert using PostgreSQL ON CONFLICT (user_id, name)
-  const { data, error } = await supabaseAdmin
-    .from('categories')
-    .upsert(
-      {
-        user_id: userId,
-        name: cleanName,
-        embedding: embedding || null,
-        usage_count: 1,
-      },
-      {
-        onConflict: 'user_id,name',
-        ignoreDuplicates: false,
-      }
-    )
-    .select()
-    .single();
-
-  if (!error && data) {
-    return data as Category;
-  }
-
-  // Fallback to fetch if conflict occurred without return
+  // 1. Check if category already exists
   const { data: existing } = await supabaseAdmin
     .from('categories')
     .select('*')
     .eq('user_id', userId)
     .ilike('name', cleanName)
-    .single();
+    .maybeSingle();
 
   if (existing) {
-    return existing as Category;
+    // Increment usage count without resetting
+    const newCount = (existing.usage_count || 1) + 1;
+    const { data: updated } = await supabaseAdmin
+      .from('categories')
+      .update({ usage_count: newCount, updated_at: new Date().toISOString() })
+      .eq('id', existing.id)
+      .select()
+      .maybeSingle();
+
+    return (updated || { ...existing, usage_count: newCount }) as Category;
+  }
+
+  // 2. Insert new category if none existed
+  const { data: created, error } = await supabaseAdmin
+    .from('categories')
+    .insert({
+      user_id: userId,
+      name: cleanName,
+      embedding: embedding || null,
+      usage_count: 1,
+    })
+    .select()
+    .single();
+
+  if (!error && created) {
+    return created as Category;
   }
 
   throw new Error(`Failed to get or create category: ${error?.message}`);
