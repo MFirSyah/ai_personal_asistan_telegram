@@ -111,13 +111,20 @@ export async function checkActivityCollision(
 
     if (nearbyActs && nearbyActs.length > 0) {
       const conflict = nearbyActs[0];
-      const conflictDate = new Date(conflict.occurred_at);
-      const formattedTime =
-        conflictDate.toLocaleTimeString('id-ID', {
-          hour: '2-digit',
-          minute: '2-digit',
-          timeZone: 'Asia/Jakarta',
-        }) + ' WIB';
+      let conflictDate = new Date(conflict.occurred_at);
+      if (isNaN(conflictDate.getTime())) conflictDate = new Date();
+
+      let formattedTime = '00.00 WIB';
+      try {
+        formattedTime =
+          conflictDate.toLocaleTimeString('id-ID', {
+            hour: '2-digit',
+            minute: '2-digit',
+            timeZone: 'Asia/Jakarta',
+          }) + ' WIB';
+      } catch (tErr) {
+        formattedTime = `${String(conflictDate.getHours()).padStart(2, '0')}:${String(conflictDate.getMinutes()).padStart(2, '0')} WIB`;
+      }
 
       return {
         isCollision: true,

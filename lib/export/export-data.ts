@@ -45,7 +45,7 @@ export async function generateExportFile(userId: string, options: ExportOptions 
       a.status || 'scheduled',
       a.priority || 'medium',
       `"${(Array.isArray(a.tags) ? a.tags.join(', ') : '').replace(/"/g, '""')}"`,
-      `"${a.occurred_at ? new Date(a.occurred_at).toLocaleString('id-ID') : ''}"`,
+      `"${(a.occurred_at ? new Date(a.occurred_at).toLocaleString('id-ID') : '').replace(/"/g, '""')}"`,
     ]);
 
     const csvContent = '\uFEFF' + [headers.join(','), ...rows.map((r) => r.join(','))].join('\n');
@@ -78,7 +78,7 @@ export async function generateExportFile(userId: string, options: ExportOptions 
     const headers = ['ID', 'Tanggal', 'Tipe', 'Nominal (Rp)', 'Merchant / Tempat', 'Metode Bayar', 'Deskripsi', 'Label / Tag', 'Sumber'];
     const rows = txList.map((t) => [
       t.id,
-      `"${t.occurred_at ? new Date(t.occurred_at).toLocaleString('id-ID') : ''}"`,
+      `"${(t.occurred_at ? new Date(t.occurred_at).toLocaleString('id-ID') : '').replace(/"/g, '""')}"`,
       t.type === 'income' ? 'Pemasukan' : 'Pengeluaran',
       t.amount || 0,
       `"${(t.merchant || '').replace(/"/g, '""')}"`,
@@ -124,7 +124,7 @@ export async function generateExportFile(userId: string, options: ExportOptions 
   const txHeaders = ['ID Transaksi', 'Tanggal', 'Tipe', 'Nominal (Rp)', 'Merchant / Tempat', 'Metode Bayar', 'Deskripsi', 'Tag', 'Sumber'];
   const txRows = txList.map((t) => [
     t.id,
-    `"${t.occurred_at ? new Date(t.occurred_at).toLocaleString('id-ID') : ''}"`,
+    `"${(t.occurred_at ? new Date(t.occurred_at).toLocaleString('id-ID') : '').replace(/"/g, '""')}"`,
     t.type === 'income' ? 'Pemasukan' : 'Pengeluaran',
     t.amount || 0,
     `"${(t.merchant || '').replace(/"/g, '""')}"`,
@@ -142,7 +142,7 @@ export async function generateExportFile(userId: string, options: ExportOptions 
     a.status || 'scheduled',
     a.priority || 'medium',
     `"${(Array.isArray(a.tags) ? a.tags.join(', ') : '').replace(/"/g, '""')}"`,
-    `"${a.occurred_at ? new Date(a.occurred_at).toLocaleString('id-ID') : ''}"`,
+    `"${(a.occurred_at ? new Date(a.occurred_at).toLocaleString('id-ID') : '').replace(/"/g, '""')}"`,
   ]);
 
   const csvSections = [

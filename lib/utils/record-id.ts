@@ -5,10 +5,10 @@
 export function getShortId(id: string, type: 'transaction' | 'activity'): string {
   if (!id) return type === 'transaction' ? 'TX-0000' : 'ACT-0000';
 
-  // Extract first 4 hex chars of UUID for clean short ID
+  // Extract first 6 hex chars of UUID for clean short ID
   const cleanId = id.replace(/-/g, '');
   const prefix = type === 'transaction' ? 'TX' : 'ACT';
-  const shortHash = cleanId.substring(0, 4).toUpperCase();
+  const shortHash = cleanId.substring(0, 6).toUpperCase();
 
   return `${prefix}-${shortHash}`;
 }

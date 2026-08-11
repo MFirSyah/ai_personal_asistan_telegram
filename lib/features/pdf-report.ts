@@ -76,11 +76,13 @@ export async function generateMonthlyPdfReport(userId: string): Promise<{
         const d = isNaN(dt.getTime()) ? '-' : dt.toLocaleDateString('id-ID');
         const typeStr = t.type === 'income' ? '[PEMASUKAN]' : '[PENGELUARAN]';
         const color = t.type === 'income' ? '#059669' : '#e11d48';
+        const rawName = t.merchant || t.description || 'Transaksi';
+        const cleanName = rawName.replace(/[^\x00-\x7F]/g, '').trim() || 'Transaksi';
         doc
           .fillColor(color)
           .fontSize(9)
           .text(
-            `${idx + 1}. ${d} | ${typeStr} ${t.merchant || t.description || 'Transaksi'}: Rp ${Number(t.amount).toLocaleString('id-ID')}`
+            `${idx + 1}. ${d} | ${typeStr} ${cleanName}: Rp ${Number(t.amount).toLocaleString('id-ID')}`
           );
       });
     }

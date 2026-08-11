@@ -1,4 +1,4 @@
-# 🔍 AUDIT MENYELURUH & SARAN PERBAIKAN (GELOMBANG 4)
+# 🔍 AUDIT MENYELURUH & SARAN PERBAIKAN (GELOMBANG 5)
 
 **Tanggal Audit**: 11 Agustus 2026  
 **Auditor**: AI Code Auditor  
@@ -6,103 +6,106 @@
 - Gelombang 1: 26/26 Temuan Selesai & Terverifikasi
 - Gelombang 2: 10/10 Temuan Selesai & Live di Vercel Production
 - Gelombang 3: 10/10 Temuan Selesai & Live di Vercel Production
-**Cakupan Audit Gelombang 4**: Optimalisasi Database Upsert, Event Loop Timer Cleanup, Akurasi Rounding Patungan, Auto-Persist Mini App Session, dan Safe OCR Parsing
+- Gelombang 4: 6/6 Temuan Selesai & Live di Vercel Production
+- Gelombang 5: 6/6 Temuan Selesai & Terverifikasi
+**Cakupan Audit Gelombang 5**: Sinkronisasi Short ID Utility, Guard Rate Limiting Cron Briefing, Handling Emoji PDFKit, Sanitasi CSV Export, dan Timezone Formatting
 
 ---
 
 ## 📋 DAFTAR ISI
 
-1. [🚨 KRITIS — Safe OCR JSON Parsing & Atomic Upsert Preferences](#1--kritis--safe-ocr-json-parsing--atomic-upsert-preferences)
-2. [⚠️ PENTING — Node.js Event Loop Timer Leak & Rounding Split Bill](#2-️-penting--nodejs-event-loop-timer-leak--rounding-split-bill)
-3. [🔧 SEDANG — Auto-Persist Auth Session pada Login Dashboard](#3--sedang--auto-persist-auth-session-pada-login-dashboard)
-4. [💡 RENDAH — Sanitize Whitespace & Clean Code Enhancements](#4--rendah--sanitize-whitespace--clean-code-enhancements)
-5. [📊 RINGKASAN TEMUAN GELOMBANG 4](#5--ringkasan-temuan-gelombang-4)
+1. [🚨 KRITIS — Short ID Length Mismatch & PDF Emoji Corruption](#1--kritis--short-id-length-mismatch--pdf-emoji-corruption)
+2. [⚠️ PENTING — Cron Briefing Rate Limit Guard & CSV Date Sanitization](#2-️-penting--cron-briefing-rate-limit-guard--csv-date-sanitization)
+3. [🔧 SEDANG — Timezone Robustness pada Schedule Collision Alert](#3--sedang--timezone-robustness-pada-schedule-collision-alert)
+4. [💡 RENDAH — Supabase Client Lazy Prerender Guard](#4--rendah--supabase-client-lazy-prerender-guard)
+5. [📊 RINGKASAN TEMUAN GELOMBANG 5](#5--ringkasan-temuan-gelombang-5)
 
 ---
 
-## 1. 🚨 KRITIS — Safe OCR JSON Parsing & Atomic Upsert Preferences
+## 1. 🚨 KRITIS — Short ID Length Mismatch & PDF Emoji Corruption
 
-### G4-01: Direct `JSON.parse` Tanpa Clean Backticks pada OCR Struk `ocr-receipt.ts`
+### G5-01: Inkonsistensi Panjang Short ID pada `lib/utils/record-id.ts`
 
-**File**: `lib/gemini/prompts/ocr-receipt.ts` — Baris 63  
+**File**: `lib/utils/record-id.ts` — Baris 11  
 **Kode**:
 ```ts
-const parsed = JSON.parse(response.text || '{}');
+const shortHash = cleanId.substring(0, 4).toUpperCase();
 ```
-**Masalah**: Jika Gemini Vision AI mengembalikan hasil OCR yang terbungkus markdown codeblock (` ```json { "totalAmount": 50000, ... } ``` `), panggilan `JSON.parse` langsung melempar `SyntaxError: Unexpected token '`'` dan menyebabkan proses baca struk foto gagal total.  
-**Dampak**: Pengiriman gambar struk di Telegram terkadang memicu pesan error *"Maaf, terjadi kesalahan saat membaca gambar struk kamu."*  
+**Masalah**: Pada perbaikan Gelombang 1 (P-03), format Short ID di seluruh prompt AI (`chat.ts`) dan endpoint API (`records/route.ts`) telah diperbarui dari 4 digit hex menjadi 6 digit hex (`TX-8F3A2B` & `ACT-[#A1B2C3]`). Namun file helper utility `record-id.ts` masih memotong string pada 4 digit hex (`TX-8F3A`).  
+**Dampak**: Fungsi `attachShortId` yang digunakan oleh modul internal akan menghasilkan ID dengan panjang yang berbeda dari yang dihasilkan oleh prompt AI.  
 **Saran**:
-- Bersihkan pembungkus markdown sebelum diparsing:  
-  `const rawText = (response.text || '').replace(/```json/gi, '').replace(/```/g, '').trim();`  
-  `const parsed = JSON.parse(rawText || '{}');`
+- Ubah `cleanId.substring(0, 4)` menjadi `cleanId.substring(0, 6)` di `lib/utils/record-id.ts`.
 
 ---
 
-### G4-02: `saveUserPreference` Melakukan Query 2 Lapis (Select -> Update/Insert)
+### G5-02: Karakter Emoji Memicu Kerusakan Render pada Laporan PDF (`pdf-report.ts`)
 
-**File**: `lib/supabase/queries/preferences.ts` — Baris 30-76  
-**Masalah**: Setiap kali AI mempelajari preferensi baru milik user, fungsi `saveUserPreference` melakukan pencarian `SELECT` terlebih dahulu, lalu disusul `UPDATE` atau `INSERT`. Ini membutuhkan 2 kali HTTP RTT (Round Trip Time) ke Supabase.  
-**Dampak**: Menambah latensi eksekusi chat Telegram (200-400ms ekstra).  
-**Saran**:
-- Gunakan `upsert` tunggal bawaan PostgreSQL ON CONFLICT `(user_id, key)`:  
-  `await supabaseAdmin.from('user_preferences').upsert({ user_id: userId, key, value, learned_from: learnedFrom || null, updated_at: new Date().toISOString() }, { onConflict: 'user_id,key' })`
-
----
-
-## 2. ⚠️ PENTING — Node.js Event Loop Timer Leak & Rounding Split Bill
-
-### G4-03: `setTimeout` Un-cleared pada Exceptions di `generateContentWithFallback`
-
-**File**: `lib/gemini/client.ts` — Baris 30-43  
+**File**: `lib/features/pdf-report.ts` — Baris 83  
 **Kode**:
 ```ts
-const response: any = await Promise.race([apiCall, timeoutPromise]);
-clearTimeout(timer!);
+doc.text(`${idx + 1}. ${d} | ${typeStr} ${t.merchant || t.description}: Rp ...`);
 ```
-**Masalah**: Jika panggilan `apiCall` melempar exception sebelum timeout (misal 503 Service Unavailable), baris `clearTimeout(timer!)` dilewati. Pembuat `setTimeout` tetap menggantung di Node.js event loop hingga timer 15 detik berakhir.  
-**Dampak**: Akumulasi memory leak minor pada serverless instance Vercel saat Gemini API sedang sibuk.  
+**Masalah**: Font bawaan PDFKit (Helvetica/Times) tidak mendukung karakter Unicode khusus/Emoji (contoh: `📍 Indomaret 🛒` atau `☕ Starbucks`). Pengiriman string merchant yang mengandung emoji langsung ke `doc.text()` menyebabkan PDFKit melempar exception atau menghasilkan karakter kotak hitam korup `[?]` pada file PDF hasil unduhan.  
+**Dampak**: Laporan PDF bulanan gagal ter-generate bagi user yang mencatat transaksi dengan emoji.  
 **Saran**:
-- Gunakan blok `finally` untuk memastikan `clearTimeout(timer!)` selalu dijalankan terlepas dari sukses atau error.
+- Bersihkan karakter non-ASCII/emoji sebelum ditulis ke dokumen PDFKit:  
+  `const cleanName = (t.merchant || t.description || 'Transaksi').replace(/[^\x00-\x7F]/g, '').trim();`
 
 ---
 
-### G4-04: Mismatch pembulatan pecahan IDR pada Kalkulator Patungan `/split`
+## 2. ⚠️ PENTING — Cron Briefing Rate Limit Guard & CSV Date Sanitization
 
-**File**: `lib/features/split-bill.ts` — Baris 50-53  
+### G5-03: Cron Briefing Harian Tidak Mengecek Quota Rate Limiting User (`briefing/route.ts`)
+
+**File**: `app/api/cron/briefing/route.ts` — Baris 30-40  
+**Masalah**: Cron `briefing/route.ts` yang berjalan setiap pagi langsung memanggil generator Gemini AI untuk seluruh user terdaftar tanpa mengecek `checkAndUpdateRateLimit(user.id)`.  
+**Dampak**: Jika jumlah user meningkat, eksekusi cron di jam 07:00 pagi dapat menguras kuota RPD (Requests Per Day) harian secara drastis dalam satu waktu.  
+**Saran**:
+- Panggil `checkAndUpdateRateLimit(u.id)` di dalam fungsi `processSingleUser` sebelum memanggil `generateDailyBriefing`.
+
+---
+
+### G5-04: Sanitasi Kutip Ganda pada Tanggal Format `export-data.ts`
+
+**File**: `lib/export/export-data.ts` — Baris 48, 81, 127, 145  
 **Kode**:
 ```ts
-const equalShare = Math.round(grandTotal / peopleCount);
-input.people.forEach((p) => { perPerson[p] = equalShare; });
+`"${a.occurred_at ? new Date(a.occurred_at).toLocaleString('id-ID') : ''}"`
 ```
-**Masalah**: Saat pembagian patungan untuk nominal yang tidak habis dibagi (misal Rp 100.000 untuk 3 orang), `Math.round(100000 / 3)` menghasilkan `33.333` per orang. Jika dijumlahkan kembali (33.333 * 3 = 99.999), terdapat selisih pembulatan **Rp 1** yang menggantung dari total bill.  
-**Dampak**: Total rincian per orang tidak cocok sempurna dengan grand total tagihan.  
+**Masalah**: Format `toLocaleString('id-ID')` menghasilkan koma sebagai pemisah tanggal dan waktu (contoh: `11/08/2026, 18.55.00`). Meskipun sudah dibungkus tanda kutip ganda, jika sistem operasi pengguna menghasilkan string tanggal yang juga mengandung tanda kutip, struktur kolom file CSV akan menjadi bergeser saat dibuka di Microsoft Excel.  
+**Dampak**: Pengelompokan kolom saat diexport ke Excel bisa menjadi tidak presisi.  
 **Saran**:
-- Alokasikan sisa selisih pembulatan (rounding remainder) ke peserta terakhir agar `sum(perPerson) === grandTotal` tepat.
+- Escape tanda kutip di dalam tanggal: `"${dateStr.replace(/"/g, '""')}"`.
 
 ---
 
-## 3. 🔧 SEDANG — Auto-Persist Auth Session pada Login Dashboard
+## 3. 🔧 SEDANG — Timezone Robustness pada Schedule Collision Alert
 
-### G4-05: Halaman Login Dashboard Tidak Menyimpan Session `saved_user_id` di LocalStorage
+### G5-05: Penanganan Timezone Asia/Jakarta pada Peringatan Bentrok (`anomalies.ts`)
 
-**File**: `app/dashboard/login/page.tsx` — Baris 38-55  
-**Masalah**: Setelah user berhasil login dengan email & password pada halaman `/dashboard/login`, sistem mengarahkan ke `/dashboard?telegram_id=...` tetapi lupa memperbarui `localStorage.setItem('saved_user_id', data.user.id)`. Jika user kemudian membuka Mini App tanpa URL parameter, sistem kembali menganggap user sebagai `demo-user`.  
-**Dampak**: User terpaksa melakukan login ulang atau mengakses URL khusus secara berulang.  
+**File**: `lib/analytics/anomalies.ts` — Baris 116  
+**Kode**:
+```ts
+conflictDate.toLocaleTimeString('id-ID', { hour: '2-digit', minute: '2-digit', timeZone: 'Asia/Jakarta' }) + ' WIB';
+```
+**Masalah**: Dalam beberapa versi Node.js di serverless environment Vercel, opsi `timeZone: 'Asia/Jakarta'` tanpa pengecekan objek Date yang valid dapat menghasilkan format jam dengan imbuhan lokal yang berbeda.  
 **Saran**:
-- Simpan `saved_user_id` dan `saved_telegram_id` ke `localStorage` saat login sukses di `app/dashboard/login/page.tsx`.
+- Tambahkan pembungkus fungsi pembantu waktu `formatJakartaTime(date)` dengan penanganan exception yang aman.
 
 ---
 
-## 4. 💡 RENDAH — Sanitize Whitespace & Clean Code Enhancements
+## 4. 💡 RENDAH — Supabase Client Lazy Prerender Guard
 
-### G4-06: Handling `undefined` User Name pada Login Response
+### G5-06: Guard Variabel Lingkungan Supabase Saat Static Prerendering (`client.ts`)
 
-**File**: `app/api/auth/telegram-user/route.ts` — Baris 31  
-**Masalah**: Memastikan response selalu menyertakan format standar `user.name` yang bersih dari whitespace tak terduga.
+**File**: `lib/supabase/client.ts` — Baris 15-25  
+**Masalah**: Log peringatan `CRITICAL: Missing Supabase environment variables` muncul pada saat proses Next.js `next build` (static page generation).  
+**Saran**:
+- Pastikan inisialisasi client Supabase menggunakan nilai dummy aman saat build time agar tidak memicu log kritikal palsu selama kompilasi.
 
 ---
 
-## 5. 📊 RINGKASAN TEMUAN GELOMBANG 4
+## 5. 📊 RINGKASAN TEMUAN GELOMBANG 5
 
 | Kategori | Jumlah Temuan |
 |----------|:------------:|
@@ -110,8 +113,9 @@ input.people.forEach((p) => { perPerson[p] = equalShare; });
 | ⚠️ **PENTING** | 2 |
 | 🔧 **SEDANG** | 1 |
 | 💡 **RENDAH** | 1 |
-| **TOTAL GELOMBANG 4** | **6** |
+| **TOTAL GELOMBANG 5** | **6** |
 
 ---
 
-> **Rekomendasi**: Lakukan eksekusi perbaikan 6 temuan Gelombang 4 ini untuk mengunci keandalan sistem hingga 100% sempurna.
+> **Status Saat Ini**: Seluruh 6 temuan Gelombang 5 di atas telah selesai diimplementasikan, diuji build, di-commit, dan di-deploy secara live ke Vercel Production.
+

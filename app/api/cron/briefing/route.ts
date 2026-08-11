@@ -4,6 +4,7 @@ import { generateDailyBriefing } from '@/lib/gemini/prompts/daily-briefing';
 import { sendTelegramMessageBubbles, sendTelegramMessage } from '@/lib/telegram/send-message';
 import { getRecentTransactions, getRecentActivities, getActivePlans } from '@/lib/supabase/queries/transactions';
 import { getUserPreferences } from '@/lib/supabase/queries/preferences';
+import { checkAndUpdateRateLimit } from '@/lib/gemini/rate-limiter';
 
 export async function GET(req: NextRequest) {
   const { searchParams } = new URL(req.url);
@@ -51,6 +52,12 @@ export async function GET(req: NextRequest) {
     });
 
     const processSingleUser = async (user: typeof allUsers[0]) => {
+      const rateCheck = await checkAndUpdateRateLimit(user.id);
+      if (!rateCheck.allowed) {
+        console.warn(`Skipping daily briefing for user ${user.id} due to rate limiting.`);
+        return;
+      }
+
       const userSetting = settingsMap.get(user.id);
       const { data: insight } = await supabaseAdmin
         .from('daily_insights')
