@@ -321,6 +321,39 @@ function DashboardContent() {
     }
   };
 
+  const handleUpdateActivityStatus = async (
+    id: string,
+    newStatus: 'scheduled' | 'in_progress' | 'completed' | 'cancelled'
+  ) => {
+    // Optimistic UI state update
+    setRecords((prev) => ({
+      ...prev,
+      activities: prev.activities.map((a) => (a.id === id ? { ...a, status: newStatus } : a)),
+    }));
+
+    try {
+      const res = await fetch('/api/data/records', {
+        method: 'PATCH',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          userId,
+          recordId: id,
+          type: 'activity',
+          data: { status: newStatus },
+        }),
+      });
+      const result = await res.json();
+      if (result.ok) {
+        addToast('success', 'Status Agenda Diperbarui', `Status berhasil diubah ke ${newStatus.toUpperCase()}`);
+      } else {
+        addToast('error', 'Gagal Mengubah Status', result.error || 'Terjadi kesalahan');
+      }
+    } catch (err: any) {
+      console.error('Update status error:', err);
+      addToast('error', 'Gagal Mengubah Status', err.message);
+    }
+  };
+
   const openAddModal = () => {
     setEditingRecord(null);
     setShowAddEditModal(true);
@@ -391,6 +424,7 @@ function DashboardContent() {
               categories={records.categories}
               onOpenEditModal={(rec, type) => openEditModal(rec, type)}
               onDeleteRecord={handleDeleteRecord}
+              onUpdateActivityStatus={handleUpdateActivityStatus}
             />
           ) : (
             <AnomaliesView

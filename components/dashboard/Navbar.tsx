@@ -34,43 +34,6 @@ export default function Navbar({
           <span>DATA_CORE_V1</span>
         </Link>
 
-        {/* Desktop Navigation Links */}
-        <div className="hidden md:flex gap-4 lg:gap-8 items-center h-full">
-          <button
-            onClick={() => setActiveTab('analisis')}
-            className={`px-4 h-full flex items-center font-bold uppercase transition-all cursor-pointer ${
-              activeTab === 'analisis'
-                ? 'border-b-4 border-white bg-black/20 text-white'
-                : 'text-white/70 hover:text-white hover:bg-black/10'
-            }`}
-            aria-current={activeTab === 'analisis' ? 'page' : undefined}
-          >
-            📊 Analisis
-          </button>
-          <button
-            onClick={() => setActiveTab('edit')}
-            className={`px-4 h-full flex items-center font-bold uppercase transition-all cursor-pointer ${
-              activeTab === 'edit'
-                ? 'border-b-4 border-white bg-black/20 text-white'
-                : 'text-white/70 hover:text-white hover:bg-black/10'
-            }`}
-            aria-current={activeTab === 'edit' ? 'page' : undefined}
-          >
-            ✏️ Edit Data ({recordsCount.transactions + recordsCount.activities})
-          </button>
-          <button
-            onClick={() => setActiveTab('anomali')}
-            className={`px-4 h-full flex items-center font-bold uppercase transition-all cursor-pointer ${
-              activeTab === 'anomali'
-                ? 'border-b-4 border-white bg-black/20 text-white'
-                : 'text-white/70 hover:text-white hover:bg-black/10'
-            }`}
-            aria-current={activeTab === 'anomali' ? 'page' : undefined}
-          >
-            ⚠️ Anomali
-          </button>
-        </div>
-
         {/* Actions & Search Shortcut */}
         <div className="flex items-center gap-2 md:gap-3">
           {/* Dark Mode Toggle (D-21) */}

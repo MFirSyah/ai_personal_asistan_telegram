@@ -11,6 +11,7 @@ interface EditDataViewProps {
   categories: Category[];
   onOpenEditModal: (record: Transaction | Activity, type: 'transaction' | 'activity') => void;
   onDeleteRecord: (id: string, type: 'transaction' | 'activity') => void;
+  onUpdateActivityStatus?: (id: string, newStatus: 'scheduled' | 'in_progress' | 'completed' | 'cancelled') => void;
 }
 
 const ITEMS_PER_PAGE = 25;
@@ -23,6 +24,7 @@ export default function EditDataView({
   categories,
   onOpenEditModal,
   onDeleteRecord,
+  onUpdateActivityStatus,
 }: EditDataViewProps) {
   // Filter state
   const [filter, setFilter] = useState<RecordFilter>({
@@ -270,95 +272,102 @@ export default function EditDataView({
             </span>
           </div>
 
-          {/* Desktop Table View */}
+          {/* Desktop Table View (Separated Dedicated Columns) */}
           <div className="hidden md:block overflow-x-auto">
-            <table className="w-full text-left border-collapse min-w-[800px]">
+            <table className="w-full text-left border-collapse min-w-[950px]">
               <thead>
                 <tr className="bg-[#e2e2e2] dark:bg-[#2a2d2d] text-black dark:text-white font-bold text-xs uppercase">
-                  <th className="p-3 cell-border border-b-4 border-black w-32">Short ID</th>
+                  <th className="p-3 cell-border border-b-4 border-black w-28">Short ID</th>
                   <th
                     onClick={() => handleSort('occurred_at')}
-                    className="p-3 cell-border border-b-4 border-black w-32 cursor-pointer hover:bg-black/10 select-none"
+                    className="p-3 cell-border border-b-4 border-black w-28 cursor-pointer hover:bg-black/10 select-none"
                   >
                     Tanggal {sortField === 'occurred_at' && (sortDirection === 'asc' ? '▲' : '▼')}
                   </th>
+                  <th className="p-3 cell-border border-b-4 border-black w-20">Jam</th>
                   <th
                     onClick={() => handleSort('merchant')}
-                    className="p-3 cell-border border-b-4 border-black cursor-pointer hover:bg-black/10 select-none"
+                    className="p-3 cell-border border-b-4 border-black w-36 cursor-pointer hover:bg-black/10 select-none"
                   >
-                    Deskripsi / Toko {sortField === 'merchant' && (sortDirection === 'asc' ? '▲' : '▼')}
+                    Toko / Merchant {sortField === 'merchant' && (sortDirection === 'asc' ? '▲' : '▼')}
                   </th>
-                  <th className="p-3 cell-border border-b-4 border-black w-32">Kategori</th>
+                  <th className="p-3 cell-border border-b-4 border-black min-w-[180px]">Deskripsi / Catatan</th>
+                  <th className="p-3 cell-border border-b-4 border-black w-28">Kategori</th>
+                  <th className="p-3 cell-border border-b-4 border-black w-28">Asal Input</th>
                   <th
                     onClick={() => handleSort('amount')}
-                    className="p-3 cell-border border-b-4 border-black w-40 text-right cursor-pointer hover:bg-black/10 select-none"
+                    className="p-3 cell-border border-b-4 border-black w-32 text-right cursor-pointer hover:bg-black/10 select-none"
                   >
                     Nominal {sortField === 'amount' && (sortDirection === 'asc' ? '▲' : '▼')}
                   </th>
-                  <th className="p-3 cell-border border-b-4 border-black w-36 text-center">Aksi</th>
+                  <th className="p-3 cell-border border-b-4 border-black w-24 text-center">Aksi</th>
                 </tr>
               </thead>
               <tbody className="font-jetbrains text-xs text-black dark:text-white">
                 {paginatedList.length === 0 ? (
                   <tr>
-                    <td colSpan={6} className="p-8 text-center font-bold uppercase text-black/60 dark:text-white/60">
+                    <td colSpan={9} className="p-8 text-center font-bold uppercase text-black/60 dark:text-white/60">
                       Tidak ada catatan transaksi ditemukan.
                     </td>
                   </tr>
                 ) : (
-                  (paginatedList as Transaction[]).map((t) => (
-                    <tr key={t.id} className="hover:bg-[#008080]/10 transition-colors">
-                      <td className="p-3 cell-border font-bold">
-                        <span className="bg-black text-[#d2f000] px-2 py-0.5 border border-black font-mono text-[11px]">
-                          {t.short_id || `TX-${t.id?.replace(/-/g, '').substring(0, 6).toUpperCase()}`}
-                        </span>
-                      </td>
-                      <td className="p-3 cell-border font-bold">
-                        {new Date(t.occurred_at || t.created_at || '').toLocaleDateString('id-ID')}
-                      </td>
-                      <td className="p-3 cell-border font-bold">
-                        <div>{t.merchant || t.description || 'Transaksi'}</div>
-                        {t.merchant && t.description && (
-                          <div className="text-[11px] font-normal text-black/70 dark:text-white/70 mt-0.5 font-jetbrains">
-                            💬 {t.description}
-                          </div>
-                        )}
-                        {t.source && (
-                          <span className="mt-1 inline-block bg-black/10 dark:bg-white/10 text-black dark:text-white px-1.5 py-0.2 text-[9px] uppercase font-jetbrains font-bold border border-black/30">
-                            {t.source === 'telegram_chat' ? '🤖 Telegram AI' : t.source === 'receipt_ocr' ? '📄 Scan Struk' : t.source}
+                  (paginatedList as Transaction[]).map((t) => {
+                    const occDate = new Date(t.occurred_at || t.created_at || '');
+                    return (
+                      <tr key={t.id} className="hover:bg-[#008080]/10 transition-colors">
+                        <td className="p-3 cell-border font-bold">
+                          <span className="bg-black text-[#d2f000] px-2 py-0.5 border border-black font-mono text-[11px]">
+                            {t.short_id || `TX-${t.id?.replace(/-/g, '').substring(0, 6).toUpperCase()}`}
                           </span>
-                        )}
-                      </td>
-                      <td className="p-3 cell-border">
-                        <span className="bg-[#e2e2e2] dark:bg-white/20 text-black dark:text-white px-2 py-0.5 border border-black text-[10px] font-bold uppercase">
-                          {t.category_id ? categoryMap.get(t.category_id) || t.type : t.type}
-                        </span>
-                      </td>
-                      <td className={`p-3 cell-border text-right font-bold text-sm ${t.type === 'income' ? 'text-[#008080] dark:text-[#20b2aa]' : 'text-[#ba1a1a] dark:text-[#ff6b6b]'}`}>
-                        {t.type === 'income' ? '+' : '-'}Rp {Number(t.amount).toLocaleString('id-ID')}
-                      </td>
-                      <td className="p-3 cell-border text-center">
-                        <div className="flex justify-center gap-2">
-                          <button
-                            onClick={() => onOpenEditModal(t, 'transaction')}
-                            className="p-1.5 border-2 border-black bg-white dark:bg-black hover:bg-[#d2f000] hover:text-black text-black dark:text-white transition-all cursor-pointer"
-                            title="Edit Record"
-                            aria-label="Edit Transaksi"
-                          >
-                            <span className="material-symbols-outlined text-sm">edit</span>
-                          </button>
-                          <button
-                            onClick={() => onDeleteRecord(t.id, 'transaction')}
-                            className="p-1.5 border-2 border-black bg-white dark:bg-black hover:bg-[#ba1a1a] hover:text-white text-black dark:text-white transition-all cursor-pointer"
-                            title="Hapus Record"
-                            aria-label="Hapus Transaksi"
-                          >
-                            <span className="material-symbols-outlined text-sm">delete</span>
-                          </button>
-                        </div>
-                      </td>
-                    </tr>
-                  ))
+                        </td>
+                        <td className="p-3 cell-border font-bold">
+                          {occDate.toLocaleDateString('id-ID')}
+                        </td>
+                        <td className="p-3 cell-border font-bold text-black/70 dark:text-white/70">
+                          {occDate.toLocaleTimeString('id-ID', { hour: '2-digit', minute: '2-digit' })}
+                        </td>
+                        <td className="p-3 cell-border font-bold text-black dark:text-white">
+                          {t.merchant || '-'}
+                        </td>
+                        <td className="p-3 cell-border text-black/80 dark:text-white/80">
+                          {t.description || '-'}
+                        </td>
+                        <td className="p-3 cell-border">
+                          <span className="bg-[#e2e2e2] dark:bg-white/20 text-black dark:text-white px-2 py-0.5 border border-black text-[10px] font-bold uppercase">
+                            {t.category_id ? categoryMap.get(t.category_id) || t.type : t.type}
+                          </span>
+                        </td>
+                        <td className="p-3 cell-border">
+                          <span className="bg-black/10 dark:bg-white/10 text-black dark:text-white px-1.5 py-0.5 text-[9px] uppercase font-jetbrains font-bold border border-black/30">
+                            {t.source === 'telegram_chat' ? '🤖 Telegram' : t.source === 'receipt_ocr' ? '📄 Struk' : t.source || 'Manual'}
+                          </span>
+                        </td>
+                        <td className={`p-3 cell-border text-right font-bold text-sm ${t.type === 'income' ? 'text-[#008080] dark:text-[#20b2aa]' : 'text-[#ba1a1a] dark:text-[#ff6b6b]'}`}>
+                          {t.type === 'income' ? '+' : '-'}Rp {Number(t.amount).toLocaleString('id-ID')}
+                        </td>
+                        <td className="p-3 cell-border text-center">
+                          <div className="flex justify-center gap-2">
+                            <button
+                              onClick={() => onOpenEditModal(t, 'transaction')}
+                              className="p-1.5 border-2 border-black bg-white dark:bg-black hover:bg-[#d2f000] hover:text-black text-black dark:text-white transition-all cursor-pointer"
+                              title="Edit Record"
+                              aria-label="Edit Transaksi"
+                            >
+                              <span className="material-symbols-outlined text-sm">edit</span>
+                            </button>
+                            <button
+                              onClick={() => onDeleteRecord(t.id, 'transaction')}
+                              className="p-1.5 border-2 border-black bg-white dark:bg-black hover:bg-[#ba1a1a] hover:text-white text-black dark:text-white transition-all cursor-pointer"
+                              title="Hapus Record"
+                              aria-label="Hapus Transaksi"
+                            >
+                              <span className="material-symbols-outlined text-sm">delete</span>
+                            </button>
+                          </div>
+                        </td>
+                      </tr>
+                    );
+                  })
                 )}
               </tbody>
             </table>
@@ -377,8 +386,8 @@ export default function EditDataView({
                     </span>
                     <span className="font-bold">{new Date(t.occurred_at || t.created_at || '').toLocaleDateString('id-ID')}</span>
                   </div>
-                  <p className="font-bold text-sm">{t.merchant || t.description || 'Transaksi'}</p>
-                  {t.merchant && t.description && (
+                  <p className="font-bold text-sm">Toko: {t.merchant || '-'}</p>
+                  {t.description && (
                     <p className="text-xs text-black/70 dark:text-white/70 font-normal">💬 {t.description}</p>
                   )}
                   {t.source && (
@@ -411,7 +420,7 @@ export default function EditDataView({
           </div>
         </div>
       ) : (
-        /* Activity Table View */
+        /* Activity Table View (Separated Dedicated Columns + Status Dropdown) */
         <div className="bg-white dark:bg-[#1a1c1c] brutalist-border brutalist-shadow-lg flex flex-col overflow-hidden">
           <div className="bg-[#536000] text-white p-4 border-b-4 border-black flex justify-between items-center">
             <h2 className="font-bold text-base md:text-lg uppercase">Record Activity & Agenda</h2>
@@ -421,107 +430,132 @@ export default function EditDataView({
           </div>
 
           <div className="hidden md:block overflow-x-auto">
-            <table className="w-full text-left border-collapse min-w-[800px]">
+            <table className="w-full text-left border-collapse min-w-[950px]">
               <thead>
                 <tr className="bg-[#e2e2e2] dark:bg-[#2a2d2d] text-black dark:text-white font-bold text-xs uppercase">
-                  <th className="p-3 cell-border border-b-4 border-black w-32">Short ID</th>
+                  <th className="p-3 cell-border border-b-4 border-black w-28">Short ID</th>
                   <th
                     onClick={() => handleSort('occurred_at')}
-                    className="p-3 cell-border border-b-4 border-black w-32 cursor-pointer hover:bg-black/10 select-none"
+                    className="p-3 cell-border border-b-4 border-black w-28 cursor-pointer hover:bg-black/10 select-none"
                   >
                     Tanggal {sortField === 'occurred_at' && (sortDirection === 'asc' ? '▲' : '▼')}
                   </th>
+                  <th className="p-3 cell-border border-b-4 border-black w-20">Jam</th>
                   <th
                     onClick={() => handleSort('title')}
-                    className="p-3 cell-border border-b-4 border-black cursor-pointer hover:bg-black/10 select-none"
+                    className="p-3 cell-border border-b-4 border-black w-44 cursor-pointer hover:bg-black/10 select-none"
                   >
                     Judul Agenda {sortField === 'title' && (sortDirection === 'asc' ? '▲' : '▼')}
                   </th>
+                  <th className="p-3 cell-border border-b-4 border-black min-w-[180px]">Deskripsi / Catatan</th>
                   <th
                     onClick={() => handleSort('priority')}
-                    className="p-3 cell-border border-b-4 border-black w-32 cursor-pointer hover:bg-black/10 select-none"
+                    className="p-3 cell-border border-b-4 border-black w-28 cursor-pointer hover:bg-black/10 select-none"
                   >
                     Prioritas {sortField === 'priority' && (sortDirection === 'asc' ? '▲' : '▼')}
                   </th>
                   <th
                     onClick={() => handleSort('status')}
-                    className="p-3 cell-border border-b-4 border-black w-32 cursor-pointer hover:bg-black/10 select-none"
+                    className="p-3 cell-border border-b-4 border-black w-40 cursor-pointer hover:bg-black/10 select-none"
                   >
-                    Status {sortField === 'status' && (sortDirection === 'asc' ? '▲' : '▼')}
+                    Status (Manual) {sortField === 'status' && (sortDirection === 'asc' ? '▲' : '▼')}
                   </th>
-                  <th className="p-3 cell-border border-b-4 border-black w-36 text-center">Aksi</th>
+                  <th className="p-3 cell-border border-b-4 border-black w-24 text-center">Aksi</th>
                 </tr>
               </thead>
               <tbody className="font-jetbrains text-xs text-black dark:text-white">
                 {paginatedList.length === 0 ? (
                   <tr>
-                    <td colSpan={6} className="p-8 text-center font-bold uppercase text-black/60 dark:text-white/60">
+                    <td colSpan={8} className="p-8 text-center font-bold uppercase text-black/60 dark:text-white/60">
                       Tidak ada catatan aktivitas ditemukan.
                     </td>
                   </tr>
                 ) : (
-                  (paginatedList as Activity[]).map((a) => (
-                    <tr key={a.id} className="hover:bg-[#536000]/10 transition-colors">
-                      <td className="p-3 cell-border font-bold">
-                        <span className="bg-black text-[#d2f000] px-2 py-0.5 border border-black font-mono text-[11px]">
-                          {a.short_id || `ACT-${a.id?.replace(/-/g, '').substring(0, 6).toUpperCase()}`}
-                        </span>
-                      </td>
-                      <td className="p-3 cell-border font-bold">
-                        {new Date(a.occurred_at || a.created_at || '').toLocaleDateString('id-ID')}
-                      </td>
-                      <td className="p-3 cell-border font-bold">
-                        <div>{a.title}</div>
-                        {a.description && (
-                          <div className="text-[11px] font-normal text-black/70 dark:text-white/70 mt-0.5 font-jetbrains">
-                            💬 {a.description}
+                  (paginatedList as Activity[]).map((a) => {
+                    const occDate = new Date(a.occurred_at || a.created_at || '');
+                    return (
+                      <tr key={a.id} className="hover:bg-[#536000]/10 transition-colors">
+                        <td className="p-3 cell-border font-bold">
+                          <span className="bg-black text-[#d2f000] px-2 py-0.5 border border-black font-mono text-[11px]">
+                            {a.short_id || `ACT-${a.id?.replace(/-/g, '').substring(0, 6).toUpperCase()}`}
+                          </span>
+                        </td>
+                        <td className="p-3 cell-border font-bold">
+                          {occDate.toLocaleDateString('id-ID')}
+                        </td>
+                        <td className="p-3 cell-border font-bold text-black/70 dark:text-white/70">
+                          {occDate.toLocaleTimeString('id-ID', { hour: '2-digit', minute: '2-digit' })}
+                        </td>
+                        <td className="p-3 cell-border font-bold text-black dark:text-white">
+                          {a.title}
+                        </td>
+                        <td className="p-3 cell-border text-black/80 dark:text-white/80">
+                          {a.description || '-'}
+                        </td>
+                        <td className="p-3 cell-border">
+                          <span
+                            className={`px-2 py-0.5 border border-black text-[10px] font-bold uppercase ${
+                              a.priority === 'urgent'
+                                ? 'bg-[#ba1a1a] text-white'
+                                : a.priority === 'high'
+                                ? 'bg-[#ff8c00] text-white'
+                                : 'bg-[#e2e2e2] dark:bg-white/20 text-black dark:text-white'
+                            }`}
+                          >
+                            {a.priority || 'medium'}
+                          </span>
+                        </td>
+                        <td className="p-3 cell-border">
+                          <select
+                            value={a.status || 'scheduled'}
+                            onChange={(e) => onUpdateActivityStatus?.(a.id, e.target.value as any)}
+                            className={`w-full p-1 border-2 border-black font-bold text-[10px] uppercase cursor-pointer ${
+                              a.status === 'completed'
+                                ? 'bg-[#d2f000] text-black'
+                                : a.status === 'in_progress'
+                                ? 'bg-[#008080] text-white'
+                                : a.status === 'cancelled'
+                                ? 'bg-[#ba1a1a] text-white'
+                                : 'bg-white dark:bg-[#2a2d2d] text-black dark:text-white'
+                            }`}
+                          >
+                            <option value="scheduled" className="bg-white dark:bg-[#1a1c1c] text-black dark:text-white">
+                              Terjadwal
+                            </option>
+                            <option value="in_progress" className="bg-white dark:bg-[#1a1c1c] text-black dark:text-white">
+                              Berjalan
+                            </option>
+                            <option value="completed" className="bg-white dark:bg-[#1a1c1c] text-black dark:text-white">
+                              Selesai ✅
+                            </option>
+                            <option value="cancelled" className="bg-white dark:bg-[#1a1c1c] text-black dark:text-white">
+                              Dibatalkan ✕
+                            </option>
+                          </select>
+                        </td>
+                        <td className="p-3 cell-border text-center">
+                          <div className="flex justify-center gap-2">
+                            <button
+                              onClick={() => onOpenEditModal(a, 'activity')}
+                              className="p-1.5 border-2 border-black bg-white dark:bg-black hover:bg-[#d2f000] text-black dark:text-white hover:text-black transition-all cursor-pointer"
+                              title="Edit Record"
+                              aria-label="Edit Aktivitas"
+                            >
+                              <span className="material-symbols-outlined text-sm">edit</span>
+                            </button>
+                            <button
+                              onClick={() => onDeleteRecord(a.id, 'activity')}
+                              className="p-1.5 border-2 border-black bg-white dark:bg-black hover:bg-[#ba1a1a] text-black dark:text-white hover:text-white transition-all cursor-pointer"
+                              title="Hapus Record"
+                              aria-label="Hapus Aktivitas"
+                            >
+                              <span className="material-symbols-outlined text-sm">delete</span>
+                            </button>
                           </div>
-                        )}
-                      </td>
-                      <td className="p-3 cell-border">
-                        <span
-                          className={`px-2 py-0.5 border border-black text-[10px] font-bold uppercase ${
-                            a.priority === 'urgent'
-                              ? 'bg-[#ba1a1a] text-white'
-                              : a.priority === 'high'
-                              ? 'bg-[#ff8c00] text-white'
-                              : 'bg-[#e2e2e2] dark:bg-white/20 text-black dark:text-white'
-                          }`}
-                        >
-                          {a.priority || 'medium'}
-                        </span>
-                      </td>
-                      <td className="p-3 cell-border">
-                        <span
-                          className={`px-2 py-0.5 border border-black text-[10px] font-bold uppercase ${
-                            a.status === 'completed' ? 'bg-[#d2f000] text-black' : 'bg-[#e2e2e2] dark:bg-white/20 text-black dark:text-white'
-                          }`}
-                        >
-                          {a.status || 'scheduled'}
-                        </span>
-                      </td>
-                      <td className="p-3 cell-border text-center">
-                        <div className="flex justify-center gap-2">
-                          <button
-                            onClick={() => onOpenEditModal(a, 'activity')}
-                            className="p-1.5 border-2 border-black bg-white dark:bg-black hover:bg-[#d2f000] text-black dark:text-white hover:text-black transition-all cursor-pointer"
-                            title="Edit Record"
-                            aria-label="Edit Aktivitas"
-                          >
-                            <span className="material-symbols-outlined text-sm">edit</span>
-                          </button>
-                          <button
-                            onClick={() => onDeleteRecord(a.id, 'activity')}
-                            className="p-1.5 border-2 border-black bg-white dark:bg-black hover:bg-[#ba1a1a] text-black dark:text-white hover:text-white transition-all cursor-pointer"
-                            title="Hapus Record"
-                            aria-label="Hapus Aktivitas"
-                          >
-                            <span className="material-symbols-outlined text-sm">delete</span>
-                          </button>
-                        </div>
-                      </td>
-                    </tr>
-                  ))
+                        </td>
+                      </tr>
+                    );
+                  })
                 )}
               </tbody>
             </table>
@@ -543,10 +577,26 @@ export default function EditDataView({
                   {a.description && (
                     <p className="text-xs text-black/70 dark:text-white/70 font-normal">💬 {a.description}</p>
                   )}
-                  <div className="flex justify-between items-center pt-1">
-                    <span className={`px-2 py-0.5 border border-black font-bold uppercase ${a.status === 'completed' ? 'bg-[#d2f000] text-black' : 'bg-[#e2e2e2] dark:bg-white/20 text-black dark:text-white'}`}>
-                      {a.status || 'scheduled'}
-                    </span>
+                  <div className="flex justify-between items-center pt-1 gap-2">
+                    <select
+                      value={a.status || 'scheduled'}
+                      onChange={(e) => onUpdateActivityStatus?.(a.id, e.target.value as any)}
+                      className={`p-1 border-2 border-black font-bold text-[10px] uppercase ${
+                        a.status === 'completed'
+                          ? 'bg-[#d2f000] text-black'
+                          : a.status === 'in_progress'
+                          ? 'bg-[#008080] text-white'
+                          : a.status === 'cancelled'
+                          ? 'bg-[#ba1a1a] text-white'
+                          : 'bg-white dark:bg-[#2a2d2d] text-black dark:text-white'
+                      }`}
+                    >
+                      <option value="scheduled">Terjadwal</option>
+                      <option value="in_progress">Berjalan</option>
+                      <option value="completed">Selesai ✅</option>
+                      <option value="cancelled">Dibatalkan ✕</option>
+                    </select>
+
                     <div className="flex gap-2">
                       <button
                         onClick={() => onOpenEditModal(a, 'activity')}
