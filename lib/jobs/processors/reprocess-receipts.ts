@@ -11,13 +11,18 @@ export async function processReprocessReceiptsBatch(userId: string, batchSize: n
 
   if (!receiptTxs || receiptTxs.length === 0) return 0;
 
-  // Touch updated_at / audit flag
+  let processedCount = 0;
   for (const tx of receiptTxs) {
-    await supabaseAdmin
-      .from('transactions')
-      .update({ raw_ai_response: { ...tx.raw_ai_response, reprocessed: true, reprocessed_at: new Date().toISOString() } })
-      .eq('id', tx.id);
+    try {
+      await supabaseAdmin
+        .from('transactions')
+        .update({ raw_ai_response: { ...tx.raw_ai_response, reprocessed: true, reprocessed_at: new Date().toISOString() } })
+        .eq('id', tx.id);
+      processedCount++;
+    } catch (itemErr) {
+      console.error(`Failed to reprocess receipt tx ${tx.id}:`, itemErr);
+    }
   }
 
-  return receiptTxs.length;
+  return processedCount;
 }

@@ -1,6 +1,7 @@
 import { processReceiptImage } from '@/lib/gemini/prompts/ocr-receipt';
+import { categorizeItem } from '@/lib/gemini/prompts/categorize';
 import { insertTransaction } from '@/lib/supabase/queries/transactions';
-import { getOrCreateCategory } from '@/lib/supabase/queries/categories';
+import { getOrCreateCategory, getUserCategories } from '@/lib/supabase/queries/categories';
 import { sendTelegramMessage } from '@/lib/telegram/send-message';
 
 export async function processReceiptDirect(
@@ -37,8 +38,18 @@ export async function processReceiptDirect(
     // 2. Process image with Gemini Vision OCR
     const ocrResult = await processReceiptImage(imageBuffer, 'image/jpeg');
 
-    // 3. Get or Create Category
-    const categoryName = ocrResult.merchant || 'Struk Belanja';
+    // 3. Categorize merchant into a broad expense category
+    const userCats = await getUserCategories(userId);
+    const existingCatNames = userCats.map((c) => c.name);
+
+    const catResult = await categorizeItem({
+      transactionOrActivityName: `Belanja Struk: ${ocrResult.merchant || 'Toko'}`,
+      merchant: ocrResult.merchant,
+      description: ocrResult.items.map((i) => i.name).join(', '),
+      existingCategories: existingCatNames.length > 0 ? existingCatNames : ['Makanan & Minuman', 'Belanja Harian', 'Transportasi', 'Tagihan', 'Hiburan'],
+    });
+
+    const categoryName = catResult.categoryName || 'Belanja Harian';
     const category = await getOrCreateCategory(userId, categoryName);
 
     // 4. Save transaction

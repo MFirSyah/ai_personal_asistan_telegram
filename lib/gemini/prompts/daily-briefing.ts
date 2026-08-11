@@ -54,7 +54,8 @@ FORMAT OUTPUT (WAJIB JSON VALID TANPA MARKDOWN BACKTICKS):
       responseMimeType: 'application/json',
     });
 
-    const parsed = JSON.parse(response.text || '{}');
+    const rawText = (response.text || '').replace(/```json/gi, '').replace(/```/g, '').trim();
+    const parsed = JSON.parse(rawText || '{}');
     return {
       messages: Array.isArray(parsed.messages)
         ? parsed.messages

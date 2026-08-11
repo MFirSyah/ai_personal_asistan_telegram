@@ -13,6 +13,10 @@ export async function notifyJobProgress(
     .single();
 
   if (user?.telegram_id) {
-    await sendTelegramMessage(user.telegram_id, message);
+    try {
+      await sendTelegramMessage(user.telegram_id, message);
+    } catch (err) {
+      console.error(`Failed to send job progress notification to user ${userId}:`, err);
+    }
   }
 }

@@ -132,7 +132,13 @@ export async function calculate20Analytics(userId: string): Promise<InsightItem[
     ? [{ name: 'Selesai', value: completedActs }, { name: 'Pending', value: pendingActs }]
     : [];
 
-  const safeDailyLimitValue = Math.round(totalIncome > 0 ? (totalIncome * 0.7) / 30 : 100000);
+  const safeDailyLimitValue = Math.round(
+    totalIncome > 0
+      ? (totalIncome * 0.7) / 30
+      : dailyBurnRate > 0
+      ? Math.max(50000, dailyBurnRate * 0.8)
+      : 100000
+  );
 
   // 20 Analytics List Construction
   const insights: InsightItem[] = [

@@ -1,197 +1,169 @@
-# 🔍 AUDIT MENYELURUH & SARAN PERBAIKAN (GELOMBANG 2)
+# 🔍 AUDIT MENYELURUH & SARAN PERBAIKAN (GELOMBANG 3)
 
 **Tanggal Audit**: 11 Agustus 2026  
 **Auditor**: AI Code Auditor  
-**Status Audit Gelombang 1**: 26/26 Temuan Telah Diperbaiki & Live di Vercel Production  
-**Cakupan Audit Gelombang 2**: Re-Audit Seluruh File API Routes, Feature Modules, Export, PDF, Telegram Handlers, dan Supabase Queries
+**Status Audit Sebelumnya**: 
+- Gelombang 1: 26/26 Temuan Selesai & Terverifikasi
+- Gelombang 2: 10/10 Temuan Selesai & Live di Vercel Production
+**Cakupan Audit Gelombang 3**: Audit Ketahanan Parsing JSON AI, Pemrosesan Suara & Struk, Batch Cron Performance, Caching & Fallback Visual
 
 ---
 
 ## 📋 DAFTAR ISI
 
-1. [🚨 KRITIS — PostgREST Syntax Error & Invalid Date Risk](#1--kritis--postgrest-syntax-error--invalid-date-risk)
-2. [⚠️ PENTING — CSV Formatting & Unclosed Markdown Sanitize](#2-️-penting--csv-formatting--unclosed-markdown-sanitize)
-3. [🔧 SEDANG — Direct Live Query vs Caching & Invalid Date Guards](#3--sedang--direct-live-query-vs-caching--invalid-date-guards)
-4. [💡 RENDAH — Cron Reminder Window & Input Validation](#4--rendah--cron-reminder-window--input-validation)
-5. [📊 RINGKASAN TEMUAN GELOMBANG 2](#5--ringkasan-temuan-gelombang-2)
+1. [🚨 KRITIS — AI JSON Parsing & Category Sprawl](#1--kritis--ai-json-parsing--category-sprawl)
+2. [⚠️ PENTING — Unhandled HTTP Audio Fetch & QuickChart Fallback](#2-️-penting--unhandled-http-audio-fetch--quickchart-fallback)
+3. [🔧 SEDANG — Batching Cron Daily Insight & Safe Burn Rate](#3--sedang--batching-cron-daily-insight--safe-burn-rate)
+4. [💡 RENDAH — Shared Goal Input Guard & Categorize Backtick Strip](#4--rendah--shared-goal-input-guard--categorize-backtick-strip)
+5. [📊 RINGKASAN TEMUAN GELOMBANG 3](#5--ringkasan-temuan-gelombang-3)
 
 ---
 
-## 1. 🚨 KRITIS — PostgREST Syntax Error & Invalid Date Risk
+## 1. 🚨 KRITIS — AI JSON Parsing & Category Sprawl
 
-### G2-01: PostgREST Syntax Error pada Perintah `/pasangan` dengan Nama Non-Angka
+### G3-01: Direct `JSON.parse` Tanpa Strip Backticks pada `daily-briefing.ts`
 
-**File**: `lib/features/couples.ts` — Baris 29  
+**File**: `lib/gemini/prompts/daily-briefing.ts` — Baris 57  
 **Kode**:
 ```ts
-.or(`name.ilike.%${partnerTelegramIdOrName}%,telegram_id.eq.${partnerTelegramIdOrName}`)
+const parsed = JSON.parse(response.text || '{}');
 ```
-**Masalah**: Kolom `telegram_id` di PostgreSQL/Supabase bertipe **BIGINT (Integer)**. Ketika user mengetik `/pasangan Firman`, ekspresi `telegram_id.eq.Firman` dikirim ke PostgREST API. Supabase menolak request ini dengan HTTP 400 Error (`invalid input syntax for type bigint: "Firman"`), sehingga pencarian nama pasangan gagal total.  
-**Dampak**: Menghubungkan pasangan menggunakan nama panggilan selalu gagal dengan error database.  
+**Masalah**: Ketika Gemini AI mengembalikan teks JSON yang terbungkus markdown code block (contoh: ` ```json { "messages": [...] } ``` `), panggilan `JSON.parse` langsung melempar exception `SyntaxError: Unexpected token '`'` dan berpindah ke blok `catch`.  
+**Dampak**: Morning briefing harian gagal ter-generate dan jatuh ke teks fallback generik statis.  
 **Saran**:
-- Cek terlebih dahulu apakah input bernilai numerik (`!isNaN(Number(partnerTelegramIdOrName))`)
-- Jika numerik, query menggunakan `.or('name.ilike.%,telegram_id.eq...')`
-- Jika bukan numerik, query cukup menggunakan `.ilike('name', `%${partnerTelegramIdOrName}%`)`
+- Bersihkan pembungkus markdown sebelum diparsing:  
+  `const rawText = (response.text || '').replace(/```json/gi, '').replace(/```/g, '').trim();`  
+  `const parsed = JSON.parse(rawText || '{}');`
 
 ---
 
-### G2-02: String Kosong `due_date: ""` Menyebabkan Error PostgreSQL Syntax pada `addDebt`
+### G3-02: Penumpukan Kategori Spesifik Toko pada OCR Struk `receipt-processor.ts`
 
-**File**: `lib/features/smart-alerts.ts` — Baris 60  
+**File**: `lib/telegram/receipt-processor.ts` — Baris 41-42  
 **Kode**:
 ```ts
-due_date: debt.due_date || null,
+const categoryName = ocrResult.merchant || 'Struk Belanja';
+const category = await getOrCreateCategory(userId, categoryName);
 ```
-**Masalah**: Jika form/AI mengirimkan `debt.due_date` berupa string kosong (`""` atau `"   "`), ekspresi `"" || null` tetap bernilai `""`. Saat dimasukkan ke kolom database bertipe `DATE`, PostgreSQL akan melemparkan error: `invalid input syntax for type date: ""`.  
-**Dampak**: Gagal menyimpan catatan hutang baru saat tanggal jatuh tempo kosong.  
+**Masalah**: Setiap foto struk baru yang diproses akan secara otomatis membuat kategori dengan nama **merchant toko tersebut** (misalnya kategori `"Indomaret"`, `"Starbucks"`, `"Kopi Kenangan"`, `"Alfamart"`). Dalam 1 bulan, tabel `categories` user akan dipenuhi oleh puluhan nama toko spesifik, bukan kategori finansial umum.  
+**Dampak**: Distribusi kategori pengeluaran dan grafik pie chart menjadi acak-acakan dan sulit dianalisis.  
 **Saran**:
-- Gunakan `due_date: debt.due_date?.trim() ? debt.due_date.trim() : null`
+- Gunakan modul kategorisasi untuk mengelompokkan merchant ke kategori umum (seperti `"Makanan & Minuman"`, `"Belanja Harian"`, `"Transportasi"`).
 
 ---
 
-## 2. ⚠️ PENTING — CSV Formatting & Unclosed Markdown Sanitize
+## 2. ⚠️ PENTING — Unhandled HTTP Audio Fetch & QuickChart Fallback
 
-### G2-03: Kolom Tanggal Tanpa Kutip Memecah Kolom CSV pada `export-data.ts`
+### G3-03: `voice-processor.ts` Tidak Mengecek HTTP `res.ok` Saat Unduh Audio Telegram
 
-**File**: `lib/export/export-data.ts` — Baris 48, 81, 126, 137  
+**File**: `lib/telegram/voice-processor.ts` — Baris 25  
 **Kode**:
 ```ts
-a.occurred_at ? new Date(a.occurred_at).toLocaleString('id-ID') : ''
+const audioArrayBuffer = await fetch(voiceUrl).then((r) => r.arrayBuffer());
 ```
-**Masalah**: Fungsi `toLocaleString('id-ID')` menghasilkan format string dengan koma, contohnya: `"11/8/2026, 17:00:00"`. Karena CSV dipisahkan oleh tanda koma (`,`), nilai tanggal tanpa tanda kutip ganda akan dianggap sebagai **dua kolom terpisah**, merusak seluruh susunan header dan tata letak tabel di Microsoft Excel / Google Sheets.  
-**Dampak**: File `.csv` hasil export berantakan di Excel.  
+**Masalah**: Jika Telegram API mengembalikan respons non-200 (misalnya 404/403/500), `fetch` tidak melempar exception tetapi mengembalikan objek Response gagal. Panggilan `.arrayBuffer()` akan tetap mengonversi halaman HTML error menjadi buffer audio palsu yang kemudian dikirim ke Gemini AI.  
+**Dampak**: AI menerima data audio korup dan memberikan pesan kesalahan ambigu ke user.  
 **Saran**:
-- Bungkus nilai tanggal dalam tanda kutip ganda: `"${a.occurred_at ? new Date(a.occurred_at).toLocaleString('id-ID') : ''}"`
+- Tambahkan pengecekan: `const res = await fetch(voiceUrl); if (!res.ok) throw new Error('Failed to download voice file');`
 
 ---
 
-### G2-04: `sanitizeMarkdown` Tidak Memeriksa Unclosed Backticks (``` ` ```)
+### G3-04: `sendTelegramChart` Gagal Tanpa Fallback Jika QuickChart.io Error/Rate Limited
 
-**File**: `lib/telegram/send-message.ts` — Baris 65-73  
+**File**: `lib/telegram/send-chart.ts` — Baris 142-147  
 **Kode**:
 ```ts
-function sanitizeMarkdown(text: string): string {
-  const openAsterisks = (text.match(/\*/g) || []).length % 2 !== 0;
-  const openUnderscores = (text.match(/_/g) || []).length % 2 !== 0;
-  if (openAsterisks || openUnderscores) {
-    return text.replace(/[*_`]/g, '');
-  }
-  return text;
+const res = await fetch(url, { method: 'POST', body: JSON.stringify(body) });
+return await res.json();
+```
+**Masalah**: Jika layanan pihak ketiga QuickChart.io mengalami masalah koneksi atau rate limit, Telegram API `sendPhoto` gagal mendownload gambar dari URL QuickChart dan mengembalikan `{ ok: false }`. Fungsi `sendTelegramChart` mengembalikan error tanpa memberikan opsi pengiriman ringkasan berbasis teks biasa.  
+**Dampak**: User yang meminta `/ringkasan` grafik tidak menerima balasan sama sekali jika generator grafik error.  
+**Saran**:
+- Cek hasil `sendPhoto`. Jika gagal, lakukan fallback otomatis dengan mengirim caption/ringkasan data sebagai pesan teks biasa via `sendTelegramMessage`.
+
+---
+
+## 3. 🔧 SEDANG — Batching Cron Daily Insight & Safe Burn Rate
+
+### G3-05: Loop Sekuensial pada Cron `daily-insight/route.ts`
+
+**File**: `app/api/cron/daily-insight/route.ts` — Baris 23-36  
+**Kode**:
+```ts
+for (const u of users) {
+  const analytics = await calculate20Analytics(u.id);
+  ...
 }
 ```
-**Masalah**: Fungsi `sanitizeMarkdown` hanya mengecek apakah jumlah asterisk (`*`) atau underscore (`_`) ganjil. Jika AI menghasilkan backtick ganjil (misal 1 backtick ` ` ` tanpa pasangan tutup), `sanitizeMarkdown` meloloskannya. Telegram API akan gagal memarsing entity dan mengembalikan error `can't parse entities`.  
-**Dampak**: Pesan Telegram berisi potongan kode/ID gagal dikirim dalam format Markdown dan terpaksa fallback ke plain text tanpa cetak tebal.  
+**Masalah**: Penggenerasian kalkulasi harian diproses secara serial satu per satu. Dengan 20 user, cron membutuhkan 20x proses kalkulasi berat yang bisa memakan waktu hingga 30-40 detik.  
+**Dampak**: Risiko Vercel cron timeout (limit 60 detik untuk Serverless Function).  
 **Saran**:
-- Tambahkan `const openBackticks = (text.match(/`/g) || []).length % 2 !== 0;` ke dalam kondisi sanitasi
+- Proses kalkulasi user secara paralel menggunakan `Promise.allSettled()` dalam batch 5 user sekaligus.
 
 ---
 
-## 3. 🔧 SEDANG — Direct Live Query vs Caching & Invalid Date Guards
+### G3-06: Estimasi Burn Rate Harian Saat `totalIncome = 0`
 
-### G2-05: Tanpa Cache pada `GET /api/analytics/summary` (Setiap Buka Dashboard Memicu 3 Query Besar)
-
-**File**: `app/api/analytics/summary/route.ts` — Baris 20-43  
-**Masalah**: Setiap kali Telegram Mini App Dashboard dibuka oleh user, `GET /api/analytics/summary` selalu menghitung `calculate20Analytics(userId)` secara live dari 500 transaksi dan 200 aktivitas Supabase, lalu menimpa `daily_insights`.  
-**Dampak**: Beban query Supabase tinggi dan waktu muat Dashboard terasa lambat (1.5 - 3 detik).  
-**Saran**:
-- Cek terlebih dahulu apakah sudah ada `daily_insights` untuk tanggal hari ini (`insight_date = today`).
-- Jika ada dan `searchParams.get('force') !== 'true'`, langsung kembalikan payload cache tersebut.
-
----
-
-### G2-06: Potensi `RangeError: Invalid time value` pada Penjumlahan PDF Report
-
-**File**: `lib/features/pdf-report.ts` — Baris 74  
+**File**: `lib/analytics/calculators.ts` — Baris 135  
 **Kode**:
 ```ts
-const d = new Date(t.occurred_at || t.created_at).toLocaleDateString('id-ID');
+const safeDailyLimitValue = Math.round(totalIncome > 0 ? (totalIncome * 0.7) / 30 : 100000);
 ```
-**Masalah**: Jika `occurred_at` berisi format tidak valid, `new Date(...)` menghasilkan `Invalid Date`. Memanggil `.toLocaleDateString()` pada `Invalid Date` akan melempar unhandled exception `RangeError: Invalid time value`, membatalkan seluruh pembuatan PDF.  
-**Dampak**: Penggenerasian laporan PDF bulanan gagal total jika ada 1 transaksi ber-tanggal corrupt.  
+**Masalah**: Jika user belum mencatat pemasukan (`totalIncome = 0`), batas aman harian di-set sebesar `Rp 100.000` tanpa memperhatikan jumlah total pengeluaran yang telah dicatat bulan ini.  
+**Dampak**: Untuk user yang total pengeluarannya sudah mencapai Rp 10.000.000 tapi belum mencatat pemasukan, rekomendasi batas harian tetap menunjukkan angka statis Rp 100.000/hari yang kurang realistis.  
 **Saran**:
-- Bungkus dengan pembacaan tanggal aman: `const rawDate = t.occurred_at || t.created_at; const dt = new Date(rawDate); const d = isNaN(dt.getTime()) ? '-' : dt.toLocaleDateString('id-ID');`
+- Hitung batas aman berbasis rata-rata pengeluaran harian berjalan (`currentMonthExpenses / currentDayOfMonth`) jika `totalIncome = 0`.
 
 ---
 
-### G2-07: Potential `NaN` Window Date pada `checkActivityCollision` & `checkTransactionAnomaly`
+## 4. 💡 RENDAH — Shared Goal Input Guard & Categorize Backtick Strip
 
-**File**: `lib/analytics/anomalies.ts` — Baris 95-97  
-**Kode**:
-```ts
-const actTime = newAct.occurred_at ? new Date(newAct.occurred_at) : new Date();
-```
-**Masalah**: Jika `newAct.occurred_at` bernilai string tidak valid, `actTime.getTime()` mengembalikan `NaN`. `new Date(NaN).toISOString()` melempar exception `RangeError: Invalid time value`.  
-**Dampak**: Menambah agenda baru dengan format tanggal tidak standar menyebabkan error 500 saat pengecekan bentrok jadwal.  
+### G3-07: Direct `JSON.parse` pada `categorizeItem` (`categorize.ts`)
+
+**File**: `lib/gemini/prompts/categorize.ts` — Baris 53  
+**Masalah**: Sama seperti G3-01, `JSON.parse(response.text)` pada modul kategorisasi berisiko crash jika AI mengembalikan respons dengan pembungkus backticks.  
 **Saran**:
-- Lakukan validasi `isNaN(actTime.getTime())` dan fallback ke `new Date()`
+- Bersihkan string respons dengan regex sebelum diparsing.
 
 ---
 
-## 4. 💡 RENDAH — Cron Reminder Window & Input Validation
+### G3-08: Validasi `targetAmount` Positif pada `createSharedGoal`
 
-### G2-08: Window Pengingat Agenda Cron Kurang Fleksibel (Hanya Pengecekan Waktu Lalu)
-
-**File**: `app/api/cron/activity-check/route.ts` — Baris 8-18  
-**Kode**:
-```ts
-const fourHoursAgo = new Date(now.getTime() - 4 * 60 * 60 * 1000).toISOString();
-const nowIso = now.toISOString();
-```
-**Masalah**: Cron mengecek agenda yang dijadwalkan antara 4 jam yang lalu hingga **detik ini saja** (`lte('occurred_at', nowIso)`). Karena Vercel Cron berjalan per jam (misal 08:00, 09:00), agenda yang dijadwalkan jam 08:15 baru terkirim pengingatnya pada jam 09:00 (45 menit terlambat).  
-**Dampak**: Pengingat jam agenda sering datang terlambat dari jam target.  
+**File**: `lib/features/couples.ts` — Baris 42-62  
+**Masalah**: Parameter `targetAmount` pada pembuatan impian bersama tidak memvalidasi angka positif. User dapat membuat shared goal dengan nominal negatif.  
 **Saran**:
-- Perluas batas atas query hingga 15-30 menit ke depan (`now.getTime() + 30 * 60 * 1000`), sehingga pengingat dikirim di awal jam sebelum agenda dimulai
+- Tambahkan guard: `if (targetAmount <= 0) throw new Error('Target nominal harus lebih dari 0');`
 
 ---
 
-### G2-09: Validasi Input Telegram ID pada `/api/auth/link-telegram`
+### G3-09: Handling Failure pada `processReprocessReceiptsBatch`
 
-**File**: `app/api/auth/link-telegram/route.ts` — Baris 12  
-**Kode**:
-```ts
-const numericTelegramId = Number(telegramId);
-```
-**Masalah**: Tidak ada pengecekan `isNaN(numericTelegramId)`. Jika payload dikirim dengan `telegramId` bertipe string tidak valid, angka yang tersimpan di Supabase adalah `NaN` atau query gagal.  
+**File**: `lib/jobs/processors/reprocess-receipts.ts` — Baris 15-20  
+**Masalah**: Loop pemrosesan batch tidak dibungkus `try/catch` per item, sehingga 1 item transaksi corrupt akan menghentikan seluruh pekerjaan batch job.  
 **Saran**:
-- Tambahkan guard: `if (isNaN(numericTelegramId)) return NextResponse.json({ error: 'Invalid telegramId' }, { status: 400 });`
+- Tambahkan `try/catch` per item agar item korup bisa dilewati dan item lain tetap terproses.
 
 ---
 
-### G2-10: `updateUserName` Sanitasi Tanda Kutip dari AI Preference
+### G3-10: Error Handling pada Notification Job Progress (`notify-progress.ts`)
 
-**File**: `lib/telegram/chat-processor.ts` — Baris 178  
-**Masalah**: Ketika AI mengekstrak nama user dari percakapan (misal `value: '"Firman"'`), string yang dikirim ke `updateUserName` terkadang masih terbawa tanda kutip ganda dari JSON output.  
-**Dampak**: Nama panggilan user tersimpan di database sebagai `"Firman"` (dengan tanda kutip).  
+**File**: `lib/jobs/notify-progress.ts` — Baris 15-17  
+**Masalah**: Panggilan `sendTelegramMessage` tidak dibungkus try/catch. Jika bot diblokir oleh user, `notifyJobProgress` melempar error unhandled.  
 **Saran**:
-- Bersihkan string nama: `pref.value.trim().replace(/^["']|["']$/g, '')`
+- Bungkus panggilan pesan pengingat job dengan `try/catch` silent log.
 
 ---
 
-## 5. 📊 RINGKASAN TEMUAN GELOMBANG 2
+## 5. 📊 RINGKASAN TEMUAN GELOMBANG 3
 
 | Kategori | Jumlah Temuan |
 |----------|:------------:|
 | 🚨 **KRITIS** | 2 |
 | ⚠️ **PENTING** | 2 |
-| 🔧 **SEDANG** | 3 |
-| 💡 **RENDAH** | 3 |
-| **TOTAL GELOMBANG 2** | **10** |
-
-### Tabel Prioritas Eksekusi Perbaikan
-
-| Urutan | ID | Ringkasan | Estimasi |
-|:------:|------|-----------|----------|
-| 1 | G2-01 | Fix PostgREST syntax error `/pasangan` nama non-angka | 5 menit |
-| 2 | G2-02 | Fix `due_date: ""` string kosong di `addDebt` | 3 menit |
-| 3 | G2-03 | Quote tanggal pada CSV export `export-data.ts` | 5 menit |
-| 4 | G2-04 | Add unclosed backtick check di `sanitizeMarkdown` | 5 menit |
-| 5 | G2-05 | Add cache check pada `GET /api/analytics/summary` | 10 menit |
-| 6 | G2-06 | Guard `Invalid Date` pada PDF report generation | 5 menit |
-| 7 | G2-07 | Guard `Invalid Date` pada `checkActivityCollision` | 5 menit |
-| 8 | G2-08 | Perluas window look-ahead cron `activity-check` (+30 mnt) | 5 menit |
-| 9 | G2-09 | Add `isNaN` guard pada `/api/auth/link-telegram` | 2 menit |
-| 10 | G2-10 | Trim quotes dari AI preference name | 3 menit |
+| 🔧 **SEDANG** | 2 |
+| 💡 **RENDAH** | 4 |
+| **TOTAL GELOMBANG 3** | **10** |
 
 ---
 
-> **Catatan**: Seluruh 26 perbaikan dari Gelombang 1 sebelumnya telah terverifikasi stabil. Dokumen Gelombang 2 ini mencatat 10 temuan penyempurnaan tambahan untuk menjamin ketahanan sistem 100%.
+> **Rekomendasi**: Seluruh 10 temuan Gelombang 3 di atas disarankan untuk langsung dieksekusi agar sistem memiliki pertahanan sempurna (bulletproof) dari berbagai skenario data edge-case.

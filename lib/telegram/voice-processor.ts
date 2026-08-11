@@ -22,7 +22,11 @@ export async function processVoiceNoteDirect(
     }
 
     const voiceUrl = `https://api.telegram.org/file/bot${TELEGRAM_BOT_TOKEN}/${fileData.result.file_path}`;
-    const audioArrayBuffer = await fetch(voiceUrl).then((r) => r.arrayBuffer());
+    const audioRes = await fetch(voiceUrl);
+    if (!audioRes.ok) {
+      throw new Error(`Failed to download audio file from Telegram (HTTP ${audioRes.status})`);
+    }
+    const audioArrayBuffer = await audioRes.arrayBuffer();
     const audioBuffer = Buffer.from(audioArrayBuffer);
     const base64Audio = audioBuffer.toString('base64');
 

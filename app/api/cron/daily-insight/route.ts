@@ -18,11 +18,9 @@ export async function GET(req: NextRequest) {
     }
 
     const todayDate = new Date().toISOString().split('T')[0];
-    let count = 0;
 
-    for (const u of users) {
+    const processSingleUser = async (u: { id: string }) => {
       const analytics = await calculate20Analytics(u.id);
-
       await supabaseAdmin.from('daily_insights').upsert(
         {
           user_id: u.id,
@@ -31,8 +29,15 @@ export async function GET(req: NextRequest) {
         },
         { onConflict: 'user_id,insight_date' }
       );
+    };
 
-      count++;
+    const chunkSize = 5;
+    let count = 0;
+
+    for (let i = 0; i < users.length; i += chunkSize) {
+      const chunk = users.slice(i, i + chunkSize);
+      const results = await Promise.allSettled(chunk.map((u) => processSingleUser(u)));
+      count += results.filter((r) => r.status === 'fulfilled').length;
     }
 
     return NextResponse.json({ ok: true, processed: count });

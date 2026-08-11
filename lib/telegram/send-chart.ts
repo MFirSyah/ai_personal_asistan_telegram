@@ -144,9 +144,21 @@ export async function sendTelegramChart(
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify(body),
     });
-    return await res.json();
+    const result = await res.json();
+
+    if (!result.ok && caption) {
+      console.warn('QuickChart sendPhoto failed, falling back to text message:', result.description);
+      const { sendTelegramMessage } = await import('./send-message');
+      await sendTelegramMessage(chatId, caption);
+    }
+
+    return result;
   } catch (error) {
     console.error('Failed to send Telegram chart photo:', error);
+    if (caption) {
+      const { sendTelegramMessage } = await import('./send-message');
+      await sendTelegramMessage(chatId, caption).catch(console.error);
+    }
     return null;
   }
 }

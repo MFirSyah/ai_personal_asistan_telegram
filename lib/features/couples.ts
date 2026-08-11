@@ -46,6 +46,10 @@ export async function linkPartnerAccounts(userId: string, partnerTelegramIdOrNam
 }
 
 export async function createSharedGoal(userId: string, title: string, targetAmount: number, targetDate?: string): Promise<SharedGoal> {
+  if (!targetAmount || targetAmount <= 0) {
+    throw new Error('Target nominal impian harus bernilai positif');
+  }
+
   const { data: user } = await supabaseAdmin.from('users').select('partner_user_id').eq('id', userId).single();
   const partnerId = user?.partner_user_id || undefined;
 

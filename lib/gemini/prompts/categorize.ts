@@ -50,7 +50,8 @@ Format JSON Output:
       responseMimeType: 'application/json',
     });
 
-    const parsed = JSON.parse(response.text || '{}');
+    const rawText = (response.text || '').replace(/```json/gi, '').replace(/```/g, '').trim();
+    const parsed = JSON.parse(rawText || '{}');
     return {
       categoryName: parsed.categoryName || 'Lain-lain',
       isNewCategory: Boolean(parsed.isNewCategory),
