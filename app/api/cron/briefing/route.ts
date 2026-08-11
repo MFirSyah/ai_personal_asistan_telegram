@@ -17,51 +17,51 @@ export async function GET(req: NextRequest) {
   }
 
   try {
-    // 1. Get current time in WIB (Asia/Jakarta)
+    // 1. Get current date in WIB (Asia/Jakarta)
     const nowWib = new Date(new Date().toLocaleString('en-US', { timeZone: 'Asia/Jakarta' }));
     const currentHour = nowWib.getHours();
     const todayDateStr = `${nowWib.getFullYear()}-${String(nowWib.getMonth() + 1).padStart(2, '0')}-${String(nowWib.getDate()).padStart(2, '0')}`;
 
-    const { data: usersWithBriefing } = await supabaseAdmin
-      .from('user_settings')
-      .select('user_id, briefing_time, timezone, briefing_enabled, last_briefing_date')
-      .eq('briefing_enabled', true);
+    // 2. Fetch ALL registered users who have a Telegram ID
+    const { data: allUsers, error: usersErr } = await supabaseAdmin
+      .from('users')
+      .select('id, name, telegram_id')
+      .not('telegram_id', 'is', null);
 
-    if (!usersWithBriefing || usersWithBriefing.length === 0) {
-      return NextResponse.json({ ok: true, processed: 0, reason: 'No users with briefing enabled' });
+    if (usersErr || !allUsers || allUsers.length === 0) {
+      return NextResponse.json({ ok: true, processed: 0, reason: 'No users with Telegram ID found' });
     }
+
+    // 3. Fetch user_settings for settings overrides
+    const { data: allSettings } = await supabaseAdmin
+      .from('user_settings')
+      .select('user_id, briefing_time, briefing_enabled, last_briefing_date');
+
+    const settingsMap = new Map<string, any>();
+    (allSettings || []).forEach((s) => settingsMap.set(s.user_id, s));
 
     let processedCount = 0;
 
-    for (const setting of usersWithBriefing) {
-      // Check briefing hour match
-      const targetTimeStr = setting.briefing_time || '07:00';
-      const targetHour = parseInt(targetTimeStr.split(':')[0], 10);
+    for (const user of allUsers) {
+      if (!user.telegram_id) continue;
 
-      // Check if already sent today
-      if (!isForce && setting.last_briefing_date === todayDateStr) {
+      const userSetting = settingsMap.get(user.id);
+      const isEnabled = userSetting ? Boolean(userSetting.briefing_enabled) : true; // Default enabled for all users
+      const lastSentDate = userSetting?.last_briefing_date;
+
+      // Skip if explicitly disabled
+      if (!isEnabled) continue;
+
+      // Skip if already sent today (unless forced)
+      if (!isForce && lastSentDate === todayDateStr) {
         continue;
       }
 
-      // If target hour hasn't been reached yet and not force, skip
-      if (!isForce && targetHour > currentHour) {
-        continue;
-      }
-
-      // Get user info
-      const { data: user } = await supabaseAdmin
-        .from('users')
-        .select('*')
-        .eq('id', setting.user_id)
-        .single();
-
-      if (!user || !user.telegram_id) continue;
-
-      // Get latest daily insight payload
+      // Fetch context data for AI briefing
       const { data: insight } = await supabaseAdmin
         .from('daily_insights')
         .select('payload')
-        .eq('user_id', setting.user_id)
+        .eq('user_id', user.id)
         .order('insight_date', { ascending: false })
         .limit(1)
         .maybeSingle();
@@ -89,11 +89,14 @@ export async function GET(req: NextRequest) {
         await sendTelegramMessage(user.telegram_id, briefing.follow_up_question);
       }
 
-      // Update last_briefing_date
-      await supabaseAdmin
-        .from('user_settings')
-        .update({ last_briefing_date: todayDateStr })
-        .eq('user_id', setting.user_id);
+      // Update last_briefing_date in user_settings
+      await supabaseAdmin.from('user_settings').upsert({
+        user_id: user.id,
+        briefing_enabled: true,
+        briefing_time: userSetting?.briefing_time || '07:00:00',
+        last_briefing_date: todayDateStr,
+        updated_at: new Date().toISOString(),
+      });
 
       processedCount++;
     }

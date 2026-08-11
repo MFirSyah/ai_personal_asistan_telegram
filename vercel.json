@@ -16,12 +16,12 @@
   },
   "crons": [
     {
-      "path": "/api/cron/briefing",
-      "schedule": "0 22 * * *"
+      "path": "/api/cron/daily-insight",
+      "schedule": "0 21 * * *"
     },
     {
-      "path": "/api/cron/daily-insight",
-      "schedule": "0 11 * * *"
+      "path": "/api/cron/briefing",
+      "schedule": "0 22 * * *"
     },
     {
       "path": "/api/cron/activity-check",
