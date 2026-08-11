@@ -131,6 +131,7 @@ export async function POST(req: NextRequest) {
           type: data.type === 'income' ? 'income' : 'expense',
           merchant: String(data.merchant || 'Manual Dashboard').trim(),
           description: String(data.description || '').trim(),
+          category_id: data.category_id || null,
           source: 'chat_manual',
           occurred_at: data.occurred_at || new Date().toISOString(),
         })
@@ -138,7 +139,11 @@ export async function POST(req: NextRequest) {
         .single();
 
       if (error) throw error;
-      return NextResponse.json({ ok: true, record: newTx });
+      const recordWithShortId = {
+        ...newTx,
+        short_id: `TX-${newTx.id.replace(/-/g, '').substring(0, 6).toUpperCase()}`,
+      };
+      return NextResponse.json({ ok: true, record: recordWithShortId });
     } else {
       const titleStr = String(data.title || '').trim();
       if (!titleStr) {
@@ -159,10 +164,88 @@ export async function POST(req: NextRequest) {
         .single();
 
       if (error) throw error;
-      return NextResponse.json({ ok: true, record: newAct });
+      const recordWithShortId = {
+        ...newAct,
+        short_id: `ACT-${newAct.id.replace(/-/g, '').substring(0, 6).toUpperCase()}`,
+      };
+      return NextResponse.json({ ok: true, record: recordWithShortId });
     }
   } catch (err: any) {
     console.error('API /api/data/records POST error:', err);
     return NextResponse.json({ error: err.message }, { status: 500 });
   }
 }
+
+export async function PATCH(req: NextRequest) {
+  try {
+    const body = await req.json();
+    let { userId, telegram_id: rawTelegramId, recordId, type, data } = body;
+
+    if (!recordId || !type || !data) {
+      return NextResponse.json({ error: 'Missing required parameters' }, { status: 400 });
+    }
+
+    const resolvedUser = await resolveUserForApi(userId, rawTelegramId);
+    userId = resolvedUser?.id;
+
+    if (!userId) {
+      return NextResponse.json({ error: 'User not found' }, { status: 404 });
+    }
+
+    const table = type === 'transaction' ? 'transactions' : 'activities';
+    const updatePayload: Record<string, any> = {
+      updated_at: new Date().toISOString(),
+    };
+
+    if (type === 'transaction') {
+      if (data.amount !== undefined) {
+        const parsedAmount = Number(data.amount);
+        if (isNaN(parsedAmount) || parsedAmount <= 0) {
+          return NextResponse.json({ error: 'Nominal transaksi harus berupa angka positif' }, { status: 400 });
+        }
+        updatePayload.amount = parsedAmount;
+      }
+      if (data.merchant !== undefined) updatePayload.merchant = String(data.merchant).trim();
+      if (data.description !== undefined) updatePayload.description = String(data.description).trim();
+      if (data.type !== undefined) updatePayload.type = data.type === 'income' ? 'income' : 'expense';
+      if (data.category_id !== undefined) updatePayload.category_id = data.category_id || null;
+      if (data.occurred_at !== undefined) updatePayload.occurred_at = data.occurred_at;
+    } else {
+      if (data.title !== undefined) {
+        const titleStr = String(data.title).trim();
+        if (!titleStr) return NextResponse.json({ error: 'Judul aktivitas tidak boleh kosong' }, { status: 400 });
+        updatePayload.title = titleStr;
+      }
+      if (data.description !== undefined) updatePayload.description = String(data.description).trim();
+      if (data.priority !== undefined) {
+        updatePayload.priority = ['low', 'medium', 'high', 'urgent'].includes(data.priority) ? data.priority : 'medium';
+      }
+      if (data.status !== undefined) {
+        updatePayload.status = ['scheduled', 'in_progress', 'completed', 'cancelled'].includes(data.status) ? data.status : 'scheduled';
+      }
+      if (data.occurred_at !== undefined) updatePayload.occurred_at = data.occurred_at;
+    }
+
+    const { data: updatedRecord, error } = await supabaseAdmin
+      .from(table)
+      .update(updatePayload)
+      .eq('id', recordId)
+      .eq('user_id', userId)
+      .select()
+      .single();
+
+    if (error) throw error;
+
+    const prefix = type === 'transaction' ? 'TX' : 'ACT';
+    const recordWithShortId = {
+      ...updatedRecord,
+      short_id: `${prefix}-${updatedRecord.id.replace(/-/g, '').substring(0, 6).toUpperCase()}`,
+    };
+
+    return NextResponse.json({ ok: true, record: recordWithShortId });
+  } catch (err: any) {
+    console.error('API /api/data/records PATCH error:', err);
+    return NextResponse.json({ error: err.message }, { status: 500 });
+  }
+}
+
