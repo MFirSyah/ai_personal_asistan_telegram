@@ -317,7 +317,17 @@ export default function EditDataView({
                         {new Date(t.occurred_at || t.created_at || '').toLocaleDateString('id-ID')}
                       </td>
                       <td className="p-3 cell-border font-bold">
-                        {t.merchant || t.description || 'Transaksi'}
+                        <div>{t.merchant || t.description || 'Transaksi'}</div>
+                        {t.merchant && t.description && (
+                          <div className="text-[11px] font-normal text-black/70 dark:text-white/70 mt-0.5 font-jetbrains">
+                            💬 {t.description}
+                          </div>
+                        )}
+                        {t.source && (
+                          <span className="mt-1 inline-block bg-black/10 dark:bg-white/10 text-black dark:text-white px-1.5 py-0.2 text-[9px] uppercase font-jetbrains font-bold border border-black/30">
+                            {t.source === 'telegram_chat' ? '🤖 Telegram AI' : t.source === 'receipt_ocr' ? '📄 Scan Struk' : t.source}
+                          </span>
+                        )}
                       </td>
                       <td className="p-3 cell-border">
                         <span className="bg-[#e2e2e2] dark:bg-white/20 text-black dark:text-white px-2 py-0.5 border border-black text-[10px] font-bold uppercase">
@@ -368,6 +378,14 @@ export default function EditDataView({
                     <span className="font-bold">{new Date(t.occurred_at || t.created_at || '').toLocaleDateString('id-ID')}</span>
                   </div>
                   <p className="font-bold text-sm">{t.merchant || t.description || 'Transaksi'}</p>
+                  {t.merchant && t.description && (
+                    <p className="text-xs text-black/70 dark:text-white/70 font-normal">💬 {t.description}</p>
+                  )}
+                  {t.source && (
+                    <span className="inline-block bg-black/10 dark:bg-white/10 text-black dark:text-white px-1.5 py-0.2 text-[9px] uppercase font-jetbrains font-bold border border-black/30">
+                      {t.source === 'telegram_chat' ? '🤖 Telegram AI' : t.source === 'receipt_ocr' ? '📄 Scan Struk' : t.source}
+                    </span>
+                  )}
                   <div className="flex justify-between items-center pt-1">
                     <span className={`font-black text-sm ${t.type === 'income' ? 'text-[#008080] dark:text-[#20b2aa]' : 'text-[#ba1a1a] dark:text-[#ff6b6b]'}`}>
                       {t.type === 'income' ? '+' : '-'}Rp {Number(t.amount).toLocaleString('id-ID')}
@@ -452,7 +470,14 @@ export default function EditDataView({
                       <td className="p-3 cell-border font-bold">
                         {new Date(a.occurred_at || a.created_at || '').toLocaleDateString('id-ID')}
                       </td>
-                      <td className="p-3 cell-border font-bold">{a.title}</td>
+                      <td className="p-3 cell-border font-bold">
+                        <div>{a.title}</div>
+                        {a.description && (
+                          <div className="text-[11px] font-normal text-black/70 dark:text-white/70 mt-0.5 font-jetbrains">
+                            💬 {a.description}
+                          </div>
+                        )}
+                      </td>
                       <td className="p-3 cell-border">
                         <span
                           className={`px-2 py-0.5 border border-black text-[10px] font-bold uppercase ${
@@ -515,6 +540,9 @@ export default function EditDataView({
                     <span className="font-bold">{new Date(a.occurred_at || a.created_at || '').toLocaleDateString('id-ID')}</span>
                   </div>
                   <p className="font-bold text-sm">{a.title}</p>
+                  {a.description && (
+                    <p className="text-xs text-black/70 dark:text-white/70 font-normal">💬 {a.description}</p>
+                  )}
                   <div className="flex justify-between items-center pt-1">
                     <span className={`px-2 py-0.5 border border-black font-bold uppercase ${a.status === 'completed' ? 'bg-[#d2f000] text-black' : 'bg-[#e2e2e2] dark:bg-white/20 text-black dark:text-white'}`}>
                       {a.status || 'scheduled'}

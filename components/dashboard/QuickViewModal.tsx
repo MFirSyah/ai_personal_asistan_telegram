@@ -26,9 +26,22 @@ export default function QuickViewModal({ record, onClose }: QuickViewModalProps)
         </div>
 
         <div className="space-y-3 text-black dark:text-white">
-          <p>
-            <strong>Judul / Item:</strong> {record.title || record.merchant || record.description || 'Tidak ada judul'}
-          </p>
+          {record.merchant && (
+            <p>
+              <strong>Merchant / Toko:</strong> {record.merchant}
+            </p>
+          )}
+          {record.title && (
+            <p>
+              <strong>Judul Agenda:</strong> {record.title}
+            </p>
+          )}
+          {record.description && (
+            <div className="bg-[#e2e2e2] dark:bg-white/10 p-2.5 border-2 border-black">
+              <strong>Deskripsi / Catatan:</strong>
+              <p className="mt-1 font-normal opacity-90">{record.description}</p>
+            </div>
+          )}
           {record.amount !== undefined && (
             <p>
               <strong>Nominal:</strong> Rp {Number(record.amount).toLocaleString('id-ID')}
@@ -36,13 +49,31 @@ export default function QuickViewModal({ record, onClose }: QuickViewModalProps)
           )}
           {record.type && (
             <p>
-              <strong>Tipe:</strong> <span className="uppercase font-bold">{record.type}</span>
+              <strong>Tipe Transaksi:</strong> <span className="uppercase font-bold">{record.type === 'income' ? '💰 Pemasukan' : '💸 Pengeluaran'}</span>
+            </p>
+          )}
+          {record.source && (
+            <p>
+              <strong>Asal Input Data:</strong>{' '}
+              <span className="uppercase font-bold font-mono text-[10px] bg-black text-[#d2f000] px-2 py-0.5 border border-black">
+                {record.source === 'telegram_chat' ? '🤖 Telegram AI' : record.source === 'receipt_ocr' ? '📄 Scan Struk' : record.source}
+              </span>
+            </p>
+          )}
+          {record.priority && (
+            <p>
+              <strong>Prioritas:</strong> <span className="uppercase font-bold">{record.priority}</span>
+            </p>
+          )}
+          {record.status && (
+            <p>
+              <strong>Status Agenda:</strong> <span className="uppercase font-bold">{record.status}</span>
             </p>
           )}
           {record.insight && (
-            <p className="bg-[#f9f9f9] dark:bg-[#2a2d2d] p-3 border-2 border-black">
+            <div className="bg-[#f9f9f9] dark:bg-[#2a2d2d] p-3 border-2 border-black">
               <strong>Insight Model:</strong> {record.insight}
-            </p>
+            </div>
           )}
           {record.category && (
             <p>

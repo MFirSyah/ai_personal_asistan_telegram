@@ -43,7 +43,7 @@ export default function AddEditRecordModal({
       if (type === 'transaction') {
         const tx = record as Transaction;
         setFormData({
-          titleOrMerchant: tx.merchant || tx.description || '',
+          titleOrMerchant: tx.merchant || '',
           amount: String(tx.amount || ''),
           type: tx.type || 'expense',
           category_id: tx.category_id || '',
