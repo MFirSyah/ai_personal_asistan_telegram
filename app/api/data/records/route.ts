@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { supabaseAdmin } from '@/lib/supabase/client';
 import { resolveUserForApi } from '@/lib/supabase/queries/sessions';
+import { sendBriefingEmail } from '@/lib/email/send-briefing-email';
 
 export async function GET(req: NextRequest) {
   const { searchParams } = new URL(req.url);
@@ -217,6 +218,30 @@ export async function PATCH(req: NextRequest) {
       });
 
       return NextResponse.json({ ok: true, message: 'Profile updated' });
+    }
+
+    if (type === 'test_email') {
+      const targetEmail = String(data.email || '').trim();
+      if (!targetEmail || !targetEmail.includes('@')) {
+        return NextResponse.json({ error: 'Alamat email tidak valid untuk dites' }, { status: 400 });
+      }
+
+      const testResult = await sendBriefingEmail(targetEmail, {
+        userName: resolvedUser?.name || 'Teman',
+        todayDateStr: new Date().toLocaleDateString('id-ID', { weekday: 'long', day: 'numeric', month: 'long', year: 'numeric' }),
+        safeDailyLimit: 150000,
+        totalIncome: 500000,
+        totalExpense: 120000,
+        todayActs: ['Tes Pengiriman Email Morning Briefing DATA_CORE_V1'],
+        urgentActs: ['Pastikan email ini masuk dengan rapi di inbox kamu!'],
+        aiInsight: 'Fitur ganti email & pengiriman briefing via email telah berhasil aktif di Supabase!',
+      });
+
+      if (!testResult.ok) {
+        return NextResponse.json({ error: testResult.error || 'Gagal mengirim email tes' }, { status: 400 });
+      }
+
+      return NextResponse.json({ ok: true, message: `Email tes berhasil dikirim ke ${targetEmail}!`, result: testResult });
     }
 
     const table = type === 'transaction' ? 'transactions' : 'activities';

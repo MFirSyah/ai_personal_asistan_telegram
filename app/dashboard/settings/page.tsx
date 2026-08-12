@@ -12,7 +12,41 @@ export default function SettingsPage() {
   const [briefingTime, setBriefingTime] = useState('07:00');
   const [briefingEnabled, setBriefingEnabled] = useState(true);
   const [saving, setSaving] = useState(false);
+  const [testingEmail, setTestingEmail] = useState(false);
   const [message, setMessage] = useState('');
+
+  const handleTestEmail = async () => {
+    if (!userEmail || !userEmail.includes('@')) {
+      setMessage('⚠️ Harap masukkan alamat email yang valid terlebih dahulu!');
+      return;
+    }
+    setTestingEmail(true);
+    setMessage('🚀 Sedang memproses pengiriman email tes...');
+
+    try {
+      const res = await fetch('/api/data/records', {
+        method: 'PATCH',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          userId: userId || undefined,
+          telegram_id: telegramId || undefined,
+          type: 'test_email',
+          data: { email: userEmail },
+        }),
+      });
+
+      const result = await res.json();
+      if (result.ok) {
+        setMessage(`✅ Email tes berhasil dikirim ke ${userEmail}! Cek Inbox atau folder Spam.`);
+      } else {
+        setMessage(`⚠️ Gagal mengirim email tes: ${result.error || 'Terjadi kesalahan'}`);
+      }
+    } catch (err: any) {
+      setMessage(`⚠️ Gagal mengirim email tes: ${err.message || 'Network error'}`);
+    } finally {
+      setTestingEmail(false);
+    }
+  };
 
   useEffect(() => {
     if (typeof window !== 'undefined') {
@@ -177,18 +211,25 @@ export default function SettingsPage() {
           {/* Email Settings Section */}
           <div className="pt-4 border-t-2 border-black">
             <h2 className="font-bold text-base uppercase border-b-2 border-black pb-2 text-[#008080] dark:text-[#20b2aa] mb-3">
-              3. Pengiriman Email Morning Briefing 📧
+              3. Pengaturan & Ganti Email Supabase 📧
             </h2>
 
-            <div className="space-y-3">
+            <div className="space-y-4">
+              <div className="p-3 bg-[#f0f0f0] dark:bg-[#2a2d2d] border-2 border-black font-jetbrains text-xs">
+                <span className="font-bold uppercase text-black/70 dark:text-white/70">Email Terdaftar Saat Ini:</span>
+                <span className="block font-bold text-sm text-[#008080] dark:text-[#20b2aa] mt-0.5">
+                  {userEmail ? `✉️ ${userEmail}` : '⚠️ Belum Didaftarkan di Supabase'}
+                </span>
+              </div>
+
               <div>
-                <label className="block font-bold uppercase mb-1 text-black dark:text-white">Alamat Email Penerima</label>
+                <label className="block font-bold uppercase mb-1 text-black dark:text-white">Ganti / Perbarui Alamat Email</label>
                 <input
                   type="email"
-                  placeholder="nama@email.com"
+                  placeholder="Ketik email baru kamu di sini..."
                   value={userEmail}
                   onChange={(e) => setUserEmail(e.target.value)}
-                  className="w-full bg-[#f9f9f9] dark:bg-[#2a2d2d] text-black dark:text-white thin-border p-3 text-xs"
+                  className="w-full bg-[#f9f9f9] dark:bg-[#2a2d2d] text-black dark:text-white thin-border p-3 text-xs font-bold"
                 />
               </div>
 
@@ -204,6 +245,16 @@ export default function SettingsPage() {
                   Kirimkan Morning Briefing juga via Email setiap pagi
                 </label>
               </div>
+
+              <button
+                type="button"
+                onClick={handleTestEmail}
+                disabled={testingEmail || !userEmail}
+                className="w-full bg-[#d2f000] text-black border-2 border-black p-2.5 font-bold uppercase text-xs hover:bg-black hover:text-white transition-all disabled:opacity-50 cursor-pointer flex items-center justify-center gap-2 shadow-[2px_2px_0px_0px_rgba(0,0,0,1)]"
+              >
+                <span>🧪</span>
+                <span>{testingEmail ? 'Mengirim Email Tes...' : `Kirim Email Uji Coba Ke (${userEmail || 'Email Baru'})`}</span>
+              </button>
             </div>
           </div>
 
