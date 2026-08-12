@@ -220,59 +220,9 @@ export default function SettingsPage() {
             </div>
           </div>
 
-          {/* Email Settings Section */}
-          <div className="pt-4 border-t-2 border-black">
-            <h2 className="font-bold text-base uppercase border-b-2 border-black pb-2 text-[#008080] dark:text-[#20b2aa] mb-3">
-              3. Pengaturan & Ganti Email Supabase 📧
-            </h2>
-
-            <div className="space-y-4">
-              <div className="p-3 bg-[#f0f0f0] dark:bg-[#2a2d2d] border-2 border-black font-jetbrains text-xs">
-                <span className="font-bold uppercase text-black/70 dark:text-white/70">Email Terdaftar Saat Ini:</span>
-                <span className="block font-bold text-sm text-[#008080] dark:text-[#20b2aa] mt-0.5">
-                  {userEmail ? `✉️ ${userEmail}` : '⚠️ Belum Didaftarkan di Supabase'}
-                </span>
-              </div>
-
-              <div>
-                <label className="block font-bold uppercase mb-1 text-black dark:text-white">Ganti / Perbarui Alamat Email</label>
-                <input
-                  type="email"
-                  placeholder="Ketik email baru kamu di sini..."
-                  value={userEmail}
-                  onChange={(e) => setUserEmail(e.target.value)}
-                  className="w-full bg-[#f9f9f9] dark:bg-[#2a2d2d] text-black dark:text-white thin-border p-3 text-xs font-bold"
-                />
-              </div>
-
-              <div className="flex items-center gap-3 pt-1">
-                <input
-                  type="checkbox"
-                  id="email-briefing-toggle"
-                  checked={emailBriefingEnabled}
-                  onChange={(e) => setEmailBriefingEnabled(e.target.checked)}
-                  className="w-4 h-4"
-                />
-                <label htmlFor="email-briefing-toggle" className="font-bold uppercase cursor-pointer text-black dark:text-white">
-                  Kirimkan Morning Briefing juga via Email setiap pagi
-                </label>
-              </div>
-
-              <button
-                type="button"
-                onClick={handleTestEmail}
-                disabled={testingEmail || !userEmail}
-                className="w-full bg-[#d2f000] text-black border-2 border-black p-2.5 font-bold uppercase text-xs hover:bg-black hover:text-white transition-all disabled:opacity-50 cursor-pointer flex items-center justify-center gap-2 shadow-[2px_2px_0px_0px_rgba(0,0,0,1)]"
-              >
-                <span>🧪</span>
-                <span>{testingEmail ? 'Mengirim Email Tes...' : `Kirim Email Uji Coba Ke (${userEmail || 'Email Baru'})`}</span>
-              </button>
-            </div>
-          </div>
-
           <div className="pt-4 border-t-2 border-black space-y-3">
             <h2 className="font-bold text-base uppercase border-b-2 border-black pb-2 text-black dark:text-white">
-              4. Status Sesi & Integrasi
+              3. Status Sesi & Integrasi
             </h2>
 
             <div className="p-3 bg-[#e2e2e2] dark:bg-white/10 border-2 border-black space-y-1 text-black dark:text-white">

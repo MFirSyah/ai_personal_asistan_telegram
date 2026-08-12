@@ -21,6 +21,18 @@ export interface Debt {
   status: 'unpaid' | 'paid' | 'cancelled';
 }
 
+export interface Installment {
+  id: string;
+  user_id: string;
+  item_name: string;
+  monthly_amount: number;
+  total_months: number;
+  remaining_months: number;
+  due_day: number;
+  status: 'active' | 'completed' | 'cancelled';
+  created_at?: string;
+}
+
 export async function addSubscription(userId: string, sub: Partial<Subscription>): Promise<Subscription> {
   const { data, error } = await supabaseAdmin
     .from('subscriptions')
@@ -40,13 +52,18 @@ export async function addSubscription(userId: string, sub: Partial<Subscription>
 }
 
 export async function getUserSubscriptions(userId: string): Promise<Subscription[]> {
-  const { data } = await supabaseAdmin
-    .from('subscriptions')
-    .select('*')
-    .eq('user_id', userId)
-    .order('next_billing_date', { ascending: true });
+  try {
+    const { data, error } = await supabaseAdmin
+      .from('subscriptions')
+      .select('*')
+      .eq('user_id', userId)
+      .order('next_billing_date', { ascending: true });
 
-  return (data || []) as Subscription[];
+    if (error) return [];
+    return (data || []) as Subscription[];
+  } catch (err) {
+    return [];
+  }
 }
 
 export async function addDebt(userId: string, debt: Partial<Debt>): Promise<Debt> {
@@ -69,14 +86,19 @@ export async function addDebt(userId: string, debt: Partial<Debt>): Promise<Debt
 }
 
 export async function getUserDebts(userId: string): Promise<Debt[]> {
-  const { data } = await supabaseAdmin
-    .from('debts')
-    .select('*')
-    .eq('user_id', userId)
-    .eq('status', 'unpaid')
-    .order('created_at', { ascending: false });
+  try {
+    const { data, error } = await supabaseAdmin
+      .from('debts')
+      .select('*')
+      .eq('user_id', userId)
+      .eq('status', 'unpaid')
+      .order('created_at', { ascending: false });
 
-  return (data || []) as Debt[];
+    if (error) return [];
+    return (data || []) as Debt[];
+  } catch (err) {
+    return [];
+  }
 }
 
 export async function markAllDebtsPaid(userId: string): Promise<number> {
@@ -89,4 +111,20 @@ export async function markAllDebtsPaid(userId: string): Promise<number> {
 
   if (error) throw error;
   return data?.length || 0;
+}
+
+export async function getUserInstallments(userId: string): Promise<Installment[]> {
+  try {
+    const { data, error } = await supabaseAdmin
+      .from('installments')
+      .select('*')
+      .eq('user_id', userId)
+      .eq('status', 'active')
+      .order('due_day', { ascending: true });
+
+    if (error) return [];
+    return (data || []) as Installment[];
+  } catch (err) {
+    return [];
+  }
 }

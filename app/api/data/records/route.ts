@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { supabaseAdmin } from '@/lib/supabase/client';
 import { verifyApiUser } from '@/lib/auth/verify-auth';
+import { getUserSubscriptions, getUserDebts, getUserInstallments } from '@/lib/features/smart-alerts';
 import { sendBriefingEmail } from '@/lib/email/send-briefing-email';
 
 export async function GET(req: NextRequest) {
@@ -59,11 +60,13 @@ export async function GET(req: NextRequest) {
     const { data: activities, count: actTotalCount, error: actError } = await actQuery;
     if (actError) throw actError;
 
-    // 3. Categories & Profile
-    const { data: categories } = await supabaseAdmin
-      .from('categories')
-      .select('*')
-      .or(`user_id.eq.${userId},is_default.eq.true`);
+    // 3. Subscriptions, Debts, Installments & Categories
+    const [subs, debts, insts, { data: categories }] = await Promise.all([
+      getUserSubscriptions(userId),
+      getUserDebts(userId),
+      getUserInstallments(userId),
+      supabaseAdmin.from('categories').select('*').or(`user_id.eq.${userId},is_default.eq.true`),
+    ]);
 
     const { data: userProfile } = await supabaseAdmin.from('users').select('email, name').eq('id', userId).maybeSingle();
     const { data: userSetting } = await supabaseAdmin.from('user_settings').select('*').eq('user_id', userId).maybeSingle();
@@ -84,10 +87,12 @@ export async function GET(req: NextRequest) {
       userName: userProfile?.name || user.name || '',
       userEmail: userProfile?.email || '',
       briefingEnabled: userSetting ? Boolean(userSetting.briefing_enabled) : true,
-      emailBriefingEnabled: userSetting ? Boolean(userSetting.email_briefing_enabled) : true,
       briefingTime: userSetting?.briefing_time || '07:00',
       transactions: txWithShortIds,
       activities: actWithShortIds,
+      subscriptions: subs || [],
+      debts: debts || [],
+      installments: insts || [],
       categories: categories || [],
       pagination: {
         page,

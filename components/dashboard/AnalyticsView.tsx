@@ -17,11 +17,17 @@ import {
   Area,
 } from 'recharts';
 import { InsightItem, Transaction, Activity } from './types';
+import { Subscription, Debt, Installment } from '@/lib/features/smart-alerts';
+import BudgetProgressWidget from './BudgetProgressWidget';
+import InstallmentsWidget from './InstallmentsWidget';
 
 interface AnalyticsViewProps {
   analytics: InsightItem[];
   transactions: Transaction[];
   activities: Activity[];
+  subscriptions?: Subscription[];
+  debts?: Debt[];
+  installments?: Installment[];
   briefingDismissed: boolean;
   onDismissBriefing: () => void;
   onOpenAddModal: () => void;
@@ -35,6 +41,9 @@ export default function AnalyticsView({
   analytics,
   transactions,
   activities,
+  subscriptions = [],
+  debts = [],
+  installments = [],
   briefingDismissed,
   onDismissBriefing,
   onOpenAddModal,
@@ -190,6 +199,12 @@ export default function AnalyticsView({
           UPDATE TERAKHIR: HARI INI, {new Date().toLocaleTimeString('id-ID', { hour: '2-digit', minute: '2-digit' })} WIB
         </p>
       </header>
+
+      {/* Target Budget Progress Bar Widget */}
+      <BudgetProgressWidget transactions={transactions} categories={[]} />
+
+      {/* Monthly Installments & Fixed Subscriptions Widget */}
+      <InstallmentsWidget subscriptions={subscriptions || []} debts={debts || []} installments={installments || []} />
 
       {/* Bento Grid */}
       <div className="grid grid-cols-1 md:grid-cols-12 gap-6">

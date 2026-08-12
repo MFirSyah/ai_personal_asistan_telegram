@@ -2,7 +2,6 @@ import { NextRequest, NextResponse } from 'next/server';
 import { supabaseAdmin } from '@/lib/supabase/client';
 import { generateDailyBriefing } from '@/lib/gemini/prompts/daily-briefing';
 import { sendTelegramMessageBubbles, sendTelegramMessage } from '@/lib/telegram/send-message';
-import { sendBriefingEmail } from '@/lib/email/send-briefing-email';
 import { getRecentTransactions, getRecentActivities, getActivePlans } from '@/lib/supabase/queries/transactions';
 import { getUserPreferences } from '@/lib/supabase/queries/preferences';
 import { checkAndUpdateRateLimit } from '@/lib/gemini/rate-limiter';
@@ -30,7 +29,7 @@ export async function GET(req: NextRequest) {
     // 2. Fetch ALL registered users
     const { data: allUsers, error: usersErr } = await supabaseAdmin
       .from('users')
-      .select('id, name, telegram_id, email');
+      .select('id, name, telegram_id');
 
     if (usersErr || !allUsers || allUsers.length === 0) {
       return NextResponse.json({ ok: true, processed: 0, reason: 'No registered users found' });
@@ -39,7 +38,7 @@ export async function GET(req: NextRequest) {
     // 3. Fetch user_settings for settings overrides
     const { data: allSettings } = await supabaseAdmin
       .from('user_settings')
-      .select('user_id, briefing_time, briefing_enabled, email_briefing_enabled, last_briefing_date');
+      .select('user_id, briefing_time, briefing_enabled, last_briefing_date');
 
     const settingsMap = new Map<string, any>();
     (allSettings || []).forEach((s) => settingsMap.set(s.user_id, s));
@@ -87,7 +86,7 @@ export async function GET(req: NextRequest) {
 
       const dispatchPromises: Promise<any>[] = [];
 
-      // Channel 1: Telegram Bot Dispatch
+      // Telegram Bot Dispatch
       if (user.telegram_id) {
         if (briefing.messages && briefing.messages.length > 0) {
           dispatchPromises.push(sendTelegramMessageBubbles(user.telegram_id, briefing.messages));
@@ -95,48 +94,6 @@ export async function GET(req: NextRequest) {
         if (briefing.follow_up_question) {
           dispatchPromises.push(sendTelegramMessage(user.telegram_id, briefing.follow_up_question));
         }
-      }
-
-      // Channel 2: Transactional Email Dispatch
-      let userEmailStatus: any = null;
-      const emailEnabled = userSetting ? userSetting.email_briefing_enabled !== false : true;
-      if (user.email && emailEnabled) {
-        const todayDateFormatted = nowWib.toLocaleDateString('id-ID', {
-          weekday: 'long',
-          day: 'numeric',
-          month: 'long',
-          year: 'numeric',
-        });
-
-        const todayActs = activities
-          .filter((a) => a.status !== 'completed' && a.status !== 'cancelled')
-          .slice(0, 5)
-          .map((a) => a.title);
-
-        const urgentActs = activities
-          .filter((a) => (a.priority === 'urgent' || a.priority === 'high') && a.status !== 'completed')
-          .map((a) => a.title);
-
-        const safeLimit = (insight?.payload || []).find((p: any) => p.title?.includes('Sisa Uang'))?.value || 100000;
-
-        const emailResult = await sendBriefingEmail(user.email, {
-          userName: user.name || 'Teman',
-          todayDateStr: todayDateFormatted,
-          safeDailyLimit: typeof safeLimit === 'number' ? safeLimit : 100000,
-          totalIncome: yesterdayTxs.filter((t) => t.type === 'income').reduce((acc, curr) => acc + Number(curr.amount || 0), 0),
-          totalExpense: yesterdayTxs.filter((t) => t.type === 'expense').reduce((acc, curr) => acc + Number(curr.amount || 0), 0),
-          todayActs,
-          urgentActs,
-          aiInsight: briefing.follow_up_question || briefing.messages?.[0] || '',
-        });
-        userEmailStatus = { userId: user.id, email: user.email, ...emailResult };
-      } else {
-        userEmailStatus = {
-          userId: user.id,
-          email: user.email || 'not_set',
-          ok: false,
-          error: !user.email ? 'Email tidak terdaftar di Supabase DB' : 'Email briefing dinonaktifkan di pengaturan',
-        };
       }
 
       await Promise.allSettled(dispatchPromises);
@@ -149,13 +106,13 @@ export async function GET(req: NextRequest) {
         updated_at: new Date().toISOString(),
       });
 
-      return userEmailStatus;
+      return { userId: user.id, ok: true, telegramSent: Boolean(user.telegram_id) };
     };
 
     // Parallel batching in chunks of 4 users
     const chunkSize = 4;
     let processedCount = 0;
-    const emailLogs: any[] = [];
+    const logs: any[] = [];
 
     for (let i = 0; i < eligibleUsers.length; i += chunkSize) {
       const chunk = eligibleUsers.slice(i, i + chunkSize);
@@ -163,7 +120,7 @@ export async function GET(req: NextRequest) {
       results.forEach((r) => {
         if (r.status === 'fulfilled') {
           processedCount++;
-          if (r.value) emailLogs.push(r.value);
+          if (r.value) logs.push(r.value);
         }
       });
     }
@@ -173,7 +130,7 @@ export async function GET(req: NextRequest) {
       processed: processedCount,
       currentWibHour: currentHour,
       todayDate: todayDateStr,
-      emailLogs,
+      logs,
     });
   } catch (error: any) {
     console.error('Error in briefing cron:', error);

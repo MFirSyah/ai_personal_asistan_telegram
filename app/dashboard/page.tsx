@@ -46,10 +46,20 @@ function DashboardContent() {
   const [toasts, setToasts] = useState<ToastMessage[]>([]);
 
   // Records state
-  const [records, setRecords] = useState<{ transactions: Transaction[]; activities: Activity[]; categories: Category[] }>({
+  const [records, setRecords] = useState<{
+    transactions: Transaction[];
+    activities: Activity[];
+    categories: Category[];
+    subscriptions?: any[];
+    debts?: any[];
+    installments?: any[];
+  }>({
     transactions: [],
     activities: [],
     categories: [],
+    subscriptions: [],
+    debts: [],
+    installments: [],
   });
 
   const addToast = (type: 'success' | 'error' | 'info' | 'warning', title: string, message?: string, undoAction?: () => void) => {
@@ -176,6 +186,9 @@ function DashboardContent() {
             transactions: recData.transactions || [],
             activities: recData.activities || [],
             categories: recData.categories || [],
+            subscriptions: recData.subscriptions || [],
+            debts: recData.debts || [],
+            installments: recData.installments || [],
           });
           if (recData.userId) {
             targetUserId = recData.userId;
@@ -421,6 +434,9 @@ function DashboardContent() {
               analytics={analytics}
               transactions={records.transactions}
               activities={records.activities}
+              subscriptions={records.subscriptions}
+              debts={records.debts}
+              installments={records.installments}
               briefingDismissed={briefingDismissed}
               onDismissBriefing={() => setBriefingDismissed(true)}
               onOpenAddModal={openAddModal}
