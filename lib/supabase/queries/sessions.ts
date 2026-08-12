@@ -37,6 +37,9 @@ export async function updateUserName(userId: string, name: string): Promise<bool
     console.error('Failed to update user name:', error);
     return false;
   }
+  return true;
+}
+
 export async function updateUserEmail(userId: string, email: string): Promise<boolean> {
   const { error } = await supabaseAdmin
     .from('users')
