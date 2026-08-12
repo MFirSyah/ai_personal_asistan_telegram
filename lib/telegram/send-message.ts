@@ -88,11 +88,35 @@ function sanitizeMarkdown(text: string): string {
   return sanitized;
 }
 
+export function markdownToTelegramHtml(text: string): string {
+  if (!text) return '';
+
+  let html = text;
+
+  // Escape HTML entities to prevent Telegram parse errors
+  html = html.replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;');
+
+  // Convert markdown links [text](url) -> <a href="url">text</a>
+  html = html.replace(/\[([^\]]+)\]\((https?:\/\/[^\s\)]+)\)/g, (match, linkText, url) => {
+    const cleanUrl = url.replace(/&amp;/g, '&');
+    return `<a href="${cleanUrl}">${linkText}</a>`;
+  });
+
+  // Convert **bold** or __bold__ -> <b>bold</b>
+  html = html.replace(/\*\*(.*?)\*\*/g, '<b>$1</b>');
+  html = html.replace(/__(.*?)__/g, '<b>$1</b>');
+
+  // Convert `code` -> <code>code</code>
+  html = html.replace(/`([^`]+)`/g, '<code>$1</code>');
+
+  return html;
+}
+
 export async function sendTelegramMessage(
   chatId: number | string,
   text: string,
   replyMarkup?: any,
-  parseMode: 'Markdown' | 'HTML' | null = 'Markdown'
+  parseMode: 'Markdown' | 'HTML' | null = 'HTML'
 ): Promise<any> {
   if (!TELEGRAM_BOT_TOKEN) {
     console.warn(`[TELEGRAM MOCK] sendTo ${chatId}: ${text}`);
@@ -100,11 +124,11 @@ export async function sendTelegramMessage(
   }
 
   const url = `${TELEGRAM_API_BASE}/sendMessage`;
-  const sanitizedText = parseMode === 'Markdown' ? sanitizeMarkdown(text) : text;
+  const formattedText = parseMode === 'HTML' ? markdownToTelegramHtml(text) : parseMode === 'Markdown' ? sanitizeMarkdown(text) : text;
 
   const body: any = {
     chat_id: chatId,
-    text: sanitizedText,
+    text: formattedText,
   };
 
   if (parseMode) {
