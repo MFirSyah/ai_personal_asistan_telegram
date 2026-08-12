@@ -403,12 +403,22 @@ export async function POST(req: NextRequest) {
     }
 
     let prefMsg = `⚙️ **PREFERENSI & POLA YANG DIPELAJARI AI**\n\n`;
-    prefs.forEach((p, idx) => {
-      prefMsg += `${idx + 1}. **${p.key}**: ${p.value}\n`;
-      if (p.learned_from) {
-        prefMsg += `   _(Konteks: ${p.learned_from})_\n`;
+    for (let idx = 0; idx < prefs.length; idx++) {
+      const p = prefs[idx];
+      const cleanKey = String(p.key || '').replace(/[*_`]/g, '').trim();
+      const cleanVal = String(p.value || '').replace(/[*_`]/g, '').trim();
+      const cleanLearned = p.learned_from ? String(p.learned_from).replace(/[*_`]/g, '').trim() : undefined;
+
+      // Auto-repair corrupted Markdown symbols in database
+      if (cleanKey !== p.key || cleanVal !== p.value) {
+        saveUserPreference(user.id, cleanKey, cleanVal, cleanLearned).catch(console.error);
       }
-    });
+
+      prefMsg += `${idx + 1}. **${cleanKey}**: ${cleanVal}\n`;
+      if (cleanLearned) {
+        prefMsg += `   _(Konteks: ${cleanLearned})_\n`;
+      }
+    }
 
     await sendTelegramMessage(chatId, prefMsg);
     return NextResponse.json({ ok: true });

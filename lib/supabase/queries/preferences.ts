@@ -27,14 +27,18 @@ export async function saveUserPreference(
   value: string,
   learnedFrom?: string
 ): Promise<UserPreference> {
+  const cleanKey = String(key || '').replace(/[*_`]/g, '').trim();
+  const cleanValue = String(value || '').replace(/[*_`]/g, '').trim();
+  const cleanLearned = learnedFrom ? String(learnedFrom).replace(/[*_`]/g, '').trim() : null;
+
   const { data, error } = await supabaseAdmin
     .from('user_preferences')
     .upsert(
       {
         user_id: userId,
-        key,
-        value,
-        learned_from: learnedFrom || null,
+        key: cleanKey,
+        value: cleanValue,
+        learned_from: cleanLearned,
         updated_at: new Date().toISOString(),
       },
       { onConflict: 'user_id,key' }

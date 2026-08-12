@@ -63,14 +63,29 @@ export async function setTelegramBotCommands(): Promise<any> {
 }
 
 function sanitizeMarkdown(text: string): string {
-  const openAsterisks = (text.match(/\*/g) || []).length % 2 !== 0;
-  const openUnderscores = (text.match(/_/g) || []).length % 2 !== 0;
-  const openBackticks = (text.match(/`/g) || []).length % 2 !== 0;
+  if (!text) return '';
 
-  if (openAsterisks || openUnderscores || openBackticks) {
-    return text.replace(/[*_`]/g, '');
+  let sanitized = text;
+
+  // Auto-balance odd asterisks count so bold formatting isn't ruined
+  const asterisks = (sanitized.match(/\*/g) || []).length;
+  if (asterisks % 2 !== 0) {
+    sanitized += '*';
   }
-  return text;
+
+  // Auto-balance odd underscores count
+  const underscores = (sanitized.match(/_/g) || []).length;
+  if (underscores % 2 !== 0) {
+    sanitized += '_';
+  }
+
+  // Auto-balance odd backticks count
+  const backticks = (sanitized.match(/`/g) || []).length;
+  if (backticks % 2 !== 0) {
+    sanitized += '`';
+  }
+
+  return sanitized;
 }
 
 export async function sendTelegramMessage(
@@ -109,9 +124,10 @@ export async function sendTelegramMessage(
 
     const data = await res.json();
 
-    if (!data.ok && data.description && data.description.includes('can\'t parse entities')) {
+    if (!data.ok && data.description && (data.description.includes("can't parse entities") || data.description.includes('find end of the entity'))) {
       console.warn('Telegram Markdown parse error, retrying as plain text...');
-      const fallbackBody = { ...body, text, parse_mode: undefined };
+      const cleanText = text.replace(/[*_`]/g, '');
+      const fallbackBody = { ...body, text: cleanText, parse_mode: undefined };
       const retryRes = await fetch(url, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
