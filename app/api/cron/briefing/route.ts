@@ -94,27 +94,7 @@ export async function GET(req: NextRequest) {
         }
       }
 
-      // Channel 2: Transational Email Dispatch
-      const emailEnabled = userSetting ? userSetting.email_briefing_enabled !== false : true;
-      if (user.email && emailEnabled) {
-        const todayDateFormatted = nowWib.toLocaleDateString('id-ID', {
-          weekday: 'long',
-          day: 'numeric',
-          month: 'long',
-          year: 'numeric',
-        });
-
-        const todayActs = activities
-          .filter((a) => a.status !== 'completed' && a.status !== 'cancelled')
-          .slice(0, 5)
-          .map((a) => a.title);
-
-        const urgentActs = activities
-          .filter((a) => (a.priority === 'urgent' || a.priority === 'high') && a.status !== 'completed')
-          .map((a) => a.title);
-
-        const safeLimit = (insight?.payload || []).find((p: any) => p.title?.includes('Sisa Uang'))?.value || 100000;
-
+      // Channel 2: Transactional Email Dispatch
       let userEmailStatus: any = null;
       const emailEnabled = userSetting ? userSetting.email_briefing_enabled !== false : true;
       if (user.email && emailEnabled) {
