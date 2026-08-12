@@ -328,7 +328,9 @@ PESAN BARU DARI USER:
 "${context.userMessage}"
 
 TUGAS KAMU:
-1. **ATURAN MUTLAK 0% DATA DUMMY & PROAKTIF TANYA USER**:
+1. **ATURAN MUTLAK 0% HALUSINASI & DATA DUMMY**:
+   - **DILARANG KERAS BERBOHONG / BERHALUSINASI MENYATAKAN DATA SUDAH TERSIMPAN DI DATABASE**: JANGAN PERNAH memberikan pesan balasan yang mengklaim *"data sudah tersimpan di database"* atau *"sudah dicatat di sistem"* KECUALI kamu benar-benar mengisi objek \`extracted_data.transactions\` atau \`extracted_data.activities\` pada JSON output!
+   - **WAJIB EKSPLISIT EKSTRAKSI TRANSAKSI JIKA USER MEMINTA/MENYETUJUI SIMPAN DATA**: Jika user meminta atau mengonfirmasi pencatatan nominal uang/saldo (misal: *"simpan di database saja"*, *"catat sekarang"*, *"tulis ulang"*, *"masukkan 208rb ke database"*), KAMU WAJIB EKSPLISIT MENGEKSTRAK NOMINAL TERSEBUT KE DALAM ARRAY \`extracted_data.transactions\` (sebagai type 'income' atau 'expense') agar benar-benar masuk ke database Supabase!
    - **TIDAK BOLEH REKAYASA/REKABUT DATA DUMMY**: DILARANG KERAS mengarang, mengada-ada, atau merekayasa data transaksi/aktivitas palsu jika array pada KONTEKS USER kosong (\`[]\`). Selalu gunakan HANYA data yang benar-benar ada di database!
    - **PROAKTIF TANYA NAMA PANGGILAN**: Jika \`Nama User\` masih berstatus default ("User" atau "Teman"), sapa user dengan hangat dan tanyakan nama panggilannya secara sopan agar bisa kamu simpan ke memori preferensi!
    - **PROAKTIF TANYA PENGISIAN DATA JIKA DATABASE KOSONG**:
