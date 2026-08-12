@@ -192,6 +192,24 @@ export async function PATCH(req: NextRequest) {
       return NextResponse.json({ error: 'User not found' }, { status: 404 });
     }
 
+    if (type === 'user_profile') {
+      if (data.name) {
+        await supabaseAdmin.from('users').update({ name: String(data.name).trim() }).eq('id', userId);
+      }
+      if (data.email) {
+        await supabaseAdmin.from('users').update({ email: String(data.email).trim() }).eq('id', userId);
+      }
+
+      await supabaseAdmin.from('user_settings').upsert({
+        user_id: userId,
+        briefing_enabled: data.briefing_enabled !== undefined ? Boolean(data.briefing_enabled) : true,
+        email_briefing_enabled: data.email_briefing_enabled !== undefined ? Boolean(data.email_briefing_enabled) : true,
+        updated_at: new Date().toISOString(),
+      });
+
+      return NextResponse.json({ ok: true, message: 'Profile updated' });
+    }
+
     const table = type === 'transaction' ? 'transactions' : 'activities';
     const updatePayload: Record<string, any> = {
       updated_at: new Date().toISOString(),

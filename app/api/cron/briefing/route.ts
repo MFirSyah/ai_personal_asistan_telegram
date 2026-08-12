@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from 'next/server';
 import { supabaseAdmin } from '@/lib/supabase/client';
 import { generateDailyBriefing } from '@/lib/gemini/prompts/daily-briefing';
 import { sendTelegramMessageBubbles, sendTelegramMessage } from '@/lib/telegram/send-message';
+import { sendBriefingEmail } from '@/lib/email/send-briefing-email';
 import { getRecentTransactions, getRecentActivities, getActivePlans } from '@/lib/supabase/queries/transactions';
 import { getUserPreferences } from '@/lib/supabase/queries/preferences';
 import { checkAndUpdateRateLimit } from '@/lib/gemini/rate-limiter';
@@ -23,26 +24,24 @@ export async function GET(req: NextRequest) {
     const currentHour = nowWib.getHours();
     const todayDateStr = `${nowWib.getFullYear()}-${String(nowWib.getMonth() + 1).padStart(2, '0')}-${String(nowWib.getDate()).padStart(2, '0')}`;
 
-    // 2. Fetch ALL registered users who have a Telegram ID
+    // 2. Fetch ALL registered users
     const { data: allUsers, error: usersErr } = await supabaseAdmin
       .from('users')
-      .select('id, name, telegram_id')
-      .not('telegram_id', 'is', null);
+      .select('id, name, telegram_id, email');
 
     if (usersErr || !allUsers || allUsers.length === 0) {
-      return NextResponse.json({ ok: true, processed: 0, reason: 'No users with Telegram ID found' });
+      return NextResponse.json({ ok: true, processed: 0, reason: 'No registered users found' });
     }
 
     // 3. Fetch user_settings for settings overrides
     const { data: allSettings } = await supabaseAdmin
       .from('user_settings')
-      .select('user_id, briefing_time, briefing_enabled, last_briefing_date');
+      .select('user_id, briefing_time, briefing_enabled, email_briefing_enabled, last_briefing_date');
 
     const settingsMap = new Map<string, any>();
     (allSettings || []).forEach((s) => settingsMap.set(s.user_id, s));
 
     const eligibleUsers = allUsers.filter((u) => {
-      if (!u.telegram_id) return false;
       const userSetting = settingsMap.get(u.id);
       const isEnabled = userSetting ? Boolean(userSetting.briefing_enabled) : true;
       const lastSentDate = userSetting?.last_briefing_date;
@@ -83,12 +82,54 @@ export async function GET(req: NextRequest) {
         preferences,
       });
 
-      if (briefing.messages && briefing.messages.length > 0 && user.telegram_id) {
-        await sendTelegramMessageBubbles(user.telegram_id, briefing.messages);
+      const dispatchPromises: Promise<any>[] = [];
+
+      // Channel 1: Telegram Bot Dispatch
+      if (user.telegram_id) {
+        if (briefing.messages && briefing.messages.length > 0) {
+          dispatchPromises.push(sendTelegramMessageBubbles(user.telegram_id, briefing.messages));
+        }
+        if (briefing.follow_up_question) {
+          dispatchPromises.push(sendTelegramMessage(user.telegram_id, briefing.follow_up_question));
+        }
       }
-      if (briefing.follow_up_question && user.telegram_id) {
-        await sendTelegramMessage(user.telegram_id, briefing.follow_up_question);
+
+      // Channel 2: Transational Email Dispatch
+      const emailEnabled = userSetting ? userSetting.email_briefing_enabled !== false : true;
+      if (user.email && emailEnabled) {
+        const todayDateFormatted = nowWib.toLocaleDateString('id-ID', {
+          weekday: 'long',
+          day: 'numeric',
+          month: 'long',
+          year: 'numeric',
+        });
+
+        const todayActs = activities
+          .filter((a) => a.status !== 'completed' && a.status !== 'cancelled')
+          .slice(0, 5)
+          .map((a) => a.title);
+
+        const urgentActs = activities
+          .filter((a) => (a.priority === 'urgent' || a.priority === 'high') && a.status !== 'completed')
+          .map((a) => a.title);
+
+        const safeLimit = briefing.insightPayload?.find((p) => p.title?.includes('Sisa Uang'))?.value || 100000;
+
+        dispatchPromises.push(
+          sendBriefingEmail(user.email, {
+            userName: user.name || 'Teman',
+            todayDateStr: todayDateFormatted,
+            safeDailyLimit: typeof safeLimit === 'number' ? safeLimit : 100000,
+            totalIncome: yesterdayTxs.filter((t) => t.type === 'income').reduce((acc, curr) => acc + Number(curr.amount || 0), 0),
+            totalExpense: yesterdayTxs.filter((t) => t.type === 'expense').reduce((acc, curr) => acc + Number(curr.amount || 0), 0),
+            todayActs,
+            urgentActs,
+            aiInsight: briefing.follow_up_question || briefing.messages?.[0] || '',
+          })
+        );
       }
+
+      await Promise.allSettled(dispatchPromises);
 
       await supabaseAdmin.from('user_settings').upsert({
         user_id: user.id,

@@ -7,6 +7,8 @@ export default function SettingsPage() {
   const [userName, setUserName] = useState('');
   const [userId, setUserId] = useState('');
   const [telegramId, setTelegramId] = useState('');
+  const [userEmail, setUserEmail] = useState('');
+  const [emailBriefingEnabled, setEmailBriefingEnabled] = useState(true);
   const [briefingTime, setBriefingTime] = useState('07:00');
   const [briefingEnabled, setBriefingEnabled] = useState(true);
   const [saving, setSaving] = useState(false);
@@ -16,8 +18,12 @@ export default function SettingsPage() {
     if (typeof window !== 'undefined') {
       const savedUser = localStorage.getItem('saved_user_id') || '';
       const savedTg = localStorage.getItem('saved_telegram_id') || '';
+      const savedName = localStorage.getItem('saved_user_name') || '';
+      const savedEmail = localStorage.getItem('saved_user_email') || '';
       setUserId(savedUser);
       setTelegramId(savedTg);
+      if (savedName) setUserName(savedName);
+      if (savedEmail) setUserEmail(savedEmail);
     }
   }, []);
 
@@ -27,10 +33,31 @@ export default function SettingsPage() {
     setMessage('');
 
     try {
-      if (userName && userId) {
-        localStorage.setItem('saved_user_name', userName);
+      if (typeof window !== 'undefined') {
+        if (userName) localStorage.setItem('saved_user_name', userName);
+        if (userEmail) localStorage.setItem('saved_user_email', userEmail);
       }
-      setMessage('✅ Pengaturan berhasil disimpan!');
+
+      // Sync user email & settings to Supabase
+      if (userId) {
+        await fetch('/api/data/records', {
+          method: 'PATCH',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            userId,
+            recordId: userId,
+            type: 'user_profile',
+            data: {
+              name: userName,
+              email: userEmail,
+              email_briefing_enabled: emailBriefingEnabled,
+              briefing_enabled: briefingEnabled,
+            },
+          }),
+        }).catch(() => {});
+      }
+
+      setMessage('✅ Pengaturan & Email berhasil disimpan!');
     } catch (err) {
       setMessage('⚠️ Gagal menyimpan pengaturan.');
     } finally {
@@ -124,14 +151,48 @@ export default function SettingsPage() {
             </div>
           </div>
 
+          {/* Email Settings Section */}
+          <div className="pt-4 border-t-2 border-black">
+            <h2 className="font-bold text-base uppercase border-b-2 border-black pb-2 text-[#008080] dark:text-[#20b2aa] mb-3">
+              3. Pengiriman Email Morning Briefing 📧
+            </h2>
+
+            <div className="space-y-3">
+              <div>
+                <label className="block font-bold uppercase mb-1 text-black dark:text-white">Alamat Email Penerima</label>
+                <input
+                  type="email"
+                  placeholder="nama@email.com"
+                  value={userEmail}
+                  onChange={(e) => setUserEmail(e.target.value)}
+                  className="w-full bg-[#f9f9f9] dark:bg-[#2a2d2d] text-black dark:text-white thin-border p-3 text-xs"
+                />
+              </div>
+
+              <div className="flex items-center gap-3 pt-1">
+                <input
+                  type="checkbox"
+                  id="email-briefing-toggle"
+                  checked={emailBriefingEnabled}
+                  onChange={(e) => setEmailBriefingEnabled(e.target.checked)}
+                  className="w-4 h-4"
+                />
+                <label htmlFor="email-briefing-toggle" className="font-bold uppercase cursor-pointer text-black dark:text-white">
+                  Kirimkan Morning Briefing juga via Email setiap pagi
+                </label>
+              </div>
+            </div>
+          </div>
+
           <div className="pt-4 border-t-2 border-black space-y-3">
             <h2 className="font-bold text-base uppercase border-b-2 border-black pb-2 text-black dark:text-white">
-              3. Status Sesi & Integrasi
+              4. Status Sesi & Integrasi
             </h2>
 
             <div className="p-3 bg-[#e2e2e2] dark:bg-white/10 border-2 border-black space-y-1 text-black dark:text-white">
               <p><strong>User ID:</strong> {userId || 'Tidak Terhubung'}</p>
               <p><strong>Telegram ID:</strong> {telegramId || 'Tidak Terhubung'}</p>
+              <p><strong>Email Registered:</strong> {userEmail || 'Belum Diatur'}</p>
             </div>
 
             <button
