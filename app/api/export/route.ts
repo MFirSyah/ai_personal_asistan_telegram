@@ -1,33 +1,18 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { supabaseAdmin } from '@/lib/supabase/client';
 import { generateExportFile } from '@/lib/export/export-data';
+import { verifyApiUser } from '@/lib/auth/verify-auth';
 
 export async function GET(req: NextRequest) {
+  const { authenticated, user, errorResponse } = await verifyApiUser(req);
+  if (!authenticated || !user) {
+    return errorResponse || NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
+  }
+
   const { searchParams } = new URL(req.url);
-  let userId = searchParams.get('userId');
   const target = (searchParams.get('target') as any) || 'all';
 
   try {
-    // Single-Account Auto Resolution
-    if (!userId || userId === 'demo-user') {
-      const { data: primaryUser } = await supabaseAdmin
-        .from('users')
-        .select('id')
-        .not('telegram_id', 'is', null)
-        .order('created_at', { ascending: false })
-        .limit(1)
-        .maybeSingle();
-
-      if (primaryUser) {
-        userId = primaryUser.id;
-      }
-    }
-
-    if (!userId) {
-      return NextResponse.json({ error: 'No user found for export' }, { status: 400 });
-    }
-
-    const exportResult = await generateExportFile(userId, { target });
+    const exportResult = await generateExportFile(user.id, { target });
 
     return new NextResponse(new Uint8Array(exportResult.buffer), {
       status: 200,

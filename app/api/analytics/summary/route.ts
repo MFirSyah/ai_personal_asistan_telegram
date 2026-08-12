@@ -1,20 +1,17 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { supabaseAdmin } from '@/lib/supabase/client';
 import { calculate20Analytics } from '@/lib/analytics/calculators';
-import { resolveUserForApi } from '@/lib/supabase/queries/sessions';
+import { verifyApiUser } from '@/lib/auth/verify-auth';
 
 export async function GET(req: NextRequest) {
-  const { searchParams } = new URL(req.url);
-  const rawUserId = searchParams.get('userId');
-  const rawTelegramId = searchParams.get('telegram_id');
-  const isForce = searchParams.get('force') === 'true';
-
-  const resolvedUser = await resolveUserForApi(rawUserId, rawTelegramId);
-  const userId = resolvedUser?.id;
-
-  if (!userId) {
-    return NextResponse.json({ error: 'Missing userId parameter' }, { status: 400 });
+  const { authenticated, user, errorResponse } = await verifyApiUser(req);
+  if (!authenticated || !user) {
+    return errorResponse || NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
   }
+
+  const userId = user.id;
+  const { searchParams } = new URL(req.url);
+  const isForce = searchParams.get('force') === 'true';
 
   try {
     const today = new Date().toISOString().split('T')[0];

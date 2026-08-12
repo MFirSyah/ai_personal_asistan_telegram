@@ -130,18 +130,5 @@ export async function resolveUserForApi(
     if (userById) return { id: userById.id, name: userById.name, telegramId: userById.telegram_id };
   }
 
-  // Fallback: Primary registered owner (ascending created_at to pick original owner, e.g. Firman)
-  const { data: primaryUser } = await supabaseAdmin
-    .from('users')
-    .select('*')
-    .not('telegram_id', 'is', null)
-    .order('created_at', { ascending: true })
-    .limit(1)
-    .maybeSingle();
-
-  if (primaryUser) {
-    return { id: primaryUser.id, name: primaryUser.name, telegramId: primaryUser.telegram_id };
-  }
-
   return null;
 }

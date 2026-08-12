@@ -165,9 +165,11 @@ function DashboardContent() {
       try {
         const queryParams = new URLSearchParams();
         if (targetUserId) queryParams.set('userId', targetUserId);
-        if (effectiveTelegramId) queryParams.set('telegram_id', effectiveTelegramId);
+        const authHeaders: Record<string, string> = {};
+        if (targetUserId) authHeaders['x-user-id'] = targetUserId;
+        if (effectiveTelegramId) authHeaders['x-telegram-id'] = effectiveTelegramId;
 
-        const recRes = await fetch(`/api/data/records?${queryParams.toString()}`);
+        const recRes = await fetch(`/api/data/records?${queryParams.toString()}`, { headers: authHeaders });
         const recData = await recRes.json();
         if (recData.ok) {
           setRecords({
@@ -197,7 +199,11 @@ function DashboardContent() {
         if (targetUserId) queryParams.set('userId', targetUserId);
         if (effectiveTelegramId) queryParams.set('telegram_id', effectiveTelegramId);
 
-        const res = await fetch(`/api/analytics/summary?${queryParams.toString()}`);
+        const authHeaders: Record<string, string> = {};
+        if (targetUserId) authHeaders['x-user-id'] = targetUserId;
+        if (effectiveTelegramId) authHeaders['x-telegram-id'] = effectiveTelegramId;
+
+        const res = await fetch(`/api/analytics/summary?${queryParams.toString()}`, { headers: authHeaders });
         const data = await res.json();
         if (data.insights && Array.isArray(data.insights)) {
           setAnalytics(data.insights);
@@ -231,9 +237,12 @@ function DashboardContent() {
     }
 
     try {
+      const authHeaders: Record<string, string> = { 'Content-Type': 'application/json' };
+      if (userId) authHeaders['x-user-id'] = userId;
+
       const res = await fetch('/api/data/records', {
         method: 'DELETE',
-        headers: { 'Content-Type': 'application/json' },
+        headers: authHeaders,
         body: JSON.stringify({ userId, recordId: id, type }),
       });
       const data = await res.json();
@@ -245,7 +254,7 @@ function DashboardContent() {
             try {
               const restoreRes = await fetch('/api/data/records', {
                 method: 'POST',
-                headers: { 'Content-Type': 'application/json' },
+                headers: authHeaders,
                 body: JSON.stringify({ userId, type, data: deletedItem }),
               });
               const restoreData = await restoreRes.json();
@@ -283,9 +292,12 @@ function DashboardContent() {
         ? { userId, recordId: id, type, data: payload }
         : { userId, type, data: payload };
 
+      const authHeaders: Record<string, string> = { 'Content-Type': 'application/json' };
+      if (userId) authHeaders['x-user-id'] = userId;
+
       const res = await fetch(endpoint, {
         method,
-        headers: { 'Content-Type': 'application/json' },
+        headers: authHeaders,
         body: JSON.stringify(body),
       });
 
@@ -332,9 +344,12 @@ function DashboardContent() {
     }));
 
     try {
+      const authHeaders: Record<string, string> = { 'Content-Type': 'application/json' };
+      if (userId) authHeaders['x-user-id'] = userId;
+
       const res = await fetch('/api/data/records', {
         method: 'PATCH',
-        headers: { 'Content-Type': 'application/json' },
+        headers: authHeaders,
         body: JSON.stringify({
           userId,
           recordId: id,

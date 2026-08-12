@@ -12,10 +12,13 @@ export async function GET(req: NextRequest) {
   const isForce = searchParams.get('force') === 'true';
 
   const authHeader = req.headers.get('authorization');
+  const secretParam = searchParams.get('secret');
   const cronSecret = process.env.CRON_SECRET;
 
-  if (!isForce && cronSecret && authHeader !== `Bearer ${cronSecret}`) {
-    return NextResponse.json({ error: 'Unauthorized cron request' }, { status: 401 });
+  const isAuthorized = !cronSecret || authHeader === `Bearer ${cronSecret}` || secretParam === cronSecret;
+
+  if (!isAuthorized) {
+    return NextResponse.json({ error: 'Unauthorized: Valid CRON_SECRET header or ?secret= parameter is required' }, { status: 401 });
   }
 
   try {

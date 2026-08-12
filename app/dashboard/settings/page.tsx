@@ -24,9 +24,13 @@ export default function SettingsPage() {
     setMessage('🚀 Sedang memproses pengiriman email tes...');
 
     try {
+      const authHeaders: Record<string, string> = { 'Content-Type': 'application/json' };
+      if (userId) authHeaders['x-user-id'] = userId;
+      if (telegramId) authHeaders['x-telegram-id'] = telegramId;
+
       const res = await fetch('/api/data/records', {
         method: 'PATCH',
-        headers: { 'Content-Type': 'application/json' },
+        headers: authHeaders,
         body: JSON.stringify({
           userId: userId || undefined,
           telegram_id: telegramId || undefined,
@@ -60,8 +64,12 @@ export default function SettingsPage() {
       if (savedName) setUserName(savedName);
       if (savedEmail) setUserEmail(savedEmail);
 
+      const authHeaders: Record<string, string> = {};
+      if (savedUser) authHeaders['x-user-id'] = savedUser;
+      if (savedTg) authHeaders['x-telegram-id'] = savedTg;
+
       // Fetch latest profile & settings from Supabase DB
-      fetch(`/api/data/records?userId=${savedUser}&telegram_id=${savedTg}`)
+      fetch(`/api/data/records?userId=${savedUser}&telegram_id=${savedTg}`, { headers: authHeaders })
         .then((res) => res.json())
         .then((data) => {
           if (data.ok) {
@@ -91,10 +99,14 @@ export default function SettingsPage() {
         if (userEmail) localStorage.setItem('saved_user_email', userEmail);
       }
 
+      const patchHeaders: Record<string, string> = { 'Content-Type': 'application/json' };
+      if (userId) patchHeaders['x-user-id'] = userId;
+      if (telegramId) patchHeaders['x-telegram-id'] = telegramId;
+
       // Sync user email & settings to Supabase DB
       const res = await fetch('/api/data/records', {
         method: 'PATCH',
-        headers: { 'Content-Type': 'application/json' },
+        headers: patchHeaders,
         body: JSON.stringify({
           userId: userId || undefined,
           telegram_id: telegramId || undefined,

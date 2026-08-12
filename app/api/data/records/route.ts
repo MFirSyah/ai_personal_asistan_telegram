@@ -1,53 +1,73 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { supabaseAdmin } from '@/lib/supabase/client';
-import { resolveUserForApi } from '@/lib/supabase/queries/sessions';
+import { verifyApiUser } from '@/lib/auth/verify-auth';
 import { sendBriefingEmail } from '@/lib/email/send-briefing-email';
 
 export async function GET(req: NextRequest) {
+  const { authenticated, user, errorResponse } = await verifyApiUser(req);
+  if (!authenticated || !user) {
+    return errorResponse || NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
+  }
+
+  const userId = user.id;
   const { searchParams } = new URL(req.url);
-  const rawUserId = searchParams.get('userId');
-  const rawTelegramId = searchParams.get('telegram_id');
+  const page = Math.max(1, parseInt(searchParams.get('page') || '1', 10));
+  const limit = Math.min(200, Math.max(10, parseInt(searchParams.get('limit') || '50', 10)));
+  const search = (searchParams.get('search') || '').trim();
+  const recordType = searchParams.get('type') || 'all';
 
   try {
-    const resolvedUser = await resolveUserForApi(rawUserId, rawTelegramId);
-    const userId = resolvedUser?.id;
-    const resolvedUserName = resolvedUser?.name || '';
+    // 1. Transactions Query
+    let txQuery = supabaseAdmin
+      .from('transactions')
+      .select('*', { count: 'exact' })
+      .eq('user_id', userId)
+      .is('deleted_at', null)
+      .order('occurred_at', { ascending: false });
 
-    if (!userId) {
-      return NextResponse.json({ ok: true, transactions: [], activities: [], categories: [] });
+    if (search) {
+      txQuery = txQuery.or(`description.ilike.%${search}%,merchant.ilike.%${search}%`);
     }
 
-    // 1. Fetch transactions
-    const { data: transactions, error: txError } = await supabaseAdmin
-      .from('transactions')
-      .select('*')
-      .eq('user_id', userId)
-      .is('deleted_at', null)
-      .order('occurred_at', { ascending: false });
+    if (recordType === 'transaction' || recordType === 'all') {
+      const from = (page - 1) * limit;
+      const to = from + limit - 1;
+      txQuery = txQuery.range(from, to);
+    }
 
+    const { data: transactions, count: txTotalCount, error: txError } = await txQuery;
     if (txError) throw txError;
 
-    // 2. Fetch activities
-    const { data: activities, error: actError } = await supabaseAdmin
+    // 2. Activities Query
+    let actQuery = supabaseAdmin
       .from('activities')
-      .select('*')
+      .select('*', { count: 'exact' })
       .eq('user_id', userId)
       .is('deleted_at', null)
       .order('occurred_at', { ascending: false });
 
+    if (search) {
+      actQuery = actQuery.or(`title.ilike.%${search}%,description.ilike.%${search}%`);
+    }
+
+    if (recordType === 'activity' || recordType === 'all') {
+      const from = (page - 1) * limit;
+      const to = from + limit - 1;
+      actQuery = actQuery.range(from, to);
+    }
+
+    const { data: activities, count: actTotalCount, error: actError } = await actQuery;
     if (actError) throw actError;
 
-    // 3. Fetch categories
+    // 3. Categories & Profile
     const { data: categories } = await supabaseAdmin
       .from('categories')
       .select('*')
       .or(`user_id.eq.${userId},is_default.eq.true`);
 
-    // 4. Fetch user profile & settings
     const { data: userProfile } = await supabaseAdmin.from('users').select('email, name').eq('id', userId).maybeSingle();
     const { data: userSetting } = await supabaseAdmin.from('user_settings').select('*').eq('user_id', userId).maybeSingle();
 
-    // Attach short IDs
     const txWithShortIds = (transactions || []).map((t) => ({
       ...t,
       short_id: `TX-${t.id.replace(/-/g, '').substring(0, 6).toUpperCase()}`,
@@ -61,7 +81,7 @@ export async function GET(req: NextRequest) {
     return NextResponse.json({
       ok: true,
       userId,
-      userName: userProfile?.name || resolvedUserName,
+      userName: userProfile?.name || user.name || '',
       userEmail: userProfile?.email || '',
       briefingEnabled: userSetting ? Boolean(userSetting.briefing_enabled) : true,
       emailBriefingEnabled: userSetting ? Boolean(userSetting.email_briefing_enabled) : true,
@@ -69,6 +89,14 @@ export async function GET(req: NextRequest) {
       transactions: txWithShortIds,
       activities: actWithShortIds,
       categories: categories || [],
+      pagination: {
+        page,
+        limit,
+        totalTransactions: txTotalCount || 0,
+        totalActivities: actTotalCount || 0,
+        totalPagesTransactions: Math.ceil((txTotalCount || 0) / limit),
+        totalPagesActivities: Math.ceil((actTotalCount || 0) / limit),
+      },
     });
   } catch (err: any) {
     console.error('API /api/data/records GET error:', err);
@@ -77,19 +105,17 @@ export async function GET(req: NextRequest) {
 }
 
 export async function DELETE(req: NextRequest) {
+  const { authenticated, user, errorResponse } = await verifyApiUser(req);
+  if (!authenticated || !user) {
+    return errorResponse || NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
+  }
+
   try {
     const body = await req.json();
-    let { userId, telegram_id: rawTelegramId, recordId, type } = body;
+    const { recordId, type } = body;
 
     if (!recordId || !type) {
-      return NextResponse.json({ error: 'Missing required parameters' }, { status: 400 });
-    }
-
-    const resolvedUser = await resolveUserForApi(userId, rawTelegramId);
-    userId = resolvedUser?.id;
-
-    if (!userId) {
-      return NextResponse.json({ error: 'User not found' }, { status: 404 });
+      return NextResponse.json({ error: 'Missing required parameters (recordId, type)' }, { status: 400 });
     }
 
     const table = type === 'transaction' ? 'transactions' : 'activities';
@@ -99,7 +125,7 @@ export async function DELETE(req: NextRequest) {
       .from(table)
       .update({ deleted_at: now })
       .eq('id', recordId)
-      .eq('user_id', userId);
+      .eq('user_id', user.id);
 
     if (error) throw error;
 
@@ -111,19 +137,17 @@ export async function DELETE(req: NextRequest) {
 }
 
 export async function POST(req: NextRequest) {
+  const { authenticated, user, errorResponse } = await verifyApiUser(req);
+  if (!authenticated || !user) {
+    return errorResponse || NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
+  }
+
   try {
     const body = await req.json();
-    let { userId, telegram_id: rawTelegramId, type, data } = body;
+    const { type, data } = body;
 
     if (!type || !data) {
       return NextResponse.json({ error: 'Missing required parameters' }, { status: 400 });
-    }
-
-    const resolvedUser = await resolveUserForApi(userId, rawTelegramId);
-    userId = resolvedUser?.id;
-
-    if (!userId) {
-      return NextResponse.json({ error: 'User not found' }, { status: 404 });
     }
 
     if (type === 'transaction') {
@@ -135,7 +159,7 @@ export async function POST(req: NextRequest) {
       const { data: newTx, error } = await supabaseAdmin
         .from('transactions')
         .insert({
-          user_id: userId,
+          user_id: user.id,
           amount: parsedAmount,
           type: data.type === 'income' ? 'income' : 'expense',
           merchant: String(data.merchant || 'Manual Dashboard').trim(),
@@ -162,7 +186,7 @@ export async function POST(req: NextRequest) {
       const { data: newAct, error } = await supabaseAdmin
         .from('activities')
         .insert({
-          user_id: userId,
+          user_id: user.id,
           title: titleStr,
           description: String(data.description || '').trim(),
           priority: ['low', 'medium', 'high', 'urgent'].includes(data.priority) ? data.priority : 'medium',
@@ -186,31 +210,29 @@ export async function POST(req: NextRequest) {
 }
 
 export async function PATCH(req: NextRequest) {
+  const { authenticated, user, errorResponse } = await verifyApiUser(req);
+  if (!authenticated || !user) {
+    return errorResponse || NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
+  }
+
   try {
     const body = await req.json();
-    let { userId, telegram_id: rawTelegramId, recordId, type, data } = body;
+    const { recordId, type, data } = body;
 
     if (!type || !data) {
       return NextResponse.json({ error: 'Missing required parameters' }, { status: 400 });
     }
 
-    const resolvedUser = await resolveUserForApi(userId, rawTelegramId);
-    userId = resolvedUser?.id;
-
-    if (!userId) {
-      return NextResponse.json({ error: 'User not found' }, { status: 404 });
-    }
-
     if (type === 'user_profile') {
       if (data.name !== undefined) {
-        await supabaseAdmin.from('users').update({ name: String(data.name).trim() }).eq('id', userId);
+        await supabaseAdmin.from('users').update({ name: String(data.name).trim() }).eq('id', user.id);
       }
       if (data.email !== undefined) {
-        await supabaseAdmin.from('users').update({ email: String(data.email).trim() }).eq('id', userId);
+        await supabaseAdmin.from('users').update({ email: String(data.email).trim() }).eq('id', user.id);
       }
 
       await supabaseAdmin.from('user_settings').upsert({
-        user_id: userId,
+        user_id: user.id,
         briefing_enabled: data.briefing_enabled !== undefined ? Boolean(data.briefing_enabled) : true,
         email_briefing_enabled: data.email_briefing_enabled !== undefined ? Boolean(data.email_briefing_enabled) : true,
         briefing_time: data.briefing_time || '07:00:00',
@@ -226,8 +248,16 @@ export async function PATCH(req: NextRequest) {
         return NextResponse.json({ error: 'Alamat email tidak valid untuk dites' }, { status: 400 });
       }
 
+      // Security check: Verify targetEmail belongs to logged in user or user profile
+      const { data: userProfile } = await supabaseAdmin.from('users').select('email').eq('id', user.id).single();
+      const userRegEmail = userProfile?.email;
+
+      if (userRegEmail && targetEmail.toLowerCase() !== userRegEmail.toLowerCase()) {
+        return NextResponse.json({ error: 'Hanya dapat mengirim email tes ke alamat email yang terdaftar pada akun kamu' }, { status: 403 });
+      }
+
       const testResult = await sendBriefingEmail(targetEmail, {
-        userName: resolvedUser?.name || 'Teman',
+        userName: user.name || 'Teman',
         todayDateStr: new Date().toLocaleDateString('id-ID', { weekday: 'long', day: 'numeric', month: 'long', year: 'numeric' }),
         safeDailyLimit: 150000,
         totalIncome: 500000,
@@ -281,7 +311,7 @@ export async function PATCH(req: NextRequest) {
       .from(table)
       .update(updatePayload)
       .eq('id', recordId)
-      .eq('user_id', userId)
+      .eq('user_id', user.id)
       .select()
       .single();
 
@@ -299,4 +329,3 @@ export async function PATCH(req: NextRequest) {
     return NextResponse.json({ error: err.message }, { status: 500 });
   }
 }
-
