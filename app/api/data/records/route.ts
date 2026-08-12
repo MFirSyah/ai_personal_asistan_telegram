@@ -245,11 +245,10 @@ export async function PATCH(req: NextRequest) {
     }
 
     const table = type === 'transaction' ? 'transactions' : 'activities';
-    const updatePayload: Record<string, any> = {
-      updated_at: new Date().toISOString(),
-    };
+    const updatePayload: Record<string, any> = {};
 
     if (type === 'transaction') {
+      updatePayload.updated_at = new Date().toISOString();
       if (data.amount !== undefined) {
         const parsedAmount = Number(data.amount);
         if (isNaN(parsedAmount) || parsedAmount <= 0) {
