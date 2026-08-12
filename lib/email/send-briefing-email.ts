@@ -13,7 +13,7 @@ function getResendClient(): Resend | null {
 export async function sendBriefingEmail(
   toEmail: string,
   data: BriefingEmailData
-): Promise<{ ok: boolean; id?: string; error?: string }> {
+): Promise<{ ok: boolean; id?: string; error?: string; provider?: string }> {
   if (!toEmail || !toEmail.includes('@')) {
     console.warn(`[SendEmail] Invalid destination email: ${toEmail}`);
     return { ok: false, error: 'Alamat email tidak valid.' };
