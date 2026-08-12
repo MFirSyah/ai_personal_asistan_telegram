@@ -42,6 +42,10 @@ export async function GET(req: NextRequest) {
       .select('*')
       .or(`user_id.eq.${userId},is_default.eq.true`);
 
+    // 4. Fetch user profile & settings
+    const { data: userProfile } = await supabaseAdmin.from('users').select('email, name').eq('id', userId).maybeSingle();
+    const { data: userSetting } = await supabaseAdmin.from('user_settings').select('*').eq('user_id', userId).maybeSingle();
+
     // Attach short IDs
     const txWithShortIds = (transactions || []).map((t) => ({
       ...t,
@@ -56,7 +60,11 @@ export async function GET(req: NextRequest) {
     return NextResponse.json({
       ok: true,
       userId,
-      userName: resolvedUserName,
+      userName: userProfile?.name || resolvedUserName,
+      userEmail: userProfile?.email || '',
+      briefingEnabled: userSetting ? Boolean(userSetting.briefing_enabled) : true,
+      emailBriefingEnabled: userSetting ? Boolean(userSetting.email_briefing_enabled) : true,
+      briefingTime: userSetting?.briefing_time || '07:00',
       transactions: txWithShortIds,
       activities: actWithShortIds,
       categories: categories || [],
@@ -181,7 +189,7 @@ export async function PATCH(req: NextRequest) {
     const body = await req.json();
     let { userId, telegram_id: rawTelegramId, recordId, type, data } = body;
 
-    if (!recordId || !type || !data) {
+    if (!type || !data) {
       return NextResponse.json({ error: 'Missing required parameters' }, { status: 400 });
     }
 
@@ -193,10 +201,10 @@ export async function PATCH(req: NextRequest) {
     }
 
     if (type === 'user_profile') {
-      if (data.name) {
+      if (data.name !== undefined) {
         await supabaseAdmin.from('users').update({ name: String(data.name).trim() }).eq('id', userId);
       }
-      if (data.email) {
+      if (data.email !== undefined) {
         await supabaseAdmin.from('users').update({ email: String(data.email).trim() }).eq('id', userId);
       }
 
@@ -204,6 +212,7 @@ export async function PATCH(req: NextRequest) {
         user_id: userId,
         briefing_enabled: data.briefing_enabled !== undefined ? Boolean(data.briefing_enabled) : true,
         email_briefing_enabled: data.email_briefing_enabled !== undefined ? Boolean(data.email_briefing_enabled) : true,
+        briefing_time: data.briefing_time || '07:00:00',
         updated_at: new Date().toISOString(),
       });
 

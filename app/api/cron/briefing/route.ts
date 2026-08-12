@@ -115,18 +115,45 @@ export async function GET(req: NextRequest) {
 
         const safeLimit = (insight?.payload || []).find((p: any) => p.title?.includes('Sisa Uang'))?.value || 100000;
 
-        dispatchPromises.push(
-          sendBriefingEmail(user.email, {
-            userName: user.name || 'Teman',
-            todayDateStr: todayDateFormatted,
-            safeDailyLimit: typeof safeLimit === 'number' ? safeLimit : 100000,
-            totalIncome: yesterdayTxs.filter((t) => t.type === 'income').reduce((acc, curr) => acc + Number(curr.amount || 0), 0),
-            totalExpense: yesterdayTxs.filter((t) => t.type === 'expense').reduce((acc, curr) => acc + Number(curr.amount || 0), 0),
-            todayActs,
-            urgentActs,
-            aiInsight: briefing.follow_up_question || briefing.messages?.[0] || '',
-          })
-        );
+      let userEmailStatus: any = null;
+      const emailEnabled = userSetting ? userSetting.email_briefing_enabled !== false : true;
+      if (user.email && emailEnabled) {
+        const todayDateFormatted = nowWib.toLocaleDateString('id-ID', {
+          weekday: 'long',
+          day: 'numeric',
+          month: 'long',
+          year: 'numeric',
+        });
+
+        const todayActs = activities
+          .filter((a) => a.status !== 'completed' && a.status !== 'cancelled')
+          .slice(0, 5)
+          .map((a) => a.title);
+
+        const urgentActs = activities
+          .filter((a) => (a.priority === 'urgent' || a.priority === 'high') && a.status !== 'completed')
+          .map((a) => a.title);
+
+        const safeLimit = (insight?.payload || []).find((p: any) => p.title?.includes('Sisa Uang'))?.value || 100000;
+
+        const emailResult = await sendBriefingEmail(user.email, {
+          userName: user.name || 'Teman',
+          todayDateStr: todayDateFormatted,
+          safeDailyLimit: typeof safeLimit === 'number' ? safeLimit : 100000,
+          totalIncome: yesterdayTxs.filter((t) => t.type === 'income').reduce((acc, curr) => acc + Number(curr.amount || 0), 0),
+          totalExpense: yesterdayTxs.filter((t) => t.type === 'expense').reduce((acc, curr) => acc + Number(curr.amount || 0), 0),
+          todayActs,
+          urgentActs,
+          aiInsight: briefing.follow_up_question || briefing.messages?.[0] || '',
+        });
+        userEmailStatus = { userId: user.id, email: user.email, ...emailResult };
+      } else {
+        userEmailStatus = {
+          userId: user.id,
+          email: user.email || 'not_set',
+          ok: false,
+          error: !user.email ? 'Email tidak terdaftar di Supabase DB' : 'Email briefing dinonaktifkan di pengaturan',
+        };
       }
 
       await Promise.allSettled(dispatchPromises);
@@ -138,16 +165,24 @@ export async function GET(req: NextRequest) {
         last_briefing_date: todayDateStr,
         updated_at: new Date().toISOString(),
       });
+
+      return userEmailStatus;
     };
 
     // Parallel batching in chunks of 4 users
     const chunkSize = 4;
     let processedCount = 0;
+    const emailLogs: any[] = [];
 
     for (let i = 0; i < eligibleUsers.length; i += chunkSize) {
       const chunk = eligibleUsers.slice(i, i + chunkSize);
       const results = await Promise.allSettled(chunk.map((u) => processSingleUser(u)));
-      processedCount += results.filter((r) => r.status === 'fulfilled').length;
+      results.forEach((r) => {
+        if (r.status === 'fulfilled') {
+          processedCount++;
+          if (r.value) emailLogs.push(r.value);
+        }
+      });
     }
 
     return NextResponse.json({
@@ -155,6 +190,7 @@ export async function GET(req: NextRequest) {
       processed: processedCount,
       currentWibHour: currentHour,
       todayDate: todayDateStr,
+      emailLogs,
     });
   } catch (error: any) {
     console.error('Error in briefing cron:', error);

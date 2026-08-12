@@ -20,10 +20,29 @@ export default function SettingsPage() {
       const savedTg = localStorage.getItem('saved_telegram_id') || '';
       const savedName = localStorage.getItem('saved_user_name') || '';
       const savedEmail = localStorage.getItem('saved_user_email') || '';
+
       setUserId(savedUser);
       setTelegramId(savedTg);
       if (savedName) setUserName(savedName);
       if (savedEmail) setUserEmail(savedEmail);
+
+      // Fetch latest profile & settings from Supabase DB
+      fetch(`/api/data/records?userId=${savedUser}&telegram_id=${savedTg}`)
+        .then((res) => res.json())
+        .then((data) => {
+          if (data.ok) {
+            if (data.userId) setUserId(data.userId);
+            if (data.userName) setUserName(data.userName);
+            if (data.userEmail) setUserEmail(data.userEmail);
+            if (data.briefingEnabled !== undefined) setBriefingEnabled(Boolean(data.briefingEnabled));
+            if (data.emailBriefingEnabled !== undefined) setEmailBriefingEnabled(Boolean(data.emailBriefingEnabled));
+            if (data.briefingTime) setBriefingTime(data.briefingTime);
+
+            if (data.userName) localStorage.setItem('saved_user_name', data.userName);
+            if (data.userEmail) localStorage.setItem('saved_user_email', data.userEmail);
+          }
+        })
+        .catch((err) => console.error('Error fetching settings:', err));
     }
   }, []);
 
@@ -38,28 +57,32 @@ export default function SettingsPage() {
         if (userEmail) localStorage.setItem('saved_user_email', userEmail);
       }
 
-      // Sync user email & settings to Supabase
-      if (userId) {
-        await fetch('/api/data/records', {
-          method: 'PATCH',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({
-            userId,
-            recordId: userId,
-            type: 'user_profile',
-            data: {
-              name: userName,
-              email: userEmail,
-              email_briefing_enabled: emailBriefingEnabled,
-              briefing_enabled: briefingEnabled,
-            },
-          }),
-        }).catch(() => {});
-      }
+      // Sync user email & settings to Supabase DB
+      const res = await fetch('/api/data/records', {
+        method: 'PATCH',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          userId: userId || undefined,
+          telegram_id: telegramId || undefined,
+          type: 'user_profile',
+          data: {
+            name: userName,
+            email: userEmail,
+            email_briefing_enabled: emailBriefingEnabled,
+            briefing_enabled: briefingEnabled,
+            briefing_time: briefingTime,
+          },
+        }),
+      });
 
-      setMessage('✅ Pengaturan & Email berhasil disimpan!');
-    } catch (err) {
-      setMessage('⚠️ Gagal menyimpan pengaturan.');
+      const result = await res.json();
+      if (result.ok) {
+        setMessage('✅ Pengaturan & Email berhasil disimpan ke basis data!');
+      } else {
+        setMessage(`⚠️ Gagal menyimpan ke basis data: ${result.error || 'Kesalahan Server'}`);
+      }
+    } catch (err: any) {
+      setMessage(`⚠️ Gagal menyimpan pengaturan: ${err.message || 'Network Error'}`);
     } finally {
       setSaving(false);
     }
