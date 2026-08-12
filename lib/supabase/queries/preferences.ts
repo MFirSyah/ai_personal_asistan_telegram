@@ -15,10 +15,20 @@ export async function getUserPreferences(userId: string, limit = 15): Promise<Us
     .select('*')
     .eq('user_id', userId)
     .order('updated_at', { ascending: false })
-    .limit(limit);
+    .limit(50);
 
-  if (error) return [];
-  return data as UserPreference[];
+  if (error || !data) return [];
+
+  // Deduplicate by clean key (keeping latest updated_at entry)
+  const uniqueMap = new Map<string, UserPreference>();
+  (data as UserPreference[]).forEach((pref) => {
+    const cleanKey = String(pref.key || '').replace(/[*_`]/g, '').trim().toLowerCase();
+    if (cleanKey && !uniqueMap.has(cleanKey)) {
+      uniqueMap.set(cleanKey, pref);
+    }
+  });
+
+  return Array.from(uniqueMap.values()).slice(0, limit);
 }
 
 export async function saveUserPreference(
