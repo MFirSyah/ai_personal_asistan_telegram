@@ -58,10 +58,10 @@ export async function sendBriefingEmail(
       }
 
       console.log(`[SendEmail] Briefing email successfully delivered via Brevo to ${toEmail} (MessageID: ${responseData.messageId})`);
-      return { ok: true, id: responseData.messageId };
+      return { ok: true, id: responseData.messageId, provider: 'brevo' };
     } catch (err: any) {
       console.error('[SendEmail] Exception during Brevo delivery:', err);
-      return { ok: false, error: err.message || 'Terjadi kesalahan saat memanggil Brevo API' };
+      return { ok: false, error: err.message || 'Terjadi kesalahan saat memanggil Brevo API', provider: 'brevo' };
     }
   }
 
@@ -79,14 +79,14 @@ export async function sendBriefingEmail(
 
       if (result.error) {
         console.error('[SendEmail] Resend API error:', result.error);
-        return { ok: false, error: result.error.message };
+        return { ok: false, error: result.error.message, provider: 'resend (sandbox fallback)' };
       }
 
       console.log(`[SendEmail] Briefing email successfully delivered via Resend to ${toEmail} (ID: ${result.data?.id})`);
-      return { ok: true, id: result.data?.id };
+      return { ok: true, id: result.data?.id, provider: 'resend' };
     } catch (err: any) {
       console.error('[SendEmail] Exception during Resend delivery:', err);
-      return { ok: false, error: err.message || 'Terjadi kesalahan saat memanggil Resend API' };
+      return { ok: false, error: err.message || 'Terjadi kesalahan saat memanggil Resend API', provider: 'resend' };
     }
   }
 
