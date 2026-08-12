@@ -113,7 +113,7 @@ export async function GET(req: NextRequest) {
           .filter((a) => (a.priority === 'urgent' || a.priority === 'high') && a.status !== 'completed')
           .map((a) => a.title);
 
-        const safeLimit = briefing.insightPayload?.find((p) => p.title?.includes('Sisa Uang'))?.value || 100000;
+        const safeLimit = (insight?.payload || []).find((p: any) => p.title?.includes('Sisa Uang'))?.value || 100000;
 
         dispatchPromises.push(
           sendBriefingEmail(user.email, {
