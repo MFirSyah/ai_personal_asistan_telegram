@@ -30,37 +30,46 @@ function parseSafeIsoDate(dateStr?: string): string {
 
   const str = dateStr.trim();
 
-  // Try direct ISO / standard Date parsing first
-  let d = new Date(str);
-  if (!isNaN(d.getTime())) {
-    // Guard against AI returning Jan 1 00:00 dummy dates
-    if (d.getMonth() === 0 && d.getDate() === 1 && d.getHours() === 0 && d.getMinutes() === 0) {
-      return new Date().toISOString();
-    }
-    return d.toISOString();
-  }
-
-  try {
-    // Only clean em-dash / en-dash, DO NOT split on hyphen '-'
-    const cleanStr = str.split(/[–—]/)[0].trim();
-    d = new Date(cleanStr);
+  // 1. Check if it's already a valid ISO string with timezone indicator (e.g. Z or +07:00)
+  if (str.includes('T') || str.endsWith('Z') || str.includes('+')) {
+    const d = new Date(str);
     if (!isNaN(d.getTime())) {
-      if (d.getMonth() === 0 && d.getDate() === 1 && d.getHours() === 0 && d.getMinutes() === 0) {
+      if (d.getMonth() === 0 && d.getDate() === 1 && d.getUTCHours() === 0 && d.getUTCMinutes() === 0) {
         return new Date().toISOString();
       }
       return d.toISOString();
     }
+  }
 
-    const parts = cleanStr.split(/[\/\s:]/);
+  try {
+    const cleanStr = str.split(/[–—]/)[0].trim();
+
+    // 2. Parse DD/MM/YYYY or YYYY-MM-DD formats with optional HH:mm
+    const parts = cleanStr.split(/[\/\s:-]+/);
     if (parts.length >= 3) {
-      const day = parseInt(parts[0], 10);
-      const month = parseInt(parts[1], 10) - 1;
-      const year = parseInt(parts[2], 10);
-      const hour = parts[3] ? parseInt(parts[3], 10) : 0;
-      const min = parts[4] ? parseInt(parts[4], 10) : 0;
-      d = new Date(Date.UTC(year < 100 ? 2000 + year : year, month, day, hour, min));
+      let year: number, month: number, day: number;
+
+      if (parts[0].length === 4) {
+        year = parseInt(parts[0], 10);
+        month = parseInt(parts[1], 10) - 1;
+        day = parseInt(parts[2], 10);
+      } else {
+        day = parseInt(parts[0], 10);
+        month = parseInt(parts[1], 10) - 1;
+        year = parseInt(parts[2], 10);
+        if (year < 100) year += 2000;
+      }
+
+      // If hour/min supplied in Indonesian text, they are in WIB (UTC+7). Subtract 7 hours for UTC!
+      const now = new Date();
+      const hasTime = parts.length >= 5;
+      const wibHour = hasTime ? parseInt(parts[3], 10) : (now.getUTCHours() + 7) % 24;
+      const wibMin = hasTime ? parseInt(parts[4], 10) : now.getUTCMinutes();
+
+      // Convert WIB hour to UTC hour: (wibHour - 7)
+      const d = new Date(Date.UTC(year, month, day, wibHour - 7, wibMin));
       if (!isNaN(d.getTime())) {
-        if (d.getMonth() === 0 && d.getDate() === 1 && d.getHours() === 0 && d.getMinutes() === 0) {
+        if (d.getMonth() === 0 && d.getDate() === 1 && d.getUTCHours() === 0 && d.getUTCMinutes() === 0) {
           return new Date().toISOString();
         }
         return d.toISOString();
@@ -69,6 +78,7 @@ function parseSafeIsoDate(dateStr?: string): string {
   } catch (e) {
     // Fallback to current time
   }
+
   return new Date().toISOString();
 }
 
