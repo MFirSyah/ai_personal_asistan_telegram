@@ -30,50 +30,48 @@ function parseSafeIsoDate(dateStr?: string): string {
 
   const str = dateStr.trim();
 
-  // 1. Check if it's already a valid ISO string with timezone indicator (e.g. Z or +07:00)
-  if (str.includes('T') || str.endsWith('Z') || str.includes('+')) {
+  // If explicit +07:00 timezone offset is already present
+  if (str.includes('+07') || str.includes('+07:00')) {
     const d = new Date(str);
-    if (!isNaN(d.getTime())) {
-      if (d.getMonth() === 0 && d.getDate() === 1 && d.getUTCHours() === 0 && d.getUTCMinutes() === 0) {
-        return new Date().toISOString();
-      }
-      return d.toISOString();
-    }
+    if (!isNaN(d.getTime())) return d.toISOString();
   }
 
   try {
     const cleanStr = str.split(/[–—]/)[0].trim();
 
-    // 2. Parse DD/MM/YYYY or YYYY-MM-DD formats with optional HH:mm
-    const parts = cleanStr.split(/[\/\s:-]+/);
-    if (parts.length >= 3) {
-      let year: number, month: number, day: number;
+    // Extract numbers for YYYY, MM, DD, HH, mm
+    // Matches YYYY-MM-DDTHH:mm or DD/MM/YYYY HH:mm
+    const matchIso = cleanStr.match(/^(\d{4})[-/](\d{1,2})[-/](\d{1,2})(?:[T\s](\d{1,2}):(\d{1,2}))?/);
+    const matchIndo = cleanStr.match(/^(\d{1,2})[-/](\d{1,2})[-/](\d{4})(?:[T\s](\d{1,2}):(\d{1,2}))?/);
 
-      if (parts[0].length === 4) {
-        year = parseInt(parts[0], 10);
-        month = parseInt(parts[1], 10) - 1;
-        day = parseInt(parts[2], 10);
-      } else {
-        day = parseInt(parts[0], 10);
-        month = parseInt(parts[1], 10) - 1;
-        year = parseInt(parts[2], 10);
-        if (year < 100) year += 2000;
+    let year: number, month: number, day: number, wibHour: number, wibMin: number;
+    const now = new Date();
+
+    if (matchIso) {
+      year = parseInt(matchIso[1], 10);
+      month = parseInt(matchIso[2], 10) - 1;
+      day = parseInt(matchIso[3], 10);
+      wibHour = matchIso[4] !== undefined ? parseInt(matchIso[4], 10) : (now.getUTCHours() + 7) % 24;
+      wibMin = matchIso[5] !== undefined ? parseInt(matchIso[5], 10) : now.getUTCMinutes();
+    } else if (matchIndo) {
+      day = parseInt(matchIndo[1], 10);
+      month = parseInt(matchIndo[2], 10) - 1;
+      year = parseInt(matchIndo[3], 10);
+      wibHour = matchIndo[4] !== undefined ? parseInt(matchIndo[4], 10) : (now.getUTCHours() + 7) % 24;
+      wibMin = matchIndo[5] !== undefined ? parseInt(matchIndo[5], 10) : now.getUTCMinutes();
+    } else {
+      const d = new Date(str);
+      if (!isNaN(d.getTime())) return d.toISOString();
+      return new Date().toISOString();
+    }
+
+    // Convert WIB hour to UTC hour (wibHour - 7)
+    const d = new Date(Date.UTC(year, month, day, wibHour - 7, wibMin));
+    if (!isNaN(d.getTime())) {
+      if (d.getMonth() === 0 && d.getDate() === 1 && d.getUTCHours() === 0 && d.getUTCMinutes() === 0) {
+        return new Date().toISOString();
       }
-
-      // If hour/min supplied in Indonesian text, they are in WIB (UTC+7). Subtract 7 hours for UTC!
-      const now = new Date();
-      const hasTime = parts.length >= 5;
-      const wibHour = hasTime ? parseInt(parts[3], 10) : (now.getUTCHours() + 7) % 24;
-      const wibMin = hasTime ? parseInt(parts[4], 10) : now.getUTCMinutes();
-
-      // Convert WIB hour to UTC hour: (wibHour - 7)
-      const d = new Date(Date.UTC(year, month, day, wibHour - 7, wibMin));
-      if (!isNaN(d.getTime())) {
-        if (d.getMonth() === 0 && d.getDate() === 1 && d.getUTCHours() === 0 && d.getUTCMinutes() === 0) {
-          return new Date().toISOString();
-        }
-        return d.toISOString();
-      }
+      return d.toISOString();
     }
   } catch (e) {
     // Fallback to current time
