@@ -88,7 +88,7 @@ export default function AnomaliesView({
                     <div key={tx.id} className="p-3 border-2 border-black bg-[#ffdad6] text-[#93000a] flex justify-between items-center">
                       <div>
                         <p className="font-bold text-sm">{tx.merchant || tx.description || 'Transaksi'}</p>
-                        <p className="text-[10px] opacity-80">{new Date(tx.occurred_at).toLocaleDateString('id-ID')}</p>
+                        <p className="text-[10px] opacity-80">{new Date(tx.occurred_at).toLocaleDateString('id-ID')} • {new Date(tx.occurred_at).toLocaleTimeString('id-ID', { hour: '2-digit', minute: '2-digit' })}</p>
                       </div>
                       <div className="text-right">
                         <p className="font-black text-sm">Rp {Number(tx.amount).toLocaleString('id-ID')}</p>

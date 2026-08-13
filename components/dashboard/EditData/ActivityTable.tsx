@@ -173,7 +173,13 @@ export default function ActivityTable({
                   <span className="bg-black text-[#d2f000] px-2 py-0.5 border border-black font-bold font-mono">
                     {a.short_id || `ACT-${a.id?.replace(/-/g, '').substring(0, 6).toUpperCase()}`}
                   </span>
-                  <span className="font-bold">{new Date(a.occurred_at || a.created_at || '').toLocaleDateString('id-ID')}</span>
+                  <span className="font-bold font-mono text-[11px] text-black/80 dark:text-white/80">
+                    {(() => {
+                      const d = new Date(a.occurred_at || a.created_at || '');
+                      if (isNaN(d.getTime())) return '-';
+                      return `${d.toLocaleDateString('id-ID')} • ${d.toLocaleTimeString('id-ID', { hour: '2-digit', minute: '2-digit' })}`;
+                    })()}
+                  </span>
                 </div>
                 <p className="font-bold text-sm">📌 {a.title}</p>
                 {a.description && (

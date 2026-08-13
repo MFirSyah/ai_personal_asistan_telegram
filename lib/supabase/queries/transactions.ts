@@ -358,3 +358,44 @@ export async function deleteRecordById(
   return true;
 }
 
+export async function getRecordDetailsByShortOrFull(
+  userId: string,
+  idOrShortId: string
+): Promise<{ type: 'transaction' | 'activity'; record: any } | null> {
+  const cleanStr = idOrShortId.trim();
+  const isAct = cleanStr.toUpperCase().startsWith('ACT');
+  const primaryType: 'transaction' | 'activity' = isAct ? 'activity' : 'transaction';
+  const secondaryType: 'transaction' | 'activity' = isAct ? 'transaction' : 'activity';
+
+  let realId = await findRecordIdByShortOrFull(userId, cleanStr, primaryType);
+  let type = primaryType;
+
+  if (!realId) {
+    realId = await findRecordIdByShortOrFull(userId, cleanStr, secondaryType);
+    type = secondaryType;
+  }
+
+  if (!realId) return null;
+
+  const table = type === 'transaction' ? 'transactions' : 'activities';
+  const { data } = await supabaseAdmin
+    .from(table)
+    .select('*')
+    .eq('id', realId)
+    .eq('user_id', userId)
+    .is('deleted_at', null)
+    .maybeSingle();
+
+  if (!data) return null;
+
+  const shortId = `${type === 'transaction' ? 'TX' : 'ACT'}-${data.id.replace(/-/g, '').substring(0, 6).toUpperCase()}`;
+  return {
+    type,
+    record: {
+      ...data,
+      short_id: shortId,
+    },
+  };
+}
+
+

@@ -11,6 +11,7 @@ import {
   randomizeActivityTimestamps,
   updateRecordById,
   deleteRecordById,
+  getRecordDetailsByShortOrFull,
 } from '@/lib/supabase/queries/transactions';
 import { getUserPreferences, saveUserPreference } from '@/lib/supabase/queries/preferences';
 import { updateUserName } from '@/lib/supabase/queries/sessions';
@@ -92,6 +93,31 @@ export async function processChatRespondDirect(
       getRecentChatHistory(userId, 24),
       getUserCategories(userId),
     ]);
+
+    // Targeted ID Lookup: If user message contains short/full ID (e.g. TX-6909C8 or ACT-XXXXXX)
+    const idMatches = userMessage.match(/(TX|ACT)-?[A-F0-9]{4,8}/gi);
+    if (idMatches && idMatches.length > 0) {
+      for (const rawId of idMatches) {
+        try {
+          const searched = await getRecordDetailsByShortOrFull(userId, rawId);
+          if (searched && searched.record) {
+            if (searched.type === 'transaction') {
+              const exists = transactions.some((t) => t.id === searched.record.id);
+              if (!exists) {
+                transactions.unshift(searched.record);
+              }
+            } else if (searched.type === 'activity') {
+              const exists = activities.some((a) => a.id === searched.record.id);
+              if (!exists) {
+                activities.unshift(searched.record);
+              }
+            }
+          }
+        } catch (idErr) {
+          console.error('Error fetching targeted ID for context:', idErr);
+        }
+      }
+    }
 
     // Save user message to history asynchronously
     saveChatMessage(userId, 'user', userMessage).catch(console.error);
