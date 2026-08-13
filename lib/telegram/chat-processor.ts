@@ -239,6 +239,9 @@ export async function processChatRespondDirect(
         const editReq = (ext as any).edit_record;
         if (editReq?.id && editReq?.type && editReq?.changes) {
           try {
+            if (editReq.changes.occurred_at) {
+              editReq.changes.occurred_at = parseSafeIsoDate(editReq.changes.occurred_at);
+            }
             const success = await updateRecordById(userId, editReq.id, editReq.type, editReq.changes);
             if (success && chatId) {
               await sendTelegramMessage(
