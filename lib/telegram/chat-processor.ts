@@ -12,6 +12,7 @@ import {
   updateRecordById,
   deleteRecordById,
   getRecordDetailsByShortOrFull,
+  syncAllRecordTimestampsToCreatedAt,
 } from '@/lib/supabase/queries/transactions';
 import { getUserPreferences, saveUserPreference } from '@/lib/supabase/queries/preferences';
 import { updateUserName } from '@/lib/supabase/queries/sessions';
@@ -296,6 +297,19 @@ export async function processChatRespondDirect(
           await sendTelegramDocument(chatId, exportResult.buffer, exportResult.filename, exportResult.caption);
         } catch (expErr) {
           console.error('Export error:', expErr);
+        }
+      }
+
+      // Fix All Timestamps Request
+      if ((ext as any).fix_all_timestamps_request && chatId) {
+        try {
+          const { txCount, actCount } = await syncAllRecordTimestampsToCreatedAt(userId);
+          await sendTelegramMessage(
+            chatId,
+            `✨ **BERHASIL MEMPERBAIKI SEMUA JAM DATA!**\n\n• **Total Transaksi Diperbarui**: ${txCount} data\n• **Total Aktivitas Diperbarui**: ${actCount} data\n\nSemua jam transaksi dan agenda kamu telah disinkronkan 100% presisi sesuai waktu kronologi asli percakapan kamu di database!`
+          );
+        } catch (syncErr) {
+          console.error('Error syncing all timestamps:', syncErr);
         }
       }
 

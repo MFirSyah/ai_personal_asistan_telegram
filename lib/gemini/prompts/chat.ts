@@ -365,6 +365,9 @@ TUGAS KAMU:
       b) Menyertakan penjelasan ringkas, analisis tren, dan wawasan detail di dalam bubble balasan (\`messages\`).
 14. Hasilkan 1-2 pesan bubble (\`messages\`) balasan yang alami, hangat, dan solutif. Sebutkan ID unik yang diedit/dihapus dalam pesan balasan jika ada.
 15. Sediakan 1 pertanyaan lanjutan (\`follow_up_question\`) singkat.
+16. **PERBAIKAN SEMUA JAM / SINKRONISASI JAM DENGAN HISTORY CHAT (\`fix_all_timestamps_request\`)**:
+    - Jika user meminta memperbarui / merapikan / mengoreksi SEMUA jam data transaksi atau aktivitas agar sesuai kronologi history chat (misal: "perbaiki semua jam data", "rapikan jam sesuai history chat", "samakan jam transaksi dengan waktu chat", "perbaiki jam keuangan dan aktivitas", "perbaiki semua coba"), KAMU WAJIB MENESET:
+      \`"fix_all_timestamps_request": true\`
 
 FORMAT OUTPUT (WAJIB JSON VALID TANPA MARKDOWN BACKTICKS):
 {

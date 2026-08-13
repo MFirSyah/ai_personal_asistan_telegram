@@ -398,4 +398,51 @@ export async function getRecordDetailsByShortOrFull(
   };
 }
 
+export async function syncAllRecordTimestampsToCreatedAt(
+  userId: string
+): Promise<{ txCount: number; actCount: number }> {
+  let txCount = 0;
+  let actCount = 0;
+
+  const { data: txs } = await supabaseAdmin
+    .from('transactions')
+    .select('id, created_at')
+    .eq('user_id', userId)
+    .is('deleted_at', null);
+
+  if (txs && txs.length > 0) {
+    for (const t of txs) {
+      if (t.created_at) {
+        await supabaseAdmin
+          .from('transactions')
+          .update({ occurred_at: t.created_at })
+          .eq('id', t.id)
+          .eq('user_id', userId);
+        txCount++;
+      }
+    }
+  }
+
+  const { data: acts } = await supabaseAdmin
+    .from('activities')
+    .select('id, created_at')
+    .eq('user_id', userId)
+    .is('deleted_at', null);
+
+  if (acts && acts.length > 0) {
+    for (const a of acts) {
+      if (a.created_at) {
+        await supabaseAdmin
+          .from('activities')
+          .update({ occurred_at: a.created_at })
+          .eq('id', a.id)
+          .eq('user_id', userId);
+        actCount++;
+      }
+    }
+  }
+
+  return { txCount, actCount };
+}
+
 
