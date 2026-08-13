@@ -283,7 +283,6 @@ export async function PATCH(req: NextRequest) {
     const updatePayload: Record<string, any> = {};
 
     if (type === 'transaction') {
-      updatePayload.updated_at = new Date().toISOString();
       if (data.amount !== undefined) {
         const parsedAmount = Number(data.amount);
         if (isNaN(parsedAmount) || parsedAmount <= 0) {
