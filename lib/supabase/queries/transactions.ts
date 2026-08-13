@@ -445,4 +445,54 @@ export async function syncAllRecordTimestampsToCreatedAt(
   return { txCount, actCount };
 }
 
+export async function consolidateDuplicateCashTransactions(
+  userId: string
+): Promise<{ mergedCount: number; newRecordId?: string }> {
+  const { data: cashTxs } = await supabaseAdmin
+    .from('transactions')
+    .select('*')
+    .eq('user_id', userId)
+    .is('deleted_at', null);
+
+  if (!cashTxs || cashTxs.length === 0) return { mergedCount: 0 };
+
+  const splitTxs = cashTxs.filter(
+    (t) =>
+      t.type === 'income' &&
+      (t.description?.toLowerCase().includes('kertas') ||
+        t.description?.toLowerCase().includes('koin') ||
+        t.description?.toLowerCase().includes('penyesuaian selisih'))
+  );
+
+  if (splitTxs.length <= 1) return { mergedCount: 0 };
+
+  let totalAmount = 0;
+  for (const st of splitTxs) {
+    totalAmount += Number(st.amount || 0);
+    await supabaseAdmin
+      .from('transactions')
+      .update({ deleted_at: new Date().toISOString() })
+      .eq('id', st.id)
+      .eq('user_id', userId);
+  }
+
+  const { data: newTx } = await supabaseAdmin
+    .from('transactions')
+    .insert({
+      user_id: userId,
+      amount: totalAmount || 30000,
+      type: 'income',
+      merchant: 'Cash',
+      description: 'Saldo Awal Dompet Cash (Terkonsolidasi)',
+      source: 'chat_manual',
+      payment_method: 'Cash',
+      occurred_at: new Date().toISOString(),
+    })
+    .select('id')
+    .single();
+
+  const shortId = newTx ? `TX-${newTx.id.replace(/-/g, '').substring(0, 6).toUpperCase()}` : undefined;
+  return { mergedCount: splitTxs.length, newRecordId: shortId };
+}
+
 

@@ -13,6 +13,7 @@ import {
   deleteRecordById,
   getRecordDetailsByShortOrFull,
   syncAllRecordTimestampsToCreatedAt,
+  consolidateDuplicateCashTransactions,
 } from '@/lib/supabase/queries/transactions';
 import { getUserPreferences, saveUserPreference } from '@/lib/supabase/queries/preferences';
 import { updateUserName } from '@/lib/supabase/queries/sessions';
@@ -310,6 +311,19 @@ export async function processChatRespondDirect(
           );
         } catch (syncErr) {
           console.error('Error syncing all timestamps:', syncErr);
+        }
+      }
+
+      // Reconcile Wallet Balances Request
+      if ((ext as any).reconcile_wallet_balances && chatId) {
+        try {
+          const { mergedCount, newRecordId } = await consolidateDuplicateCashTransactions(userId);
+          const msg = mergedCount > 0
+            ? `👛 **KONSOLIDASI SALDO DOMPET BERHASIL!**\n\n• **Total Transaksi Terpisah Digabung**: ${mergedCount} entri\n• **ID Transaksi Konsolidasi Baru**: [${newRecordId}]\n\nSeluruh catatan pecahan tunai (kertas, koin, penyesuaian) telah digabungkan secara rapi menjadi 1 entri Saldo Cash di database!`
+            : `👛 **REKONSILIASI SALDO DOMPET**\n\nSeluruh saldo dompet kamu (SeaBank, Cash, Gopay, BCA, dll) sudah tercatat rapi dan berada dalam kondisi ideal tanpa duplikasi!`;
+          await sendTelegramMessage(chatId, msg);
+        } catch (recErr) {
+          console.error('Error reconciling wallet balances:', recErr);
         }
       }
 

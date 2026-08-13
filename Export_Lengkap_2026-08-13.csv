@@ -1,0 +1,26 @@
+﻿--- SECTION: CATATAN TRANSAKSI KEUANGAN ---
+ID Transaksi,Tanggal,Tipe,Nominal (Rp),Merchant / Tempat,Metode Bayar,Deskripsi,Tag,Sumber
+e24adbe2-842d-493b-b5d8-72bd785c7ccc,"13/8/2026, 11.21.48",Pemasukan,26000,"Cash","Cash","Penyesuaian selisih cash kertas","penyesuaian",chat_manual
+58be817a-11dc-4d28-aeba-b84320c23e3f,"13/8/2026, 11.01.26",Pemasukan,6000,"Cash Koin","Cash","Cash Koin","koin",chat_manual
+1b987559-c5a2-4100-b168-f3046e34df75,"13/8/2026, 11.01.25",Pemasukan,24000,"Cash Kertas","Cash","Cash Kertas","kertas",chat_manual
+f8a85a40-e46d-4206-b028-99dcfb7a8909,"13/8/2026, 10.45.36",Pemasukan,21000,"Gopay","Gopay","Pemasukan dari Gopay","gopay",chat_manual
+5ce9b78a-b5b3-46c7-b725-7e3a75e17faa,"13/8/2026, 04.07.04",Pengeluaran,4000,"Cash","Cash","Beli es tebu","jajan",chat_manual
+ccfe48e1-ca4a-42ef-ad32-7f5fb1bf7693,"12/8/2026, 15.27.19",Pengeluaran,67941,"Tagihan Bulanan","Cash","Tagihan rutin bulanan (Cicilan 1 dari 12)","tagihan, rutin",chat_manual
+de4e8ed7-b8fe-4412-a95b-64d5445ea5f3,"12/8/2026, 13.37.17",Pengeluaran,10000,"Cash","Cash","Beli es cincau","jajan",chat_manual
+564355bb-b05a-4409-8c7e-ceac77afe562,"12/8/2026, 13.37.11",Pengeluaran,25000,"Cash","Cash","Pembelian kabel HDMI","elektronik",chat_manual
+1310f020-782c-430b-b3e4-3ce6b920e356,"12/8/2026, 12.29.42",Pemasukan,100000,"Cash","Cash","Ambil uang dari SeaBank untuk dijadikan cash","tarik_tunai",chat_manual
+fe82dc31-6ab8-4b2c-bcb5-91ca9304a807,"12/8/2026, 12.29.40",Pengeluaran,100000,"SeaBank","SeaBank","Ambil uang dari SeaBank untuk dijadikan cash","tarik_tunai",chat_manual
+c8a32701-68d8-4f65-bd97-7c58d9ac795b,"12/8/2026, 12.29.00",Pengeluaran,4000,"Cash","-","Bayar nambang kapal PP","",chat_manual
+7cbecbe5-f652-4a51-927e-2cd6fe217bdb,"12/8/2026, 12.28.46",Pengeluaran,20000,"Cash","Cash","Beli adaptor HDMI splitter","peralatan",chat_manual
+c818dc40-c2d3-40ee-bdce-5d4e1255093f,"12/8/2026, 09.15.56",Pengeluaran,5500,"Teh Rico Ketawang","SeaBank","Beli teh Rico di Ketawang","jajan, minuman",chat_manual
+7a03ea68-0e6d-4fa1-a9ad-75780df150d8,"12/8/2026, 05.44.25",Pemasukan,208000,"SeaBank","SeaBank","Saldo SeaBank","saldo",chat_manual
+
+--- SECTION: CATATAN AGENDA & AKTIVITAS ---
+ID Aktivitas,Judul Aktivitas,Deskripsi,Status,Prioritas,Tag,Tanggal Execution
+486088b0-209f-472e-b19f-21ed17f97a9b,"Cari cuan gojek","Cari cuan gojek pagi hari",completed,urgent,"gojek, cuan","12/8/2026, 17.01.58"
+52bcec42-1a64-4584-8790-347acb452126,"Bayar Tagihan Bulanan (Rp 67.941)","Tagihan rutin bulanan tiap tanggal 20",scheduled,urgent,"tagihan, rutin","12/8/2026, 15.27.20"
+0eecbb46-b399-413e-800d-642241011714,"Cek status pendaftaran yudisium dan ikuti morning briefing","",completed,urgent,"","12/8/2026, 05.30.33"
+e1d583b8-8086-40a4-ae9f-c7ed9ffacbbf,"Wisuda di kampus Telkom University Surabaya","",completed,urgent,"","12/8/2026, 05.30.32"
+8fc5f744-4478-4244-9a72-2c3f98a4e9f9,"Mengambil Surat Bebas Tunggakan dan Seminar Hasil 3 Teman","Surat bebas tunggakan dan seminar teman",completed,urgent,"akademik","12/8/2026, 05.29.40"
+ff241c44-cb03-4153-9ac8-0643f13da425,"Seminar Hasil","Seminar Hasil (Selesai)",completed,urgent,"seminar","12/8/2026, 05.29.40"
+c42f18d8-b280-4d6f-9bd2-61913ab24684,"Bayar hutang ke Rifky","Bayar hutang",scheduled,urgent,"hutang","12/8/2026, 05.29.38"
