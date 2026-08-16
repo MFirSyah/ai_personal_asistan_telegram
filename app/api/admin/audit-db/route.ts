@@ -90,10 +90,11 @@ export async function GET(req: NextRequest) {
         })),
       },
       userPreferences: (prefs || []).map((p) => ({
-        key: p.key,
-        value: p.value,
-        learnedFrom: p.learned_from || '-',
-        updatedAt: p.updated_at,
+        raw: p,
+        key: p.key || p.preference_key || p.name || p.title || 'unknown',
+        value: p.value || p.preference_value || p.content || '-',
+        learnedFrom: p.learned_from || p.context || '-',
+        updatedAt: p.updated_at || p.created_at,
       })),
       categoriesCount: (cats || []).length,
     };
