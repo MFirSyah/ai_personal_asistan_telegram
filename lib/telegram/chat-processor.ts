@@ -4,6 +4,7 @@ import {
   calculateItemAffordability,
   checkSmartScheduleConflict,
   optimizeTripBudget,
+  calculateLoanRisk,
 } from '@/lib/analytics/calculators';
 
 import {
@@ -393,6 +394,31 @@ export async function processChatRespondDirect(
           await sendTelegramMessage(chatId, replyMsg);
         } catch (optErr) {
           console.error('Error optimizing trip budget:', optErr);
+        }
+      }
+
+
+      // Loan Risk & Pinjol Stress Test Request
+      if ((ext as any).check_loan_risk_request && chatId) {
+        try {
+          const req = (ext as any).check_loan_risk_request;
+          const res = await calculateLoanRisk(
+            userId,
+            req.principal || 500000,
+            req.dailyInterestRatePct ?? 0.2,
+            req.tenorMonths ?? 12
+          );
+          let icon = res.decision === 'STRONGLY_REJECT' ? '🛑' : '⚠️';
+          let replyMsg = `${icon} **ANALISIS RISIKO PINJAMAN ONLINE (PINJOL STRESS TEST)**\n\n`;
+          replyMsg += `• **Pokok Pinjaman**: Rp ${res.principal.toLocaleString('id-ID')}\n`;
+          replyMsg += `• **Bunga Harian**: ${res.dailyInterestRatePct}% / hari (${res.effectiveAnnualRatePct.toFixed(1)}% / tahun!)\n`;
+          replyMsg += `• **Total Bunga Membengkak**: Rp ${res.totalInterestPayable.toLocaleString('id-ID')}\n`;
+          replyMsg += `• **Total Pengembalian (Pokok + Bunga)**: Rp ${res.totalRepaymentTotal.toLocaleString('id-ID')}\n`;
+          replyMsg += `• **Estimasi Cicilan**: Rp ${res.monthlyRepaymentEst.toLocaleString('id-ID')} / bulan (${res.tenorMonths} bulan)\n\n`;
+          replyMsg += `💬 **Peringatan & Saran Royal Butler**:\n${res.butlerAdvice}`;
+          await sendTelegramMessage(chatId, replyMsg);
+        } catch (loanErr) {
+          console.error('Error checking loan risk:', loanErr);
         }
       }
 

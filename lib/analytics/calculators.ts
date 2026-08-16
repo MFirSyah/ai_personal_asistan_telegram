@@ -636,3 +636,61 @@ export async function optimizeTripBudget(userId: string, destination: string, pl
 
   return { destination, originalBudget, optimizedBudget, potentialSavings, itemizedBreakdown, butlerAdvice };
 }
+
+
+export interface LoanRiskResult {
+  principal: number;
+  dailyInterestRatePct: number;
+  tenorMonths: number;
+  monthlyRepaymentEst: number;
+  totalInterestPayable: number;
+  totalRepaymentTotal: number;
+  effectiveAnnualRatePct: number;
+  currentFreeBalance: number;
+  decision: 'STRONGLY_REJECT' | 'HIGH_RISK_WARNING' | 'ACCEPTABLE_WITH_CAUTION';
+  butlerAdvice: string;
+}
+
+export async function calculateLoanRisk(
+  userId: string,
+  principal: number,
+  dailyInterestRatePct: number = 0.2,
+  tenorMonths: number = 12
+): Promise<LoanRiskResult> {
+  const { freeBalance } = await calculateRealtimeDailyAllowance(userId);
+
+  const monthlyInterestRate = (dailyInterestRatePct / 100) * 30; // 0.2% * 30 = 6% / month
+  const totalDays = tenorMonths * 30;
+  const totalInterestPayable = Math.round(principal * (dailyInterestRatePct / 100) * totalDays);
+  const totalRepaymentTotal = principal + totalInterestPayable;
+  const monthlyRepaymentEst = Math.round(totalRepaymentTotal / tenorMonths);
+  const effectiveAnnualRatePct = dailyInterestRatePct * 365;
+
+  let decision: 'STRONGLY_REJECT' | 'HIGH_RISK_WARNING' | 'ACCEPTABLE_WITH_CAUTION' = 'STRONGLY_REJECT';
+  let advice = '';
+
+  if (effectiveAnnualRatePct >= 30) {
+    decision = 'STRONGLY_REJECT';
+    if (freeBalance >= principal) {
+      advice = `Izin memberi masukan tegas Mas Firman: PINJAMAN INI SANGAT TIDAK DISARANKAN! Bunga 0.2%/hari setara dengan ${effectiveAnnualRatePct.toFixed(1)}% per tahun (Anda harus membayar bunga Rp ${totalInterestPayable.toLocaleString('id-ID')} hanya untuk pinjaman Rp ${principal.toLocaleString('id-ID')}). Apalagi saldo bebas Anda saat ini (Rp ${freeBalance.toLocaleString('id-ID')}) sangat cukup untuk menutupi kebutuhan ini secara tunai tanpa perlu berhutang.`;
+    } else {
+      advice = `Sangat tidak disarankan Mas Firman. Bunga 0.2%/hari (${effectiveAnnualRatePct.toFixed(1)}%/tahun) tergolong sangat tinggi dan menjebak. Total yang harus dikembalikan menjadi Rp ${totalRepaymentTotal.toLocaleString('id-ID')}. Disarankan mencari alternatif tanpa bunga atau menekan pengeluaran opsional selama beberapa hari.`;
+    }
+  } else {
+    decision = 'HIGH_RISK_WARNING';
+    advice = `Pinjaman Rp ${principal.toLocaleString('id-ID')} memiliki estimasi cicilan Rp ${monthlyRepaymentEst.toLocaleString('id-ID')}/bulan. Harap pastikan cicilan ini tidak melebihi 15% dari pendapatan bulanan Anda.`;
+  }
+
+  return {
+    principal,
+    dailyInterestRatePct,
+    tenorMonths,
+    monthlyRepaymentEst,
+    totalInterestPayable,
+    totalRepaymentTotal,
+    effectiveAnnualRatePct,
+    currentFreeBalance: freeBalance,
+    decision,
+    butlerAdvice: advice,
+  };
+}

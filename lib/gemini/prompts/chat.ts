@@ -387,6 +387,10 @@ TUGAS KAMU:
 21. **REKOMENDASI TRIPS & BUDGET OPTIMIZER (optimize_trip_budget_request)**:
     - Jika user menyebutkan draf pengeluaran trip/liburan (misal: "ke Jogja Malioboro 500rb, pantai 500rb, hotel 1jt"), set "optimize_trip_budget_request": { "destination": "Jogja", "items": [{ "item": "Hotel", "amount": 1000000 }, { "item": "Malioboro", "amount": 500000 }, { "item": "Pantai", "amount": 500000 }] }.
 
+
+22. **ANALISIS RISIKO PINJAMAN / CREDIT STRESS TEST (check_loan_risk_request)**:
+    - Jika user bertanya mengenai pengajuan pinjaman online, kredit, atau utang (misal: "mau pinjam 500rb bunga 0.2% per hari 12 bulan aman ngga?", "pinjam online 2jt aman ngga?"), set \`"check_loan_risk_request": { "principal": 500000, "dailyInterestRatePct": 0.2, "tenorMonths": 12 }\`.
+
 FORMAT OUTPUT (WAJIB JSON VALID TANPA MARKDOWN BACKTICKS):
 {
   "messages": ["Bubble pesan 1"],
