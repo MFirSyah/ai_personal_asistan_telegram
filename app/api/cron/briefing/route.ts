@@ -1,3 +1,4 @@
+import { sendMobilePushNotification } from '@/lib/notifications/push-service';
 import { NextRequest, NextResponse } from 'next/server';
 import { supabaseAdmin } from '@/lib/supabase/client';
 import { generateDailyBriefing } from '@/lib/gemini/prompts/daily-briefing';
