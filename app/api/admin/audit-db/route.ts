@@ -51,6 +51,10 @@ export async function GET(req: NextRequest) {
     // 4. Categories Audit
     const { data: cats } = await supabaseAdmin.from('categories').select('*');
 
+    // 5. Users List Audit
+    const { data: usersList } = await supabaseAdmin.from('users').select('id, name, email, telegram_id, created_at');
+
+
     const auditReport = {
       timestamp: new Date().toISOString(),
       transactionsSummary: {
@@ -97,6 +101,7 @@ export async function GET(req: NextRequest) {
         updatedAt: p.updated_at || p.created_at,
       })),
       categoriesCount: (cats || []).length,
+      usersList: usersList || [],
     };
 
     return NextResponse.json(auditReport);
