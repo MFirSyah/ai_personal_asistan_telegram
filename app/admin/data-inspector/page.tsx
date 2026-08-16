@@ -5,44 +5,62 @@ import Link from 'next/link';
 
 interface Transaction {
   id: string;
-  rawId?: string;
+  rawId: string;
+  userId: string;
+  userName: string;
   date: string;
   type: string;
   amount: number;
   merchant: string;
   paymentMethod: string;
   description: string;
+  deletedAt?: string | null;
 }
 
 interface Activity {
   id: string;
-  rawId?: string;
+  rawId: string;
+  userId: string;
+  userName: string;
   date: string;
   title: string;
   status: string;
   priority: string;
+  deletedAt?: string | null;
+}
+
+interface UserPreference {
+  key: string;
+  value: string;
+  learnedFrom: string;
+  updatedAt: string;
+  userName: string;
 }
 
 export default function AdminDataInspectorPage() {
   const [selectedUser, setSelectedUser] = useState<string>('all');
-  const [activeTab, setActiveTab] = useState<'tx' | 'act'>('tx');
-  const [searchTerm, setSearchTerm] = useState<string>('');
+  const [activeTab, setActiveTab] = useState<'tx' | 'act' | 'pref'>('tx');
+  const [statusFilter, setStatusFilter] = useState<'active' | 'deleted' | 'all'>('active');
   const [typeFilter, setTypeFilter] = useState<string>('all');
-  
+  const [searchTerm, setSearchTerm] = useState<string>('');
+
   const [auditData, setAuditData] = useState<any>(null);
   const [loading, setLoading] = useState<boolean>(true);
 
   // Edit Modal State
-  const [editingTx, setEditingTx] = useState<any>(null);
+  const [editingTx, setEditingTx] = useState<Transaction | null>(null);
   const [newAmount, setNewAmount] = useState<string>('');
   const [newMerchant, setNewMerchant] = useState<string>('');
+  const [newMethod, setNewMethod] = useState<string>('');
   const [newDesc, setNewDesc] = useState<string>('');
   const [newType, setNewType] = useState<string>('expense');
 
   // Create Modal State
   const [showCreateModal, setShowCreateModal] = useState<boolean>(false);
+  const [createUserId, setCreateUserId] = useState<string>('');
   const [createAmount, setCreateAmount] = useState<string>('');
   const [createMerchant, setCreateMerchant] = useState<string>('');
+  const [createMethod, setCreateMethod] = useState<string>('Cash');
   const [createDesc, setCreateDesc] = useState<string>('');
   const [createType, setCreateType] = useState<string>('expense');
 
@@ -63,10 +81,11 @@ export default function AdminDataInspectorPage() {
     fetchAuditData();
   }, []);
 
-  const handleEditClick = (tx: any) => {
+  const handleEditClick = (tx: Transaction) => {
     setEditingTx(tx);
     setNewAmount(String(tx.amount || 0));
     setNewMerchant(tx.merchant || '');
+    setNewMethod(tx.paymentMethod || 'Cash');
     setNewDesc(tx.description || '');
     setNewType(tx.type || 'expense');
   };
@@ -74,23 +93,23 @@ export default function AdminDataInspectorPage() {
   const handleSaveEdit = async () => {
     if (!editingTx) return;
     try {
-      const rawId = editingTx.rawId || editingTx.id.replace('TX-', '');
       const res = await fetch('/api/admin/mutate', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
           action: 'update_transaction',
           payload: {
-            id: rawId,
+            id: editingTx.rawId,
             amount: parseFloat(newAmount),
             merchant: newMerchant,
+            payment_method: newMethod,
             description: newDesc,
             type: newType,
           },
         }),
       });
       if (res.ok) {
-        alert('Transaksi berhasil diperbarui di database Supabase live!');
+        alert('Data transaksi berhasil diperbarui di Supabase live!');
         setEditingTx(null);
         fetchAuditData();
       } else {
@@ -102,20 +121,38 @@ export default function AdminDataInspectorPage() {
     }
   };
 
-  const handleDeleteTx = async (tx: any) => {
-    if (!confirm(`Hapus transaksi ${tx.id} (${tx.merchant})?`)) return;
+  const handleDeleteTx = async (tx: Transaction) => {
+    if (!confirm(`Hapus (soft delete) transaksi ${tx.id} (${tx.merchant})?`)) return;
     try {
-      const rawId = tx.rawId || tx.id.replace('TX-', '');
       const res = await fetch('/api/admin/mutate', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
           action: 'delete_transaction',
-          payload: { id: rawId },
+          payload: { id: tx.rawId },
         }),
       });
       if (res.ok) {
-        alert('Transaksi berhasil dihapus (soft delete) di database!');
+        alert('Transaksi berhasil di-soft delete!');
+        fetchAuditData();
+      }
+    } catch (e: any) {
+      alert('Error: ' + e.message);
+    }
+  };
+
+  const handleRestoreTx = async (tx: Transaction) => {
+    try {
+      const res = await fetch('/api/admin/mutate', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          action: 'restore_transaction',
+          payload: { id: tx.rawId },
+        }),
+      });
+      if (res.ok) {
+        alert('Transaksi berhasil dipulihkan!');
         fetchAuditData();
       }
     } catch (e: any) {
@@ -125,7 +162,7 @@ export default function AdminDataInspectorPage() {
 
   const handleCreateTx = async () => {
     if (!createAmount || !createMerchant) {
-      alert('Jumlah dan Merchant wajib diisi!');
+      alert('Jumlah Nominal dan Merchant wajib diisi!');
       return;
     }
     try {
@@ -135,15 +172,17 @@ export default function AdminDataInspectorPage() {
         body: JSON.stringify({
           action: 'create_transaction',
           payload: {
+            user_id: createUserId || (usersList[0]?.id || '00000000-0000-0000-0000-000000000001'),
             amount: parseFloat(createAmount),
             merchant: createMerchant,
+            payment_method: createMethod,
             description: createDesc,
             type: createType,
           },
         }),
       });
       if (res.ok) {
-        alert('Transaksi baru berhasil ditambahkan ke database Supabase live!');
+        alert('Transaksi baru berhasil ditambahkan!');
         setShowCreateModal(false);
         setCreateAmount('');
         setCreateMerchant('');
@@ -155,185 +194,296 @@ export default function AdminDataInspectorPage() {
     }
   };
 
-  const txList: Transaction[] = auditData?.transactionsSummary?.sampleActiveTransactions || [];
-  const actList: Activity[] = auditData?.activitiesSummary?.sampleActiveActivities || [];
+  const allTxs: Transaction[] = auditData?.transactionsSummary?.allTransactions || [];
+  const allActs: Activity[] = auditData?.activitiesSummary?.allActivities || [];
+  const prefs: UserPreference[] = auditData?.userPreferences || [];
+  const usersList: any[] = auditData?.usersList || [];
 
-  const filteredTxs = txList.filter((t) => {
+  // Filtering per User and Filters
+  const userFilteredTxs = allTxs.filter((t) => {
+    if (selectedUser === 'all') return true;
+    return t.userId === selectedUser || t.userName.toLowerCase().includes(selectedUser.toLowerCase());
+  });
+
+  const finalFilteredTxs = userFilteredTxs.filter((t) => {
     const matchesSearch =
       t.merchant.toLowerCase().includes(searchTerm.toLowerCase()) ||
       t.description.toLowerCase().includes(searchTerm.toLowerCase()) ||
-      t.id.toLowerCase().includes(searchTerm.toLowerCase());
+      t.id.toLowerCase().includes(searchTerm.toLowerCase()) ||
+      t.paymentMethod.toLowerCase().includes(searchTerm.toLowerCase());
+    
     const matchesType = typeFilter === 'all' || t.type === typeFilter;
-    return matchesSearch && matchesType;
+    
+    let matchesStatus = true;
+    if (statusFilter === 'active') matchesStatus = !t.deletedAt;
+    if (statusFilter === 'deleted') matchesStatus = !!t.deletedAt;
+
+    return matchesSearch && matchesType && matchesStatus;
   });
+
+  const userFilteredActs = allActs.filter((a) => {
+    if (selectedUser === 'all') return true;
+    return a.userId === selectedUser || a.userName.toLowerCase().includes(selectedUser.toLowerCase());
+  });
+
+  const activeUserTxs = userFilteredTxs.filter((t) => !t.deletedAt);
+  let userIncome = 0;
+  let userExpense = 0;
+  activeUserTxs.forEach((t) => {
+    if (t.type === 'income') userIncome += t.amount;
+    if (t.type === 'expense') userExpense += t.amount;
+  });
+  const userNetBalance = userIncome - userExpense;
 
   return (
     <div className="min-h-screen bg-[#0B0C10] text-white p-8 font-sans">
+      {/* Header */}
       <header className="mb-8 flex justify-between items-center border-b border-gray-800 pb-4">
         <div>
-          <h1 className="text-2xl font-extrabold tracking-tight text-cyan-400">
-            🗄️ Multi-Tenant Data Inspector & Manipulator
+          <h1 className="text-3xl font-black tracking-tight text-cyan-400">
+            🗄️ Multi-Tenant Super Admin Data Inspector
           </h1>
           <p className="text-gray-400 text-sm mt-1">
-            Inspeksi Real-time, Penyuntingan, & Modifikasi Data Supabase Per User (Firman / Khofita)
+            Modifikasi Live, Audit Presisi, & Filter Data Per User (Mas Firman & Mbak Khofita)
           </p>
         </div>
-        <div className="flex gap-4">
+        <div className="flex gap-3">
           <button
             onClick={() => setShowCreateModal(true)}
-            className="px-4 py-2 bg-purple-600 hover:bg-purple-500 text-white font-bold rounded-lg text-sm transition"
+            className="px-4 py-2.5 bg-purple-600 hover:bg-purple-500 text-white font-bold rounded-xl text-xs shadow-lg transition"
           >
             + Tambah Transaksi Baru
           </button>
-          <Link href="/admin" className="px-4 py-2 bg-gray-800 text-gray-200 rounded-lg text-sm font-semibold">
-            ← Kembali ke Admin Center
+          <Link href="/admin" className="px-4 py-2.5 bg-gray-800 hover:bg-gray-700 text-gray-200 rounded-xl text-xs font-semibold">
+            ← Kembali ke Control Center
           </Link>
         </div>
       </header>
 
-      {/* User Selector */}
-      <div className="flex gap-4 items-center mb-6 bg-[#1F2833] p-4 rounded-xl border border-gray-800">
-        <span className="text-xs font-bold text-gray-400">PILIH PROFIL USER:</span>
-        {[
-          { id: 'all', label: '👥 Semua User (Joint Ledger)' },
-          { id: 'firman', label: '👤 Mas Firman' },
-          { id: 'khofita', label: '👤 Mbak Khofita' },
-        ].map((u) => (
+      {/* User Selector Tabs */}
+      <div className="bg-[#1F2833] p-4 rounded-2xl border border-gray-800 mb-6 flex flex-wrap justify-between items-center gap-4">
+        <div className="flex items-center gap-3">
+          <span className="text-xs font-extrabold text-gray-400 tracking-wider">PILIH PROFIL USER:</span>
           <button
-            key={u.id}
-            onClick={() => setSelectedUser(u.id)}
-            className={`px-3 py-1.5 rounded-lg text-xs font-bold transition ${
-              selectedUser === u.id
-                ? 'bg-purple-600 text-white'
+            onClick={() => setSelectedUser('all')}
+            className={`px-4 py-2 rounded-xl text-xs font-extrabold transition ${
+              selectedUser === 'all'
+                ? 'bg-purple-600 text-white shadow-lg'
                 : 'bg-[#0B0C10] text-gray-400 hover:text-white'
             }`}
           >
-            {u.label}
+            👥 Semua User (Joint Ledger - {allTxs.filter((t) => !t.deletedAt).length} TX)
           </button>
-        ))}
+          {usersList.map((u) => (
+            <button
+              key={u.id}
+              onClick={() => setSelectedUser(u.id)}
+              className={`px-4 py-2 rounded-xl text-xs font-extrabold transition ${
+                selectedUser === u.id
+                  ? 'bg-purple-600 text-white shadow-lg'
+                  : 'bg-[#0B0C10] text-gray-400 hover:text-white'
+              }`}
+            >
+              👤 {u.name}
+            </button>
+          ))}
+        </div>
+
+        <div className="text-xs text-gray-400">
+          Status Database Supabase: <span className="text-emerald-400 font-bold">🟢 Live Connected</span>
+        </div>
       </div>
 
-      {/* Overview Cards */}
-      {auditData && (
-        <div className="grid grid-cols-1 md:grid-cols-4 gap-4 mb-6">
-          <div className="bg-[#1F2833] p-4 rounded-xl border border-gray-800">
-            <span className="text-xs text-gray-400 font-bold block">TOTAL TRANSAKSI IN DATABASE</span>
-            <span className="text-xl font-extrabold text-white mt-1 block">
-              {auditData.transactionsSummary.totalRecords} Records ({auditData.transactionsSummary.activeRecords} Active)
-            </span>
-          </div>
-          <div className="bg-[#1F2833] p-4 rounded-xl border border-gray-800">
-            <span className="text-xs text-gray-400 font-bold block">TOTAL PEMASUKAN</span>
-            <span className="text-xl font-extrabold text-emerald-400 mt-1 block">
-              Rp {auditData.transactionsSummary.totalIncome.toLocaleString('id-ID')}
-            </span>
-          </div>
-          <div className="bg-[#1F2833] p-4 rounded-xl border border-gray-800">
-            <span className="text-xs text-gray-400 font-bold block">TOTAL PENGELUARAN</span>
-            <span className="text-xl font-extrabold text-rose-400 mt-1 block">
-              Rp {auditData.transactionsSummary.totalExpense.toLocaleString('id-ID')}
-            </span>
-          </div>
-          <div className="bg-[#1F2833] p-4 rounded-xl border border-gray-800">
-            <span className="text-xs text-gray-400 font-bold block">NET SURPLUS</span>
-            <span className="text-xl font-extrabold text-cyan-400 mt-1 block">
-              +Rp {auditData.transactionsSummary.netBalance.toLocaleString('id-ID')}
-            </span>
-          </div>
+      {/* Dynamic User Analytics Header */}
+      <div className="grid grid-cols-1 md:grid-cols-4 gap-4 mb-6">
+        <div className="bg-[#1F2833] p-5 rounded-2xl border border-gray-800">
+          <span className="text-[11px] font-bold text-gray-400 block tracking-wider">TOTAL PEMASUKAN</span>
+          <span className="text-2xl font-black text-emerald-400 mt-1 block">
+            Rp {userIncome.toLocaleString('id-ID')}
+          </span>
         </div>
-      )}
 
-      {/* Filter and Search Bar */}
-      <div className="flex justify-between items-center mb-4 bg-[#1F2833] p-4 rounded-xl border border-gray-800">
+        <div className="bg-[#1F2833] p-5 rounded-2xl border border-gray-800">
+          <span className="text-[11px] font-bold text-gray-400 block tracking-wider">TOTAL PENGELUARAN</span>
+          <span className="text-2xl font-black text-rose-400 mt-1 block">
+            Rp {userExpense.toLocaleString('id-ID')}
+          </span>
+        </div>
+
+        <div className="bg-[#1F2833] p-5 rounded-2xl border border-gray-800">
+          <span className="text-[11px] font-bold text-gray-400 block tracking-wider">NET SURPLUS (SALDO)</span>
+          <span className="text-2xl font-black text-cyan-400 mt-1 block">
+            +Rp {userNetBalance.toLocaleString('id-ID')}
+          </span>
+        </div>
+
+        <div className="bg-[#1F2833] p-5 rounded-2xl border border-gray-800">
+          <span className="text-[11px] font-bold text-gray-400 block tracking-wider">AGENDA COMPLETED</span>
+          <span className="text-2xl font-black text-purple-400 mt-1 block">
+            {userFilteredActs.filter((a) => a.status === 'completed').length} / {userFilteredActs.length} Agenda
+          </span>
+        </div>
+      </div>
+
+      {/* Filter and Control Bar */}
+      <div className="bg-[#1F2833] p-4 rounded-2xl border border-gray-800 mb-6 flex flex-wrap justify-between items-center gap-4">
         <div className="flex gap-2">
           <button
             onClick={() => setActiveTab('tx')}
-            className={`px-4 py-2 rounded-lg text-xs font-bold ${
+            className={`px-4 py-2 rounded-xl text-xs font-bold ${
               activeTab === 'tx' ? 'bg-purple-600 text-white' : 'bg-[#0B0C10] text-gray-400'
             }`}
           >
-            📊 Keuangan ({filteredTxs.length})
+            📊 Keuangan ({finalFilteredTxs.length})
           </button>
           <button
             onClick={() => setActiveTab('act')}
-            className={`px-4 py-2 rounded-lg text-xs font-bold ${
+            className={`px-4 py-2 rounded-xl text-xs font-bold ${
               activeTab === 'act' ? 'bg-purple-600 text-white' : 'bg-[#0B0C10] text-gray-400'
             }`}
           >
-            📅 Agenda ({actList.length})
+            📅 Agenda ({userFilteredActs.length})
+          </button>
+          <button
+            onClick={() => setActiveTab('pref')}
+            className={`px-4 py-2 rounded-xl text-xs font-bold ${
+              activeTab === 'pref' ? 'bg-purple-600 text-white' : 'bg-[#0B0C10] text-gray-400'
+            }`}
+          >
+            ⚙️ Preferensi Memori ({prefs.length})
           </button>
         </div>
 
-        <div className="flex gap-4">
-          <select
-            value={typeFilter}
-            onChange={(e) => setTypeFilter(e.target.value)}
-            className="bg-[#0B0C10] border border-gray-800 text-xs text-white rounded-lg px-3 py-2"
-          >
-            <option value="all">Semua Tipe</option>
-            <option value="income">Pemasukan (Income)</option>
-            <option value="expense">Pengeluaran (Expense)</option>
-          </select>
-          <input
-            type="text"
-            placeholder="Cari Merchant / Deskripsi..."
-            value={searchTerm}
-            onChange={(e) => setSearchTerm(e.target.value)}
-            className="bg-[#0B0C10] border border-gray-800 text-xs text-white rounded-lg px-4 py-2 w-64"
-          />
-        </div>
+        {activeTab === 'tx' && (
+          <div className="flex flex-wrap gap-3 items-center">
+            <select
+              value={statusFilter}
+              onChange={(e) => setStatusFilter(e.target.value as any)}
+              className="bg-[#0B0C10] border border-gray-800 text-xs text-white rounded-xl px-3 py-2"
+            >
+              <option value="active">Hanya Aktif</option>
+              <option value="deleted">Hanya Soft-Deleted</option>
+              <option value="all">Semua Status</option>
+            </select>
+
+            <select
+              value={typeFilter}
+              onChange={(e) => setTypeFilter(e.target.value)}
+              className="bg-[#0B0C10] border border-gray-800 text-xs text-white rounded-xl px-3 py-2"
+            >
+              <option value="all">Semua Tipe</option>
+              <option value="income">Pemasukan (Income)</option>
+              <option value="expense">Pengeluaran (Expense)</option>
+            </select>
+
+            <input
+              type="text"
+              placeholder="Cari Merchant, Deskripsi, ID..."
+              value={searchTerm}
+              onChange={(e) => setSearchTerm(e.target.value)}
+              className="bg-[#0B0C10] border border-gray-800 text-xs text-white rounded-xl px-4 py-2 w-64 focus:outline-none focus:border-purple-500"
+            />
+          </div>
+        )}
       </div>
 
-      {/* Table Data */}
-      <div className="bg-[#1F2833] rounded-xl border border-gray-800 p-6 overflow-x-auto">
+      {/* Main Table Content */}
+      <div className="bg-[#1F2833] rounded-2xl border border-gray-800 p-6 overflow-x-auto">
         {loading ? (
-          <p className="text-gray-400 text-center py-8">Mengambil data dari Supabase live...</p>
+          <div className="text-center py-12">
+            <div className="inline-block w-8 h-8 border-4 border-purple-500 border-t-transparent rounded-full animate-spin mb-2"></div>
+            <p className="text-gray-400 text-xs font-semibold">Mengambil seluruh data Supabase live...</p>
+          </div>
         ) : activeTab === 'tx' ? (
           <table className="w-full text-left text-xs">
             <thead>
-              <tr className="border-b border-gray-800 text-gray-400">
+              <tr className="border-b border-gray-800 text-gray-400 font-bold">
                 <th className="pb-3">ID</th>
+                <th className="pb-3">PENGGUNA</th>
                 <th className="pb-3">TANGGAL</th>
                 <th className="pb-3">TIPE</th>
                 <th className="pb-3">NOMINAL</th>
                 <th className="pb-3">MERCHANT / TEMPAT</th>
                 <th className="pb-3">METODE BAYAR</th>
                 <th className="pb-3">DESKRIPSI</th>
-                <th className="pb-3 text-right">AKSI ADMINISTRATOR</th>
+                <th className="pb-3 text-right">AKSI SUPER ADMIN</th>
               </tr>
             </thead>
             <tbody className="divide-y divide-gray-800">
-              {filteredTxs.map((t) => (
-                <tr key={t.id} className="hover:bg-[#0B0C10]/50 transition">
-                  <td className="py-3 font-bold text-purple-400">{t.id}</td>
-                  <td className="py-3 text-gray-400">{new Date(t.date).toLocaleDateString('id-ID')}</td>
+              {finalFilteredTxs.map((t) => (
+                <tr key={t.id} className={`hover:bg-[#0B0C10]/60 transition ${t.deletedAt ? 'opacity-50 bg-rose-950/10' : ''}`}>
+                  <td className="py-3 font-extrabold text-purple-400">{t.id}</td>
+                  <td className="py-3 font-semibold text-white">{t.userName}</td>
+                  <td className="py-3 text-gray-400">{new Date(t.date).toLocaleString('id-ID')}</td>
                   <td className="py-3">
                     <span
-                      className={`px-2 py-0.5 rounded font-bold text-[10px] ${
+                      className={`px-2 py-0.5 rounded-md font-black text-[10px] ${
                         t.type === 'income' ? 'bg-emerald-500/20 text-emerald-400' : 'bg-rose-500/20 text-rose-400'
                       }`}
                     >
                       {t.type.toUpperCase()}
                     </span>
                   </td>
-                  <td className="py-3 font-bold text-white">Rp {t.amount.toLocaleString('id-ID')}</td>
-                  <td className="py-3 text-gray-200">{t.merchant}</td>
+                  <td className="py-3 font-extrabold text-white">Rp {t.amount.toLocaleString('id-ID')}</td>
+                  <td className="py-3 text-gray-200 font-medium">{t.merchant}</td>
                   <td className="py-3 text-gray-400">{t.paymentMethod}</td>
                   <td className="py-3 text-gray-300 max-w-xs truncate">{t.description}</td>
                   <td className="py-3 text-right space-x-2">
                     <button
                       onClick={() => handleEditClick(t)}
-                      className="px-2.5 py-1 bg-cyan-600 hover:bg-cyan-500 text-white rounded font-bold text-[11px]"
+                      className="px-2.5 py-1 bg-cyan-600 hover:bg-cyan-500 text-white rounded-lg font-bold text-[11px] transition"
                     >
                       ✏️ Edit
                     </button>
-                    <button
-                      onClick={() => handleDeleteTx(t)}
-                      className="px-2.5 py-1 bg-rose-600 hover:bg-rose-500 text-white rounded font-bold text-[11px]"
-                    >
-                      🗑️ Hapus
-                    </button>
+                    {t.deletedAt ? (
+                      <button
+                        onClick={() => handleRestoreTx(t)}
+                        className="px-2.5 py-1 bg-emerald-600 hover:bg-emerald-500 text-white rounded-lg font-bold text-[11px] transition"
+                      >
+                        🔄 Pulihkan
+                      </button>
+                    ) : (
+                      <button
+                        onClick={() => handleDeleteTx(t)}
+                        className="px-2.5 py-1 bg-rose-600 hover:bg-rose-500 text-white rounded-lg font-bold text-[11px] transition"
+                      >
+                        🗑️ Hapus
+                      </button>
+                    )}
                   </td>
+                </tr>
+              ))}
+            </tbody>
+          </table>
+        ) : activeTab === 'act' ? (
+          <table className="w-full text-left text-xs">
+            <thead>
+              <tr className="border-b border-gray-800 text-gray-400 font-bold">
+                <th className="pb-3">ID AGENDA</th>
+                <th className="pb-3">PENGGUNA</th>
+                <th className="pb-3">WAKTU EKSEKUSI</th>
+                <th className="pb-3">JUDUL AGENDA</th>
+                <th className="pb-3">STATUS</th>
+                <th className="pb-3">PRIORITAS</th>
+              </tr>
+            </thead>
+            <tbody className="divide-y divide-gray-800">
+              {userFilteredActs.map((a) => (
+                <tr key={a.id} className="hover:bg-[#0B0C10]/60 transition">
+                  <td className="py-3 font-extrabold text-cyan-400">{a.id}</td>
+                  <td className="py-3 font-semibold text-white">{a.userName}</td>
+                  <td className="py-3 text-gray-400">{new Date(a.date).toLocaleString('id-ID')}</td>
+                  <td className="py-3 font-bold text-white">{a.title}</td>
+                  <td className="py-3">
+                    <span
+                      className={`px-2 py-0.5 rounded-md font-extrabold text-[10px] ${
+                        a.status === 'completed' ? 'bg-emerald-500/20 text-emerald-400' : 'bg-amber-500/20 text-amber-400'
+                      }`}
+                    >
+                      {a.status.toUpperCase()}
+                    </span>
+                  </td>
+                  <td className="py-3 font-extrabold text-purple-400">{a.priority.toUpperCase()}</td>
                 </tr>
               ))}
             </tbody>
@@ -341,20 +491,20 @@ export default function AdminDataInspectorPage() {
         ) : (
           <table className="w-full text-left text-xs">
             <thead>
-              <tr className="border-b border-gray-800 text-gray-400">
-                <th className="pb-3">ID AGENDA</th>
-                <th className="pb-3">JUDUL AKTIVITAS</th>
-                <th className="pb-3">STATUS</th>
-                <th className="pb-3">PRIORITAS</th>
+              <tr className="border-b border-gray-800 text-gray-400 font-bold">
+                <th className="pb-3">PREFERENCE KEY</th>
+                <th className="pb-3">NILAI PREFERENSI</th>
+                <th className="pb-3">SUMBER KONTEKS</th>
+                <th className="pb-3">TERAKHIR DIPERBARUI</th>
               </tr>
             </thead>
             <tbody className="divide-y divide-gray-800">
-              {actList.map((a) => (
-                <tr key={a.id}>
-                  <td className="py-3 font-bold text-cyan-400">{a.id}</td>
-                  <td className="py-3 font-bold text-white">{a.title}</td>
-                  <td className="py-3 text-emerald-400 font-bold">{a.status.toUpperCase()}</td>
-                  <td className="py-3 text-purple-400 font-bold">{a.priority.toUpperCase()}</td>
+              {prefs.map((p, i) => (
+                <tr key={i} className="hover:bg-[#0B0C10]/60 transition">
+                  <td className="py-3 font-bold text-purple-400">{p.key}</td>
+                  <td className="py-3 font-medium text-white max-w-sm">{p.value}</td>
+                  <td className="py-3 text-gray-400">{p.learnedFrom}</td>
+                  <td className="py-3 text-gray-500">{new Date(p.updatedAt).toLocaleDateString('id-ID')}</td>
                 </tr>
               ))}
             </tbody>
@@ -365,42 +515,51 @@ export default function AdminDataInspectorPage() {
       {/* Edit Modal */}
       {editingTx && (
         <div className="fixed inset-0 bg-black/80 flex items-center justify-center p-4 z-50">
-          <div className="bg-[#1F2833] border border-gray-800 rounded-2xl p-6 w-full max-w-md">
-            <h3 className="text-lg font-bold text-white mb-4">✏️ Edit Transaksi ({editingTx.id})</h3>
+          <div className="bg-[#1F2833] border border-gray-800 rounded-2xl p-6 w-full max-w-md shadow-2xl">
+            <h3 className="text-lg font-extrabold text-white mb-4">✏️ Edit Transaksi ({editingTx.id})</h3>
             <div className="space-y-4 text-xs">
               <div>
-                <label className="block text-gray-400 mb-1">JUMLAH NOMINAL (RP)</label>
+                <label className="block text-gray-400 font-bold mb-1">JUMLAH NOMINAL (RP)</label>
                 <input
                   type="number"
                   value={newAmount}
                   onChange={(e) => setNewAmount(e.target.value)}
-                  className="w-full bg-[#0B0C10] border border-gray-800 rounded-lg p-2.5 text-white font-bold"
+                  className="w-full bg-[#0B0C10] border border-gray-800 rounded-xl p-3 text-white font-extrabold focus:outline-none focus:border-purple-500"
                 />
               </div>
               <div>
-                <label className="block text-gray-400 mb-1">MERCHANT / TEMPAT</label>
+                <label className="block text-gray-400 font-bold mb-1">MERCHANT / TEMPAT</label>
                 <input
                   type="text"
                   value={newMerchant}
                   onChange={(e) => setNewMerchant(e.target.value)}
-                  className="w-full bg-[#0B0C10] border border-gray-800 rounded-lg p-2.5 text-white"
+                  className="w-full bg-[#0B0C10] border border-gray-800 rounded-xl p-3 text-white focus:outline-none focus:border-purple-500"
                 />
               </div>
               <div>
-                <label className="block text-gray-400 mb-1">DESKRIPSI</label>
+                <label className="block text-gray-400 font-bold mb-1">METODE PEMBAYARAN</label>
+                <input
+                  type="text"
+                  value={newMethod}
+                  onChange={(e) => setNewMethod(e.target.value)}
+                  className="w-full bg-[#0B0C10] border border-gray-800 rounded-xl p-3 text-white focus:outline-none focus:border-purple-500"
+                />
+              </div>
+              <div>
+                <label className="block text-gray-400 font-bold mb-1">DESKRIPSI</label>
                 <input
                   type="text"
                   value={newDesc}
                   onChange={(e) => setNewDesc(e.target.value)}
-                  className="w-full bg-[#0B0C10] border border-gray-800 rounded-lg p-2.5 text-white"
+                  className="w-full bg-[#0B0C10] border border-gray-800 rounded-xl p-3 text-white focus:outline-none focus:border-purple-500"
                 />
               </div>
               <div>
-                <label className="block text-gray-400 mb-1">TIPE TRANSAKSI</label>
+                <label className="block text-gray-400 font-bold mb-1">TIPE TRANSAKSI</label>
                 <select
                   value={newType}
                   onChange={(e) => setNewType(e.target.value)}
-                  className="w-full bg-[#0B0C10] border border-gray-800 rounded-lg p-2.5 text-white"
+                  className="w-full bg-[#0B0C10] border border-gray-800 rounded-xl p-3 text-white focus:outline-none focus:border-purple-500"
                 >
                   <option value="expense">Pengeluaran (Expense)</option>
                   <option value="income">Pemasukan (Income)</option>
@@ -410,13 +569,13 @@ export default function AdminDataInspectorPage() {
             <div className="flex justify-end gap-3 mt-6">
               <button
                 onClick={() => setEditingTx(null)}
-                className="px-4 py-2 bg-gray-800 text-gray-300 font-bold rounded-lg text-xs"
+                className="px-4 py-2.5 bg-gray-800 text-gray-300 font-bold rounded-xl text-xs hover:bg-gray-700"
               >
                 Batal
               </button>
               <button
                 onClick={handleSaveEdit}
-                className="px-4 py-2 bg-purple-600 hover:bg-purple-500 text-white font-bold rounded-lg text-xs"
+                className="px-4 py-2.5 bg-purple-600 hover:bg-purple-500 text-white font-bold rounded-xl text-xs transition"
               >
                 Simpan Perubahan
               </button>
@@ -428,45 +587,57 @@ export default function AdminDataInspectorPage() {
       {/* Create Modal */}
       {showCreateModal && (
         <div className="fixed inset-0 bg-black/80 flex items-center justify-center p-4 z-50">
-          <div className="bg-[#1F2833] border border-gray-800 rounded-2xl p-6 w-full max-w-md">
-            <h3 className="text-lg font-bold text-white mb-4">+ Tambah Transaksi Baru via Admin</h3>
+          <div className="bg-[#1F2833] border border-gray-800 rounded-2xl p-6 w-full max-w-md shadow-2xl">
+            <h3 className="text-lg font-extrabold text-white mb-4">+ Tambah Transaksi Baru via Admin</h3>
             <div className="space-y-4 text-xs">
               <div>
-                <label className="block text-gray-400 mb-1">JUMLAH NOMINAL (RP)</label>
+                <label className="block text-gray-400 font-bold mb-1">PILIK PENGGUNA (OWNER)</label>
+                <select
+                  value={createUserId}
+                  onChange={(e) => setCreateUserId(e.target.value)}
+                  className="w-full bg-[#0B0C10] border border-gray-800 rounded-xl p-3 text-white"
+                >
+                  {usersList.map((u) => (
+                    <option key={u.id} value={u.id}>{u.name}</option>
+                  ))}
+                </select>
+              </div>
+              <div>
+                <label className="block text-gray-400 font-bold mb-1">JUMLAH NOMINAL (RP)</label>
                 <input
                   type="number"
                   placeholder="Contoh: 50000"
                   value={createAmount}
                   onChange={(e) => setCreateAmount(e.target.value)}
-                  className="w-full bg-[#0B0C10] border border-gray-800 rounded-lg p-2.5 text-white font-bold"
+                  className="w-full bg-[#0B0C10] border border-gray-800 rounded-xl p-3 text-white font-extrabold"
                 />
               </div>
               <div>
-                <label className="block text-gray-400 mb-1">MERCHANT / TEMPAT</label>
+                <label className="block text-gray-400 font-bold mb-1">MERCHANT / TEMPAT</label>
                 <input
                   type="text"
                   placeholder="Contoh: Indomaret"
                   value={createMerchant}
                   onChange={(e) => setCreateMerchant(e.target.value)}
-                  className="w-full bg-[#0B0C10] border border-gray-800 rounded-lg p-2.5 text-white"
+                  className="w-full bg-[#0B0C10] border border-gray-800 rounded-xl p-3 text-white"
                 />
               </div>
               <div>
-                <label className="block text-gray-400 mb-1">DESKRIPSI</label>
+                <label className="block text-gray-400 font-bold mb-1">DESKRIPSI</label>
                 <input
                   type="text"
-                  placeholder="Contoh: Beli keperluan bulanan"
+                  placeholder="Contoh: Belanja keperluan rumah"
                   value={createDesc}
                   onChange={(e) => setCreateDesc(e.target.value)}
-                  className="w-full bg-[#0B0C10] border border-gray-800 rounded-lg p-2.5 text-white"
+                  className="w-full bg-[#0B0C10] border border-gray-800 rounded-xl p-3 text-white"
                 />
               </div>
               <div>
-                <label className="block text-gray-400 mb-1">TIPE TRANSAKSI</label>
+                <label className="block text-gray-400 font-bold mb-1">TIPE TRANSAKSI</label>
                 <select
                   value={createType}
                   onChange={(e) => setCreateType(e.target.value)}
-                  className="w-full bg-[#0B0C10] border border-gray-800 rounded-lg p-2.5 text-white"
+                  className="w-full bg-[#0B0C10] border border-gray-800 rounded-xl p-3 text-white"
                 >
                   <option value="expense">Pengeluaran (Expense)</option>
                   <option value="income">Pemasukan (Income)</option>
@@ -476,13 +647,13 @@ export default function AdminDataInspectorPage() {
             <div className="flex justify-end gap-3 mt-6">
               <button
                 onClick={() => setShowCreateModal(false)}
-                className="px-4 py-2 bg-gray-800 text-gray-300 font-bold rounded-lg text-xs"
+                className="px-4 py-2.5 bg-gray-800 text-gray-300 font-bold rounded-xl text-xs hover:bg-gray-700"
               >
                 Batal
               </button>
               <button
                 onClick={handleCreateTx}
-                className="px-4 py-2 bg-purple-600 hover:bg-purple-500 text-white font-bold rounded-lg text-xs"
+                className="px-4 py-2.5 bg-purple-600 hover:bg-purple-500 text-white font-bold rounded-xl text-xs transition"
               >
                 Tambah Ke Supabase
               </button>
