@@ -50,14 +50,69 @@ export default function AnalyticsView({
   onQuickView,
   onNavigateToEdit,
 }: AnalyticsViewProps) {
+  const [selectedTimeframe, setSelectedTimeframe] = useState<'today' | '7d' | 'month' | '90d' | '1y'>('month');
+
+  // Dynamic timeframe filter
+  const filteredTransactions = useMemo(() => {
+    const now = new Date();
+    const todayStr = now.toISOString().split('T')[0];
+
+    if (selectedTimeframe === 'today') {
+      return transactions.filter((t) => t.occurred_at?.startsWith(todayStr));
+    }
+    if (selectedTimeframe === '7d') {
+      const past = new Date(now.setDate(now.getDate() - 7)).toISOString();
+      return transactions.filter((t) => t.occurred_at >= past);
+    }
+    if (selectedTimeframe === 'month') {
+      const monthStart = new Date(now.getFullYear(), now.getMonth(), 1).toISOString();
+      return transactions.filter((t) => t.occurred_at >= monthStart);
+    }
+    if (selectedTimeframe === '90d') {
+      const past = new Date(now.setDate(now.getDate() - 90)).toISOString();
+      return transactions.filter((t) => t.occurred_at >= past);
+    }
+    if (selectedTimeframe === '1y') {
+      const past = new Date(now.setDate(now.getDate() - 365)).toISOString();
+      return transactions.filter((t) => t.occurred_at >= past);
+    }
+    return transactions;
+  }, [transactions, selectedTimeframe]);
+
+  const filteredActivities = useMemo(() => {
+    const now = new Date();
+    const todayStr = now.toISOString().split('T')[0];
+
+    if (selectedTimeframe === 'today') {
+      return activities.filter((a) => a.occurred_at?.startsWith(todayStr));
+    }
+    if (selectedTimeframe === '7d') {
+      const past = new Date(now.setDate(now.getDate() - 7)).toISOString();
+      return activities.filter((a) => a.occurred_at >= past);
+    }
+    if (selectedTimeframe === 'month') {
+      const monthStart = new Date(now.getFullYear(), now.getMonth(), 1).toISOString();
+      return activities.filter((a) => a.occurred_at >= monthStart);
+    }
+    if (selectedTimeframe === '90d') {
+      const past = new Date(now.setDate(now.getDate() - 90)).toISOString();
+      return activities.filter((a) => a.occurred_at >= past);
+    }
+    if (selectedTimeframe === '1y') {
+      const past = new Date(now.setDate(now.getDate() - 365)).toISOString();
+      return activities.filter((a) => a.occurred_at >= past);
+    }
+    return activities;
+  }, [activities, selectedTimeframe]);
+
   const totalExpenseSum = useMemo(
-    () => transactions.filter((t) => t.type === 'expense').reduce((sum, t) => sum + Number(t.amount || 0), 0),
-    [transactions]
+    () => filteredTransactions.filter((t) => t.type === 'expense').reduce((sum, t) => sum + Number(t.amount || 0), 0),
+    [filteredTransactions]
   );
 
   const totalIncomeSum = useMemo(
-    () => transactions.filter((t) => t.type === 'income').reduce((sum, t) => sum + Number(t.amount || 0), 0),
-    [transactions]
+    () => filteredTransactions.filter((t) => t.type === 'income').reduce((sum, t) => sum + Number(t.amount || 0), 0),
+    [filteredTransactions]
   );
 
   const safeDailyLimit = useMemo(
@@ -234,7 +289,7 @@ export default function AnalyticsView({
             {completedActsCount} <span className="text-sm font-normal text-zinc-500 dark:text-zinc-400">/ {totalActsCount} Agenda</span>
           </div>
           <p className="text-xs text-zinc-600 dark:text-zinc-400 mb-3">
-            Urgent: <strong className="text-red-500">{activities.filter(a => a.priority === 'urgent' || a.priority === 'high').length}</strong> | Medium: <strong className="text-amber-500">{activities.filter(a => a.priority === 'medium').length}</strong> | Low: <strong className="text-teal-500">{activities.filter(a => a.priority === 'low').length}</strong>
+            Urgent: <strong className="text-red-500">{filteredActivities.filter(a => a.priority === 'urgent' || a.priority === 'high').length}</strong> | Medium: <strong className="text-amber-500">{filteredActivities.filter(a => a.priority === 'medium').length}</strong> | Low: <strong className="text-teal-500">{filteredActivities.filter(a => a.priority === 'low').length}</strong>
           </p>
           <div className="w-full bg-zinc-100 dark:bg-zinc-800 rounded-full h-2 overflow-hidden flex">
             <div className="bg-emerald-500 h-full" style={{ width: `${totalActsCount > 0 ? (completedActsCount / totalActsCount) * 100 : 0}%` }}></div>
@@ -252,12 +307,23 @@ export default function AnalyticsView({
             <p className="text-xs text-zinc-500 dark:text-zinc-400 mb-3">Pilih perspektif periode analisis data umum di Dashboard:</p>
           </div>
           <div className="flex flex-wrap gap-1.5">
-            {['Hari Ini', '7 Hari', 'Bulan Ini', '3 Bulan', '1 Tahun'].map((label, idx) => (
+            {[
+              { label: 'Hari Ini', key: 'today' },
+              { label: '7 Hari', key: '7d' },
+              { label: 'Bulan Ini', key: 'month' },
+              { label: '3 Bulan', key: '90d' },
+              { label: '1 Tahun', key: '1y' },
+            ].map((tf) => (
               <button
-                key={label}
-                className={`px-3 py-1 text-xs font-medium rounded-lg transition-all ${idx === 2 ? 'bg-purple-600 text-white shadow' : 'bg-zinc-100 dark:bg-zinc-800 text-zinc-600 dark:text-zinc-300 hover:bg-zinc-200'}`}
+                key={tf.key}
+                onClick={() => setSelectedTimeframe(tf.key as any)}
+                className={`px-3 py-1 text-xs font-medium rounded-lg transition-all cursor-pointer ${
+                  selectedTimeframe === tf.key
+                    ? 'bg-purple-600 text-white shadow font-bold scale-105'
+                    : 'bg-zinc-100 dark:bg-zinc-800 text-zinc-600 dark:text-zinc-300 hover:bg-zinc-200'
+                }`}
               >
-                {label}
+                {tf.label}
               </button>
             ))}
           </div>
