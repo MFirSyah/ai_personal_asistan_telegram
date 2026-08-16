@@ -1,3 +1,11 @@
+
+import {
+  runFinancialSimulation,
+  calculateItemAffordability,
+  checkSmartScheduleConflict,
+  optimizeTripBudget,
+} from '@/lib/analytics/calculators';
+
 import {
   getRecentTransactions,
   getRecentActivities,
@@ -315,7 +323,80 @@ export async function processChatRespondDirect(
       }
 
       // Reconcile Wallet Balances Request
-      if ((ext as any).reconcile_wallet_balances && chatId) {
+      
+      // Simulation / What-If Request
+      if ((ext as any).run_simulation_request && chatId) {
+        try {
+          const req = (ext as any).run_simulation_request;
+          const res = await runFinancialSimulation(userId, req.timeframe || 'next_6m', req.customParams);
+          let replyMsg = `📊 **${res.scenarioName.toUpperCase()}**\n\n`;
+          replyMsg += `• **Estimasi Saldo Akhir**: Rp ${res.projectedEndingBalance.toLocaleString('id-ID')}\n`;
+          replyMsg += `• **Ketahanan Saldo (Runway)**: ${res.runwayDays} hari\n`;
+          replyMsg += `• **Rata-rata Pengeluaran Harian**: Rp ${res.burnRatePerDay.toLocaleString('id-ID')}/hari\n\n`;
+          if (res.recommendations.length > 0) {
+            replyMsg += `💡 **Rekomendasi Butler**:\n` + res.recommendations.map(r => `• ${r}`).join('\n');
+          }
+          await sendTelegramMessage(chatId, replyMsg);
+        } catch (simErr) {
+          console.error('Error running financial simulation:', simErr);
+        }
+      }
+
+      // Affordability Check Request (Motor 25 Juta)
+      if ((ext as any).check_affordability_request && chatId) {
+        try {
+          const req = (ext as any).check_affordability_request;
+          const res = await calculateItemAffordability(userId, req.itemName || 'Barang', req.itemPrice || 0);
+          let icon = res.decision === 'SAFE_TO_BUY' ? '✅' : res.decision === 'RISKY_NEAR_EMERGENCY_FUND' ? '⚠️' : '🛑';
+          let replyMsg = `${icon} **ANALISIS KELAYAKAN PEMBELIAN (${res.itemName.toUpperCase()})**\n\n`;
+          replyMsg += `• **Harga Barang**: Rp ${res.itemPrice.toLocaleString('id-ID')}\n`;
+          replyMsg += `• **Total Saldo Aktif**: Rp ${res.currentTotalBalance.toLocaleString('id-ID')}\n`;
+          replyMsg += `• **Cadangan Dana Darurat (3 Bulan)**: Rp ${res.emergencyFundRequired.toLocaleString('id-ID')}\n`;
+          replyMsg += `• **Saldo Bebas Aman**: Rp ${res.freeBalance.toLocaleString('id-ID')}\n\n`;
+          replyMsg += `💬 **Penjelasan Butler**:\n${res.explanation}`;
+          await sendTelegramMessage(chatId, replyMsg);
+        } catch (affErr) {
+          console.error('Error checking affordability:', affErr);
+        }
+      }
+
+      // Schedule Conflict & Travel Buffer Request
+      if ((ext as any).check_schedule_conflict_request && chatId) {
+        try {
+          const req = (ext as any).check_schedule_conflict_request;
+          const res = await checkSmartScheduleConflict(userId, req.targetDate || new Date().toISOString(), req.destination);
+          let replyMsg = `📅 **ANALISIS BENTROK AGENDA & TRAVEL BUFFER**\n\n`;
+          replyMsg += `• **Tanggal Target**: ${res.targetDate}\n`;
+          replyMsg += `• **Estimasi Perjalanan**: ~${res.travelBufferNeededHours} jam\n`;
+          replyMsg += `• **Sisa Waktu Luang**: ${res.restHoursAvailable} jam\n\n`;
+          replyMsg += `💬 **Rekomendasi Butler**:\n${res.recommendation}`;
+          await sendTelegramMessage(chatId, replyMsg);
+        } catch (confErr) {
+          console.error('Error checking schedule conflict:', confErr);
+        }
+      }
+
+      // Trip Budget Optimization Request
+      if ((ext as any).optimize_trip_budget_request && chatId) {
+        try {
+          const req = (ext as any).optimize_trip_budget_request;
+          const res = await optimizeTripBudget(userId, req.destination || 'Tujuan', req.items || []);
+          let replyMsg = `🗺️ **REKOMENDASI OPTIMISASI BUDGET TRIP (${res.destination.toUpperCase()})**\n\n`;
+          replyMsg += `• **Total Draf Awal**: Rp ${res.originalBudget.toLocaleString('id-ID')}\n`;
+          replyMsg += `• **Total Rekomendasi Hemat**: Rp ${res.optimizedBudget.toLocaleString('id-ID')}\n`;
+          replyMsg += `• **Potensi Penghematan**: Rp ${res.potentialSavings.toLocaleString('id-ID')}\n\n`;
+          replyMsg += `📋 **Rincian Pos**:\n`;
+          res.itemizedBreakdown.forEach(item => {
+            replyMsg += `• **${item.item}**: Rp ${item.recommended.toLocaleString('id-ID')} (${item.note})\n`;
+          });
+          replyMsg += `\n💬 **Pesan Butler**:\n${res.butlerAdvice}`;
+          await sendTelegramMessage(chatId, replyMsg);
+        } catch (optErr) {
+          console.error('Error optimizing trip budget:', optErr);
+        }
+      }
+
+if ((ext as any).reconcile_wallet_balances && chatId) {
         try {
           const { mergedCount, newRecordId } = await consolidateDuplicateCashTransactions(userId);
           const msg = mergedCount > 0

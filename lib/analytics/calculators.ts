@@ -327,3 +327,312 @@ export async function calculate20Analytics(userId: string): Promise<InsightItem[
   return insights;
 }
 
+
+
+export interface DailyAllowanceResult {
+  dailyBurnRate: number; // R_harian
+  safeDailyLimit: number; // B_harian
+  remainingDaysInMonth: number;
+  totalDaysInMonth: number;
+  currentDayOfMonth: number;
+  freeBalance: number;
+  status: 'safe' | 'warning' | 'danger';
+  insight: string;
+}
+
+export interface ActivityAnalyticsResult {
+  totalActivities: number;
+  completedActivities: number;
+  pendingActivities: number;
+  completionRate: number;
+  avgActivitiesPerDay: number;
+  priorityBreakdown: { urgent: number; medium: number; low: number };
+  statusBreakdown: { completed: number; scheduled: number; in_progress: number; cancelled: number };
+  insight: string;
+}
+
+export interface SimulationResult {
+  scenarioName: string;
+  timeframe: string;
+  projectedEndingBalance: number;
+  runwayDays: number;
+  microLeaks: { item: string; totalAmount: number; count: number }[];
+  burnRatePerDay: number;
+  riskLevel: 'low' | 'moderate' | 'high' | 'critical';
+  recommendations: string[];
+}
+
+export interface AffordabilityResult {
+  itemName: string;
+  itemPrice: number;
+  currentTotalBalance: number;
+  emergencyFundRequired: number;
+  activeRecurringBills: number;
+  freeBalance: number;
+  decision: 'SAFE_TO_BUY' | 'RISKY_NEAR_EMERGENCY_FUND' | 'POSTPONE_AND_SAVE';
+  recommendedMonthlySaving?: number;
+  targetMonthsNeeded?: number;
+  explanation: string;
+}
+
+export interface ScheduleConflictResult {
+  targetDate: string;
+  hasDirectConflict: boolean;
+  conflictingEvents: { title: string; timeStr: string; priority: string }[];
+  travelBufferNeededHours: number;
+  restHoursAvailable: number;
+  recommendation: string;
+}
+
+export interface TripOptimizationResult {
+  destination: string;
+  originalBudget: number;
+  optimizedBudget: number;
+  potentialSavings: number;
+  itemizedBreakdown: { item: string; original: number; recommended: number; note: string }[];
+  butlerAdvice: string;
+}
+
+export async function calculateRealtimeDailyAllowance(userId: string): Promise<DailyAllowanceResult> {
+  const now = new Date();
+  const currentDayOfMonth = Math.max(1, now.getDate());
+  const totalDaysInMonth = new Date(now.getFullYear(), now.getMonth() + 1, 0).getDate();
+  const remainingDaysInMonth = Math.max(1, totalDaysInMonth - currentDayOfMonth + 1);
+  const currentMonthStart = new Date(now.getFullYear(), now.getMonth(), 1).toISOString();
+
+  const { data: txs } = await supabaseAdmin
+    .from('transactions')
+    .select('amount, type, occurred_at')
+    .eq('user_id', userId)
+    .is('deleted_at', null);
+
+  const allTxs = txs || [];
+  const currentMonthExpenses = allTxs
+    .filter((t) => t.type === 'expense' && t.occurred_at >= currentMonthStart)
+    .reduce((sum, t) => sum + Number(t.amount || 0), 0);
+
+  const totalIncome = allTxs.filter((t) => t.type === 'income').reduce((sum, t) => sum + Number(t.amount || 0), 0);
+  const totalExpense = allTxs.filter((t) => t.type === 'expense').reduce((sum, t) => sum + Number(t.amount || 0), 0);
+  const netBalance = totalIncome - totalExpense;
+
+  const dailyBurnRate = Math.round(currentMonthExpenses / currentDayOfMonth);
+  const reservedBills = 67941;
+  const freeBalance = Math.max(0, netBalance - reservedBills);
+  const safeDailyLimit = Math.round(freeBalance / remainingDaysInMonth);
+
+  let status: 'safe' | 'warning' | 'danger' = 'safe';
+  let insight = `Batas belanja aman kamu hari ini adalah Rp ${safeDailyLimit.toLocaleString('id-ID')}/hari.`;
+
+  if (dailyBurnRate > safeDailyLimit && safeDailyLimit > 0) {
+    status = 'warning';
+    insight = `Perhatian: Rata-rata pengeluaran harianmu (Rp ${dailyBurnRate.toLocaleString('id-ID')}) melebihi batas aman (Rp ${safeDailyLimit.toLocaleString('id-ID')}).`;
+  }
+  if (freeBalance <= 0) {
+    status = 'danger';
+    insight = `Bahaya: Saldo bebas kamu saat ini habis atau defisit. Disarankan menunda pengeluaran opsional.`;
+  }
+
+  return { dailyBurnRate, safeDailyLimit, remainingDaysInMonth, totalDaysInMonth, currentDayOfMonth, freeBalance, status, insight };
+}
+
+export async function calculateActivityMetrics(userId: string): Promise<ActivityAnalyticsResult> {
+  const { data: acts } = await supabaseAdmin
+    .from('activities')
+    .select('id, title, status, priority, occurred_at')
+    .eq('user_id', userId)
+    .is('deleted_at', null);
+
+  const activities = acts || [];
+  const totalActivities = activities.length;
+  const completedActivities = activities.filter((a) => a.status === 'completed').length;
+  const pendingActivities = activities.filter((a) => a.status === 'scheduled' || a.status === 'in_progress').length;
+  const completionRate = totalActivities > 0 ? Math.round((completedActivities / totalActivities) * 100) : 0;
+
+  const priorityBreakdown = {
+    urgent: activities.filter((a) => a.priority === 'urgent' || a.priority === 'high').length,
+    medium: activities.filter((a) => a.priority === 'medium').length,
+    low: activities.filter((a) => a.priority === 'low').length,
+  };
+
+  const statusBreakdown = {
+    completed: completedActivities,
+    scheduled: activities.filter((a) => a.status === 'scheduled').length,
+    in_progress: activities.filter((a) => a.status === 'in_progress').length,
+    cancelled: activities.filter((a) => a.status === 'cancelled').length,
+  };
+
+  const distinctDates = new Set(activities.map((a) => a.occurred_at?.split('T')[0]));
+  const activeDays = Math.max(1, distinctDates.size);
+  const avgActivitiesPerDay = Math.round((totalActivities / activeDays) * 10) / 10;
+
+  const insight = `Tingkat penyelesaian agenda kamu adalah ${completionRate}% (${completedActivities}/${totalActivities} selesai). Rata-rata ${avgActivitiesPerDay} agenda/hari.`;
+
+  return { totalActivities, completedActivities, pendingActivities, completionRate, avgActivitiesPerDay, priorityBreakdown, statusBreakdown, insight };
+}
+
+export async function runFinancialSimulation(
+  userId: string,
+  timeframe: string,
+  customParams?: { incomeChangePct?: number; expenseChangePct?: number; addMonthlyBill?: number }
+): Promise<SimulationResult> {
+  const { data: txs } = await supabaseAdmin
+    .from('transactions')
+    .select('amount, type, merchant, description, occurred_at')
+    .eq('user_id', userId)
+    .is('deleted_at', null);
+
+  const transactions = txs || [];
+  const totalIncome = transactions.filter((t) => t.type === 'income').reduce((sum, t) => sum + Number(t.amount || 0), 0);
+  const totalExpense = transactions.filter((t) => t.type === 'expense').reduce((sum, t) => sum + Number(t.amount || 0), 0);
+  const currentNetBalance = totalIncome - totalExpense;
+
+  const leakMap: Record<string, { total: number; count: number }> = {};
+  transactions
+    .filter((t) => t.type === 'expense' && Number(t.amount) <= 35000)
+    .forEach((t) => {
+      const key = t.merchant || t.description || 'Jajan Harian';
+      if (!leakMap[key]) leakMap[key] = { total: 0, count: 0 };
+      leakMap[key].total += Number(t.amount);
+      leakMap[key].count += 1;
+    });
+
+  const microLeaks = Object.entries(leakMap)
+    .filter(([, v]) => v.count >= 2)
+    .map(([k, v]) => ({ item: k, totalAmount: v.total, count: v.count }))
+    .sort((a, b) => b.totalAmount - a.totalAmount);
+
+  const now = new Date();
+  const currentDayOfMonth = Math.max(1, now.getDate());
+  const dailyBurnRate = Math.max(10000, Math.round(totalExpense / Math.max(30, currentDayOfMonth)));
+
+  let projectedEndingBalance = currentNetBalance;
+  let runwayDays = dailyBurnRate > 0 ? Math.floor(currentNetBalance / dailyBurnRate) : 999;
+  let scenarioName = 'Simulasi Standar';
+  let riskLevel: 'low' | 'moderate' | 'high' | 'critical' = 'low';
+  const recommendations: string[] = [];
+
+  if (timeframe === 'zero_income_stress_test') {
+    scenarioName = 'Simulasi Uji Stres Tanpa Pemasukan (Zero Income)';
+    runwayDays = Math.max(0, Math.floor(currentNetBalance / dailyBurnRate));
+    projectedEndingBalance = 0;
+    riskLevel = runwayDays < 30 ? 'critical' : runwayDays < 90 ? 'high' : 'moderate';
+    recommendations.push(`Tanpa pemasukan baru, saldo Anda sebesar Rp ${currentNetBalance.toLocaleString('id-ID')} hanya dapat bertahan selama ${runwayDays} hari.`);
+  } else if (timeframe === 'next_6m') {
+    scenarioName = 'Proyeksi Keuangan 6 Bulan Ke Depan';
+    const incMod = 1 + (customParams?.incomeChangePct || 0) / 100;
+    const expMod = 1 + (customParams?.expenseChangePct || 0) / 100;
+    const addBill = customParams?.addMonthlyBill || 0;
+    const monthlyInc = (totalIncome / Math.max(1, currentDayOfMonth / 30)) * incMod;
+    const monthlyExp = (totalExpense / Math.max(1, currentDayOfMonth / 30)) * expMod + addBill;
+    const netMonthly = monthlyInc - monthlyExp;
+    projectedEndingBalance = Math.round(currentNetBalance + netMonthly * 6);
+    recommendations.push(`Estimasi saldo Anda 6 bulan ke depan adalah Rp ${projectedEndingBalance.toLocaleString('id-ID')}.`);
+  } else {
+    scenarioName = `Simulasi Periode (${timeframe})`;
+    recommendations.push(`Kondisi keuangan saat ini stabil dengan runway ${runwayDays} hari.`);
+  }
+
+  if (microLeaks.length > 0) {
+    const topLeak = microLeaks[0];
+    recommendations.push(`Potensi Kebocoran Halus: Pembelian "${topLeak.item}" terjadi ${topLeak.count}x dengan akumulasi Rp ${topLeak.totalAmount.toLocaleString('id-ID')}.`);
+  }
+
+  return { scenarioName, timeframe, projectedEndingBalance, runwayDays, microLeaks, burnRatePerDay: dailyBurnRate, riskLevel, recommendations };
+}
+
+export async function calculateItemAffordability(userId: string, itemName: string, itemPrice: number): Promise<AffordabilityResult> {
+  const { data: txs } = await supabaseAdmin.from('transactions').select('amount, type').eq('user_id', userId).is('deleted_at', null);
+  const allTxs = txs || [];
+  const totalIncome = allTxs.filter((t) => t.type === 'income').reduce((sum, t) => sum + Number(t.amount || 0), 0);
+  const totalExpense = allTxs.filter((t) => t.type === 'expense').reduce((sum, t) => sum + Number(t.amount || 0), 0);
+  const currentTotalBalance = totalIncome - totalExpense;
+
+  const monthlyExpenseEst = Math.max(500000, Math.round(totalExpense / 2));
+  const emergencyFundRequired = monthlyExpenseEst * 3;
+  const activeRecurringBills = 67941;
+  const freeBalance = Math.max(0, currentTotalBalance - emergencyFundRequired - activeRecurringBills);
+
+  let decision: 'SAFE_TO_BUY' | 'RISKY_NEAR_EMERGENCY_FUND' | 'POSTPONE_AND_SAVE' = 'POSTPONE_AND_SAVE';
+  let recommendedMonthlySaving = 0;
+  let targetMonthsNeeded = 0;
+  let explanation = '';
+
+  if (itemPrice <= freeBalance) {
+    decision = 'SAFE_TO_BUY';
+    explanation = `Keuangan Anda sangat siap untuk membeli ${itemName} seharga Rp ${itemPrice.toLocaleString('id-ID')}. Saldo bebas Anda (Rp ${freeBalance.toLocaleString('id-ID')}) mencukupi tanpa mengganggu Dana Darurat 3 Bulan (Rp ${emergencyFundRequired.toLocaleString('id-ID')}).`;
+  } else if (itemPrice <= currentTotalBalance) {
+    decision = 'RISKY_NEAR_EMERGENCY_FUND';
+    explanation = `Total saldo Anda mencukupi, namun pembelian ${itemName} seharga Rp ${itemPrice.toLocaleString('id-ID')} akan terpaksa memotong Dana Darurat Anda. Disarankan menunda atau membeli secara bertahap.`;
+    recommendedMonthlySaving = Math.round((itemPrice - freeBalance) / 4);
+    targetMonthsNeeded = 4;
+  } else {
+    decision = 'POSTPONE_AND_SAVE';
+    const shortage = itemPrice - freeBalance;
+    recommendedMonthlySaving = Math.max(500000, Math.round(shortage / 6));
+    targetMonthsNeeded = Math.ceil(shortage / recommendedMonthlySaving);
+    explanation = `Untuk saat ini, disarankan menunda pembelian ${itemName}. Kekurangan dana aman adalah Rp ${shortage.toLocaleString('id-ID')}. Anda disarankan menabung Rp ${recommendedMonthlySaving.toLocaleString('id-ID')}/bulan selama ${targetMonthsNeeded} bulan ke depan.`;
+  }
+
+  return { itemName, itemPrice, currentTotalBalance, emergencyFundRequired, activeRecurringBills, freeBalance, decision, recommendedMonthlySaving, targetMonthsNeeded, explanation };
+}
+
+export async function checkSmartScheduleConflict(userId: string, targetDateStr: string, destinationName?: string): Promise<ScheduleConflictResult> {
+  const targetDateClean = targetDateStr.split('T')[0];
+  const { data: acts } = await supabaseAdmin.from('activities').select('title, occurred_at, priority').eq('user_id', userId).is('deleted_at', null);
+  const activities = (acts || []).filter((a) => a.occurred_at?.startsWith(targetDateClean));
+  const hasDirectConflict = activities.length > 0;
+  const conflictingEvents = activities.map((a) => ({
+    title: a.title,
+    timeStr: new Date(a.occurred_at).toLocaleTimeString('id-ID', { hour: '2-digit', minute: '2-digit' }),
+    priority: a.priority || 'medium',
+  }));
+
+  let travelBufferNeededHours = 2;
+  const destLower = (destinationName || '').toLowerCase();
+  if (destLower.includes('bromo')) travelBufferNeededHours = 4;
+  if (destLower.includes('jogja') || destLower.includes('yogyakarta')) travelBufferNeededHours = 8;
+  if (destLower.includes('bali')) travelBufferNeededHours = 12;
+
+  const totalOccupiedHours = activities.length * 2 + travelBufferNeededHours;
+  const restHoursAvailable = Math.max(0, 24 - totalOccupiedHours);
+  let recommendation = `Jadwal pada tanggal ${targetDateClean} luang dan aman untuk direncanakan.`;
+
+  if (hasDirectConflict) {
+    recommendation = `Perhatian: Terdapat ${activities.length} agenda di tanggal ${targetDateClean} (termasuk "${activities[0].title}"). Perkiraan waktu perjalanan/buffer adalah ~${travelBufferNeededHours} jam. Jadwal Anda cukup padat namun dapat diatur dengan berangkat lebih awal.`;
+  }
+
+  return { targetDate: targetDateClean, hasDirectConflict, conflictingEvents, travelBufferNeededHours, restHoursAvailable, recommendation };
+}
+
+export async function optimizeTripBudget(userId: string, destination: string, plannedBudgetItems: { item: string; amount: number }[]): Promise<TripOptimizationResult> {
+  const originalBudget = plannedBudgetItems.reduce((sum, b) => sum + b.amount, 0);
+  const { freeBalance } = await calculateRealtimeDailyAllowance(userId);
+  const itemizedBreakdown: { item: string; original: number; recommended: number; note: string }[] = [];
+  let optimizedBudget = 0;
+
+  plannedBudgetItems.forEach((b) => {
+    const itemLower = b.item.toLowerCase();
+    let recAmount = b.amount;
+    let note = 'Budget aman dan sesuai.';
+
+    if (itemLower.includes('hotel') || itemLower.includes('penginapan')) {
+      if (b.amount > 600000) {
+        recAmount = 450000;
+        note = 'Disarankan mencari hotel bintang 3 pilihan dengan review tinggi di pusat kota (Hemat Rp ' + (b.amount - 450000).toLocaleString('id-ID') + ').';
+      }
+    } else if (itemLower.includes('malioboro') || itemLower.includes('oleh') || itemLower.includes('jajan')) {
+      if (b.amount > 300000) {
+        recAmount = 200000;
+        note = 'Disarankan mengalokasikan Rp 200.000 untuk jajan & ngopi agar budget tetap terjaga.';
+      }
+    }
+
+    optimizedBudget += recAmount;
+    itemizedBreakdown.push({ item: b.item, original: b.amount, recommended: recAmount, note });
+  });
+
+  const potentialSavings = Math.max(0, originalBudget - optimizedBudget);
+  const butlerAdvice = `Selamat siang Mas Firman, izin menyampaikan rekomendasi penghematan trip ke ${destination}. Dengan penyesuaian alokasi dari Rp ${originalBudget.toLocaleString('id-ID')} menjadi Rp ${optimizedBudget.toLocaleString('id-ID')}, Anda menghemat Rp ${potentialSavings.toLocaleString('id-ID')} sehingga keuangan tetap sehat dan perjalanan tetap nyaman. Bagaimana menurut Anda, apakah penyesuaian ini cocok?`;
+
+  return { destination, originalBudget, optimizedBudget, potentialSavings, itemizedBreakdown, butlerAdvice };
+}

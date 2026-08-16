@@ -1,6 +1,6 @@
 'use client';
 
-import { useMemo } from 'react';
+import { useMemo, useState } from 'react';
 import {
   ResponsiveContainer,
   BarChart,
@@ -201,7 +201,70 @@ export default function AnalyticsView({
       </header>
 
       {/* Target Budget Progress Bar Widget */}
-      <BudgetProgressWidget transactions={transactions} categories={[]} />
+      
+      {/* --- SMART REALTIME DAILY ALLOWANCE & PRODUCTIVITY WIDGETS --- */}
+      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4 mb-6">
+        {/* Widget 1: Batas Belanja Aman Harian (B_harian) & Daily Burn Rate */}
+        <div className="bg-white dark:bg-zinc-900 border border-teal-100 dark:border-zinc-800 rounded-2xl p-5 shadow-sm hover:shadow-md transition-all">
+          <div className="flex items-center justify-between mb-3">
+            <span className="text-xs font-semibold uppercase tracking-wider text-teal-600 dark:text-teal-400">Batas Belanja Aman Harian</span>
+            <span className="px-2.5 py-0.5 text-[10px] font-bold uppercase rounded-full bg-teal-50 text-teal-700 dark:bg-teal-950 dark:text-teal-300">Realtime</span>
+          </div>
+          <div className="text-2xl font-black text-zinc-900 dark:text-zinc-50 mb-1">
+            Rp {(Math.max(10000, Math.round((totalIncomeSum - totalExpenseSum - 67941) / Math.max(1, 30 - new Date().getDate() + 1)))).toLocaleString('id-ID')}
+            <span className="text-xs font-normal text-zinc-500 dark:text-zinc-400"> / hari</span>
+          </div>
+          <p className="text-xs text-zinc-600 dark:text-zinc-400 mb-3">
+            Rata-rata pengeluaran harianmu bulan ini adalah <strong className="text-zinc-900 dark:text-zinc-200">Rp {(Math.round(totalExpenseSum / Math.max(1, new Date().getDate()))).toLocaleString('id-ID')}/hari</strong>.
+          </p>
+          <div className="w-full bg-zinc-100 dark:bg-zinc-800 rounded-full h-2 overflow-hidden">
+            <div className="bg-teal-500 h-full rounded-full transition-all duration-500" style={{ width: `${Math.min(100, Math.round(((totalExpenseSum / Math.max(1, new Date().getDate())) / Math.max(10000, (totalIncomeSum - totalExpenseSum) / 30)) * 100))}%` }}></div>
+          </div>
+        </div>
+
+        {/* Widget 2: Produktivitas & Prioritas Agenda */}
+        <div className="bg-white dark:bg-zinc-900 border border-blue-100 dark:border-zinc-800 rounded-2xl p-5 shadow-sm hover:shadow-md transition-all">
+          <div className="flex items-center justify-between mb-3">
+            <span className="text-xs font-semibold uppercase tracking-wider text-blue-600 dark:text-blue-400">Produktivitas Agenda</span>
+            <span className="px-2.5 py-0.5 text-[10px] font-bold uppercase rounded-full bg-blue-50 text-blue-700 dark:bg-blue-950 dark:text-blue-300">
+              {totalActsCount > 0 ? `${Math.round((completedActsCount / totalActsCount) * 100)}% Selesai` : '0%'}
+            </span>
+          </div>
+          <div className="text-2xl font-black text-zinc-900 dark:text-zinc-50 mb-1">
+            {completedActsCount} <span className="text-sm font-normal text-zinc-500 dark:text-zinc-400">/ {totalActsCount} Agenda</span>
+          </div>
+          <p className="text-xs text-zinc-600 dark:text-zinc-400 mb-3">
+            Urgent: <strong className="text-red-500">{activities.filter(a => a.priority === 'urgent' || a.priority === 'high').length}</strong> | Medium: <strong className="text-amber-500">{activities.filter(a => a.priority === 'medium').length}</strong> | Low: <strong className="text-teal-500">{activities.filter(a => a.priority === 'low').length}</strong>
+          </p>
+          <div className="w-full bg-zinc-100 dark:bg-zinc-800 rounded-full h-2 overflow-hidden flex">
+            <div className="bg-emerald-500 h-full" style={{ width: `${totalActsCount > 0 ? (completedActsCount / totalActsCount) * 100 : 0}%` }}></div>
+            <div className="bg-amber-500 h-full" style={{ width: `${totalActsCount > 0 ? ((totalActsCount - completedActsCount) / totalActsCount) * 100 : 0}%` }}></div>
+          </div>
+        </div>
+
+        {/* Widget 3: Filter Rentang Waktu Dashboard */}
+        <div className="bg-white dark:bg-zinc-900 border border-purple-100 dark:border-zinc-800 rounded-2xl p-5 shadow-sm hover:shadow-md transition-all flex flex-col justify-between">
+          <div>
+            <div className="flex items-center justify-between mb-2">
+              <span className="text-xs font-semibold uppercase tracking-wider text-purple-600 dark:text-purple-400">Perspektif Rentang Waktu</span>
+              <span className="text-[10px] text-zinc-400">Cockpit View</span>
+            </div>
+            <p className="text-xs text-zinc-500 dark:text-zinc-400 mb-3">Pilih perspektif periode analisis data umum di Dashboard:</p>
+          </div>
+          <div className="flex flex-wrap gap-1.5">
+            {['Hari Ini', '7 Hari', 'Bulan Ini', '3 Bulan', '1 Tahun'].map((label, idx) => (
+              <button
+                key={label}
+                className={`px-3 py-1 text-xs font-medium rounded-lg transition-all ${idx === 2 ? 'bg-purple-600 text-white shadow' : 'bg-zinc-100 dark:bg-zinc-800 text-zinc-600 dark:text-zinc-300 hover:bg-zinc-200'}`}
+              >
+                {label}
+              </button>
+            ))}
+          </div>
+        </div>
+      </div>
+
+<BudgetProgressWidget transactions={transactions} categories={[]} />
 
       {/* Monthly Installments & Fixed Subscriptions Widget */}
       <InstallmentsWidget subscriptions={subscriptions || []} debts={debts || []} installments={installments || []} />

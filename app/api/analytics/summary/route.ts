@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { supabaseAdmin } from '@/lib/supabase/client';
-import { calculate20Analytics } from '@/lib/analytics/calculators';
+import { calculate20Analytics, calculateRealtimeDailyAllowance, calculateActivityMetrics } from '@/lib/analytics/calculators';
 import { verifyApiUser } from '@/lib/auth/verify-auth';
 
 export async function GET(req: NextRequest) {
