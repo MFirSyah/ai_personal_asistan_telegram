@@ -64,22 +64,23 @@ export const SUB_HEADERS = [
   'created_time',
 ];
 
-// Helper to cleanly split ISO timestamp into separated Date (DD/MM/YYYY) and Time (HH:mm:ss) in WIB
+// Helper to cleanly split ISO timestamp into separated Date (DD/MM/YYYY) and Time (HH:mm) in WIB
 export function splitDateAndTime(input?: string | Date | null): { date: string; time: string } {
-  if (!input) {
-    const now = new Date();
-    return {
-      date: now.toLocaleDateString('id-ID', { timeZone: 'Asia/Jakarta' }),
-      time: now.toLocaleTimeString('id-ID', { timeZone: 'Asia/Jakarta', hour12: false }),
-    };
-  }
-  const d = new Date(input);
+  const d = input ? new Date(input) : new Date();
   if (isNaN(d.getTime())) {
     return { date: '', time: '' };
   }
+  const dateStr = d.toLocaleDateString('id-ID', { timeZone: 'Asia/Jakarta' });
+  const timeStr = d.toLocaleTimeString('id-ID', {
+    timeZone: 'Asia/Jakarta',
+    hour: '2-digit',
+    minute: '2-digit',
+    hour12: false,
+  }).replace('.', ':');
+
   return {
-    date: d.toLocaleDateString('id-ID', { timeZone: 'Asia/Jakarta' }),
-    time: d.toLocaleTimeString('id-ID', { timeZone: 'Asia/Jakarta', hour12: false }),
+    date: dateStr,
+    time: timeStr,
   };
 }
 

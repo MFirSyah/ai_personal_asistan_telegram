@@ -1,15 +1,16 @@
 -- ====================================================================
--- SUPABASE MIGRATION: SEPARATE DATE & TIME COLUMNS + AI ANALYTICAL LABELS
+-- SUPABASE MIGRATION: SEPARATE DATE & TIME (HH:MI) + AI ANALYTICAL LABELS
 -- ====================================================================
--- Script ini aman dijalankan dan khusus untuk tabel transactions & activities
+-- Script ini memisahkan kolom Tanggal (Date) dan Jam:Menit (HH:MI)
+-- serta label analitik pada tabel transactions & activities di Supabase.
 -- ====================================================================
 
 -- 1. TAMBAHKAN KOLOM PADA TABEL TRANSACTIONS
 ALTER TABLE transactions 
   ADD COLUMN IF NOT EXISTS occurred_date DATE,
-  ADD COLUMN IF NOT EXISTS occurred_time TIME,
+  ADD COLUMN IF NOT EXISTS occurred_time TEXT,
   ADD COLUMN IF NOT EXISTS created_date DATE,
-  ADD COLUMN IF NOT EXISTS created_time TIME,
+  ADD COLUMN IF NOT EXISTS created_time TEXT,
   ADD COLUMN IF NOT EXISTS category_name TEXT,
   ADD COLUMN IF NOT EXISTS subcategory_name TEXT,
   ADD COLUMN IF NOT EXISTS necessity_level TEXT,
@@ -19,20 +20,20 @@ ALTER TABLE transactions
 -- 2. TAMBAHKAN KOLOM PADA TABEL ACTIVITIES
 ALTER TABLE activities 
   ADD COLUMN IF NOT EXISTS occurred_date DATE,
-  ADD COLUMN IF NOT EXISTS occurred_time TIME,
+  ADD COLUMN IF NOT EXISTS occurred_time TEXT,
   ADD COLUMN IF NOT EXISTS created_date DATE,
-  ADD COLUMN IF NOT EXISTS created_time TIME,
+  ADD COLUMN IF NOT EXISTS created_time TEXT,
   ADD COLUMN IF NOT EXISTS category_name TEXT,
   ADD COLUMN IF NOT EXISTS day_type TEXT,
   ADD COLUMN IF NOT EXISTS time_bucket TEXT;
 
--- 3. BACKFILL DATA LAMA TRANSACTIONS (WIB Asia/Jakarta)
+-- 3. BACKFILL DATA LAMA TRANSACTIONS (Format Jam:Menit WIB)
 UPDATE transactions
 SET 
   occurred_date = COALESCE((occurred_at AT TIME ZONE 'Asia/Jakarta')::date, (created_at AT TIME ZONE 'Asia/Jakarta')::date),
-  occurred_time = COALESCE((occurred_at AT TIME ZONE 'Asia/Jakarta')::time, (created_at AT TIME ZONE 'Asia/Jakarta')::time),
+  occurred_time = TO_CHAR(COALESCE(occurred_at, created_at) AT TIME ZONE 'Asia/Jakarta', 'HH24:MI'),
   created_date = (created_at AT TIME ZONE 'Asia/Jakarta')::date,
-  created_time = (created_at AT TIME ZONE 'Asia/Jakarta')::time,
+  created_time = TO_CHAR(created_at AT TIME ZONE 'Asia/Jakarta', 'HH24:MI'),
   day_type = CASE 
     WHEN EXTRACT(DOW FROM COALESCE(occurred_at, created_at) AT TIME ZONE 'Asia/Jakarta') IN (0, 6) THEN 'Weekend (Akhir Pekan)'
     ELSE 'Weekday (Hari Kerja)'
@@ -45,13 +46,13 @@ SET
   END
 WHERE occurred_date IS NULL OR created_date IS NULL;
 
--- 4. BACKFILL DATA LAMA ACTIVITIES (WIB Asia/Jakarta)
+-- 4. BACKFILL DATA LAMA ACTIVITIES (Format Jam:Menit WIB)
 UPDATE activities
 SET 
   occurred_date = COALESCE((occurred_at AT TIME ZONE 'Asia/Jakarta')::date, (created_at AT TIME ZONE 'Asia/Jakarta')::date),
-  occurred_time = COALESCE((occurred_at AT TIME ZONE 'Asia/Jakarta')::time, (created_at AT TIME ZONE 'Asia/Jakarta')::time),
+  occurred_time = TO_CHAR(COALESCE(occurred_at, created_at) AT TIME ZONE 'Asia/Jakarta', 'HH24:MI'),
   created_date = (created_at AT TIME ZONE 'Asia/Jakarta')::date,
-  created_time = (created_at AT TIME ZONE 'Asia/Jakarta')::time,
+  created_time = TO_CHAR(created_at AT TIME ZONE 'Asia/Jakarta', 'HH24:MI'),
   day_type = CASE 
     WHEN EXTRACT(DOW FROM COALESCE(occurred_at, created_at) AT TIME ZONE 'Asia/Jakarta') IN (0, 6) THEN 'Weekend (Akhir Pekan)'
     ELSE 'Weekday (Hari Kerja)'
@@ -64,7 +65,7 @@ SET
   END
 WHERE occurred_date IS NULL OR created_date IS NULL;
 
--- 5. TRIGGER OTOMATIS: AUTO POPULATE SAAT ADA DATA BARU MASUK
+-- 5. TRIGGER OTOMATIS: AUTO POPULATE (HH:MI) SAAT ADA DATA BARU MASUK
 CREATE OR REPLACE FUNCTION fn_auto_populate_datetime_labels()
 RETURNS TRIGGER AS $$
 DECLARE
@@ -75,9 +76,9 @@ BEGIN
   ref_ts := COALESCE(NEW.occurred_at, NEW.created_at, NOW());
   
   NEW.occurred_date := (ref_ts AT TIME ZONE 'Asia/Jakarta')::date;
-  NEW.occurred_time := (ref_ts AT TIME ZONE 'Asia/Jakarta')::time;
+  NEW.occurred_time := TO_CHAR(ref_ts AT TIME ZONE 'Asia/Jakarta', 'HH24:MI');
   NEW.created_date := (COALESCE(NEW.created_at, NOW()) AT TIME ZONE 'Asia/Jakarta')::date;
-  NEW.created_time := (COALESCE(NEW.created_at, NOW()) AT TIME ZONE 'Asia/Jakarta')::time;
+  NEW.created_time := TO_CHAR(COALESCE(NEW.created_at, NOW()) AT TIME ZONE 'Asia/Jakarta', 'HH24:MI');
 
   wib_dow := EXTRACT(DOW FROM ref_ts AT TIME ZONE 'Asia/Jakarta');
   wib_hour := EXTRACT(HOUR FROM ref_ts AT TIME ZONE 'Asia/Jakarta');
