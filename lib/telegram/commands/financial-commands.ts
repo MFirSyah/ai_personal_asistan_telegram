@@ -105,11 +105,15 @@ export async function handleFinancialCommands(
     return NextResponse.json({ ok: true });
   }
 
-  // /export
-  if (text.startsWith('/export')) {
+  // /export & /export_sql & /backup
+  if (text.startsWith('/export') || text.startsWith('/backup')) {
     sendTelegramChatAction(chatId, 'upload_photo').catch(console.error);
+    const isSql = text.includes('sql') || text.startsWith('/backup') || text.startsWith('/export_sql');
     try {
-      const exportResult = await generateExportFile(user.id, { target: 'all' });
+      const exportResult = await generateExportFile(user.id, {
+        target: 'all',
+        format: isSql ? 'sql' : 'csv',
+      });
       await sendTelegramDocument(chatId, exportResult.buffer, exportResult.filename, exportResult.caption);
     } catch (expErr: any) {
       await sendTelegramMessage(chatId, `⚠️ Gagal meng-export data: ${expErr?.message || 'Error tidak diketahui'}`);

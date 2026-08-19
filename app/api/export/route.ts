@@ -10,14 +10,19 @@ export async function GET(req: NextRequest) {
 
   const { searchParams } = new URL(req.url);
   const target = (searchParams.get('target') as any) || 'all';
+  const format = (searchParams.get('format') as any) === 'sql' ? 'sql' : 'csv';
 
   try {
-    const exportResult = await generateExportFile(user.id, { target });
+    const exportResult = await generateExportFile(user.id, { target, format });
+
+    const contentType = format === 'sql' 
+      ? 'application/sql; charset=utf-8' 
+      : 'text/csv; charset=utf-8';
 
     return new NextResponse(new Uint8Array(exportResult.buffer), {
       status: 200,
       headers: {
-        'Content-Type': 'text/csv; charset=utf-8',
+        'Content-Type': contentType,
         'Content-Disposition': `attachment; filename="${exportResult.filename}"`,
       },
     });
