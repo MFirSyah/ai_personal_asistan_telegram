@@ -4,7 +4,8 @@ import { supabaseAdmin } from '../supabase/client';
 export const TX_HEADERS = [
   'id',
   'user_id',
-  'occurred_at',
+  'occurred_date',
+  'occurred_time',
   'type',
   'amount',
   'merchant',
@@ -17,13 +18,15 @@ export const TX_HEADERS = [
   'time_bucket',
   'tags',
   'source',
-  'created_at',
+  'created_date',
+  'created_time',
 ];
 
 export const ACT_HEADERS = [
   'id',
   'user_id',
-  'occurred_at',
+  'occurred_date',
+  'occurred_time',
   'title',
   'description',
   'status',
@@ -32,7 +35,8 @@ export const ACT_HEADERS = [
   'day_type',
   'time_bucket',
   'tags',
-  'created_at',
+  'created_date',
+  'created_time',
 ];
 
 export const INST_HEADERS = [
@@ -44,7 +48,8 @@ export const INST_HEADERS = [
   'remaining_months',
   'due_day',
   'status',
-  'created_at',
+  'created_date',
+  'created_time',
 ];
 
 export const SUB_HEADERS = [
@@ -55,8 +60,28 @@ export const SUB_HEADERS = [
   'billing_cycle',
   'next_billing_date',
   'category',
-  'created_at',
+  'created_date',
+  'created_time',
 ];
+
+// Helper to cleanly split ISO timestamp into separated Date (DD/MM/YYYY) and Time (HH:mm:ss) in WIB
+export function splitDateAndTime(input?: string | Date | null): { date: string; time: string } {
+  if (!input) {
+    const now = new Date();
+    return {
+      date: now.toLocaleDateString('id-ID', { timeZone: 'Asia/Jakarta' }),
+      time: now.toLocaleTimeString('id-ID', { timeZone: 'Asia/Jakarta', hour12: false }),
+    };
+  }
+  const d = new Date(input);
+  if (isNaN(d.getTime())) {
+    return { date: '', time: '' };
+  }
+  return {
+    date: d.toLocaleDateString('id-ID', { timeZone: 'Asia/Jakarta' }),
+    time: d.toLocaleTimeString('id-ID', { timeZone: 'Asia/Jakarta', hour12: false }),
+  };
+}
 
 // Helper to determine time bucket & day type
 export function computeTimeAndDayLabels(dateStr?: string | null) {
@@ -172,19 +197,21 @@ export async function getOrCreateUserSpreadsheet(userId: string, userName: strin
  * Migrates & Syncs ALL existing data for a specific user to their Google Spreadsheet.
  */
 export async function syncFullUserDataToGoogleSheet(userId: string): Promise<{ ok: boolean; fileId?: string; error?: string }> {
-  if (!isGoogleConfigured) return { ok: false, error: 'Google credentials not configured' };
-
   try {
-    const { data: user } = await supabaseAdmin.from('users').select('id, name').eq('id', userId).single();
-    if (!user) return { ok: false, error: 'User not found in Supabase' };
+    const { data: user } = await supabaseAdmin.from('users').select('id, name').eq('id', userId).maybeSingle();
+    const userName = user?.name || 'User';
 
-    const spreadsheetId = await getOrCreateUserSpreadsheet(user.id, user.name || 'User');
-    if (!spreadsheetId) return { ok: false, error: 'Failed to create or access Google Spreadsheet' };
+    const spreadsheetId = await getOrCreateUserSpreadsheet(userId, userName);
+    if (!spreadsheetId) {
+      return { ok: false, error: 'Could not create or access Google Spreadsheet' };
+    }
 
     const sheets = getSheetsClient();
-    if (!sheets) return { ok: false, error: 'Sheets client unavailable' };
+    if (!sheets) {
+      return { ok: false, error: 'Google Sheets client unavailable' };
+    }
 
-    // Fetch all user records from Supabase
+    // Fetch all tables
     const [
       { data: txs },
       { data: acts },
@@ -192,10 +219,10 @@ export async function syncFullUserDataToGoogleSheet(userId: string): Promise<{ o
       { data: subs },
       { data: categories },
     ] = await Promise.all([
-      supabaseAdmin.from('transactions').select('*').eq('user_id', userId).is('deleted_at', null).order('occurred_at', { ascending: true }),
-      supabaseAdmin.from('activities').select('*').eq('user_id', userId).is('deleted_at', null).order('occurred_at', { ascending: true }),
-      supabaseAdmin.from('installments').select('*').eq('user_id', userId).order('created_at', { ascending: true }),
-      supabaseAdmin.from('subscriptions').select('*').eq('user_id', userId).order('created_at', { ascending: true }),
+      supabaseAdmin.from('transactions').select('*').eq('user_id', userId).order('occurred_at', { ascending: false }),
+      supabaseAdmin.from('activities').select('*').eq('user_id', userId).order('occurred_at', { ascending: false }),
+      supabaseAdmin.from('installments').select('*').eq('user_id', userId).order('created_at', { ascending: false }),
+      supabaseAdmin.from('subscriptions').select('*').eq('user_id', userId).order('created_at', { ascending: false }),
       supabaseAdmin.from('categories').select('id, name'),
     ]);
 
@@ -207,11 +234,14 @@ export async function syncFullUserDataToGoogleSheet(userId: string): Promise<{ o
       const catName = t.category_id ? catMap.get(t.category_id) || t.merchant || 'Lain-lain' : t.merchant || 'Lain-lain';
       const { dayType, timeBucket } = computeTimeAndDayLabels(t.occurred_at || t.created_at);
       const necessity = computeNecessityLevel(t.type || 'expense', catName, t.tags);
+      const occurred = splitDateAndTime(t.occurred_at || t.created_at);
+      const created = splitDateAndTime(t.created_at);
 
       return [
         t.id,
         t.user_id,
-        t.occurred_at ? new Date(t.occurred_at).toLocaleString('id-ID') : '',
+        occurred.date,
+        occurred.time,
         t.type || 'expense',
         Number(t.amount || 0),
         t.merchant || '',
@@ -224,7 +254,8 @@ export async function syncFullUserDataToGoogleSheet(userId: string): Promise<{ o
         timeBucket,
         Array.isArray(t.tags) ? t.tags.join(', ') : '',
         t.source || 'chat_manual',
-        t.created_at ? new Date(t.created_at).toLocaleString('id-ID') : '',
+        created.date,
+        created.time,
       ];
     });
 
@@ -232,11 +263,14 @@ export async function syncFullUserDataToGoogleSheet(userId: string): Promise<{ o
     const actRows = (acts || []).map((a) => {
       const catName = a.category_id ? catMap.get(a.category_id) || 'Umum' : 'Umum';
       const { dayType, timeBucket } = computeTimeAndDayLabels(a.occurred_at || a.created_at);
+      const occurred = splitDateAndTime(a.occurred_at || a.created_at);
+      const created = splitDateAndTime(a.created_at);
 
       return [
         a.id,
         a.user_id,
-        a.occurred_at ? new Date(a.occurred_at).toLocaleString('id-ID') : '',
+        occurred.date,
+        occurred.time,
         a.title || '',
         a.description || '',
         a.status || 'scheduled',
@@ -245,34 +279,43 @@ export async function syncFullUserDataToGoogleSheet(userId: string): Promise<{ o
         dayType,
         timeBucket,
         Array.isArray(a.tags) ? a.tags.join(', ') : '',
-        a.created_at ? new Date(a.created_at).toLocaleString('id-ID') : '',
+        created.date,
+        created.time,
       ];
     });
 
     // Prepare Installment Rows
-    const instRows = (insts || []).map((i) => [
-      i.id,
-      i.user_id,
-      i.item_name || '',
-      Number(i.monthly_amount || 0),
-      Number(i.total_months || 0),
-      Number(i.remaining_months || 0),
-      Number(i.due_day || 1),
-      i.status || 'active',
-      i.created_at ? new Date(i.created_at).toLocaleString('id-ID') : '',
-    ]);
+    const instRows = (insts || []).map((i) => {
+      const created = splitDateAndTime(i.created_at);
+      return [
+        i.id,
+        i.user_id,
+        i.item_name || '',
+        Number(i.monthly_amount || 0),
+        Number(i.total_months || 0),
+        Number(i.remaining_months || 0),
+        Number(i.due_day || 1),
+        i.status || 'active',
+        created.date,
+        created.time,
+      ];
+    });
 
     // Prepare Subscription Rows
-    const subRows = (subs || []).map((s) => [
-      s.id,
-      s.user_id,
-      s.service_name || '',
-      Number(s.amount || 0),
-      s.billing_cycle || 'monthly',
-      s.next_billing_date || '',
-      s.category || 'Tagihan',
-      s.created_at ? new Date(s.created_at).toLocaleString('id-ID') : '',
-    ]);
+    const subRows = (subs || []).map((s) => {
+      const created = splitDateAndTime(s.created_at);
+      return [
+        s.id,
+        s.user_id,
+        s.service_name || '',
+        Number(s.amount || 0),
+        s.billing_cycle || 'monthly',
+        s.next_billing_date || '',
+        s.category || 'Tagihan',
+        created.date,
+        created.time,
+      ];
+    });
 
     // Batch Clear & Overwrite
     await sheets.spreadsheets.values.batchUpdate({
@@ -280,10 +323,10 @@ export async function syncFullUserDataToGoogleSheet(userId: string): Promise<{ o
       requestBody: {
         valueInputOption: 'USER_ENTERED',
         data: [
-          { range: 'transactions!A1:P' + Math.max(2, txRows.length + 1), values: [TX_HEADERS, ...txRows] },
-          { range: 'activities!A1:L' + Math.max(2, actRows.length + 1), values: [ACT_HEADERS, ...actRows] },
-          { range: 'installments!A1:I' + Math.max(2, instRows.length + 1), values: [INST_HEADERS, ...instRows] },
-          { range: 'subscriptions!A1:H' + Math.max(2, subRows.length + 1), values: [SUB_HEADERS, ...subRows] },
+          { range: 'transactions!A1:R' + Math.max(2, txRows.length + 1), values: [TX_HEADERS, ...txRows] },
+          { range: 'activities!A1:N' + Math.max(2, actRows.length + 1), values: [ACT_HEADERS, ...actRows] },
+          { range: 'installments!A1:J' + Math.max(2, instRows.length + 1), values: [INST_HEADERS, ...instRows] },
+          { range: 'subscriptions!A1:I' + Math.max(2, subRows.length + 1), values: [SUB_HEADERS, ...subRows] },
         ],
       },
     });
@@ -309,11 +352,14 @@ export async function appendTransactionRealtime(userId: string, tx: any) {
     const { dayType, timeBucket } = computeTimeAndDayLabels(tx.occurred_at || tx.created_at);
     const catName = tx.category || tx.merchant || 'Lain-lain';
     const necessity = computeNecessityLevel(tx.type || 'expense', catName, tx.tags);
+    const occurred = splitDateAndTime(tx.occurred_at || tx.created_at);
+    const created = splitDateAndTime(tx.created_at || new Date());
 
     const row = [
       tx.id || `TX-${Date.now().toString(36).toUpperCase()}`,
       userId,
-      tx.occurred_at ? new Date(tx.occurred_at).toLocaleString('id-ID') : new Date().toLocaleString('id-ID'),
+      occurred.date,
+      occurred.time,
       tx.type || 'expense',
       Number(tx.amount || 0),
       tx.merchant || '',
@@ -326,7 +372,8 @@ export async function appendTransactionRealtime(userId: string, tx: any) {
       timeBucket,
       Array.isArray(tx.tags) ? tx.tags.join(', ') : '',
       tx.source || 'chat_manual',
-      new Date().toLocaleString('id-ID'),
+      created.date,
+      created.time,
     ];
 
     const appsScriptUrl = process.env.GOOGLE_APPS_SCRIPT_URL;
@@ -348,7 +395,7 @@ export async function appendTransactionRealtime(userId: string, tx: any) {
     if (sheets) {
       await sheets.spreadsheets.values.append({
         spreadsheetId,
-        range: 'transactions!A:P',
+        range: 'transactions!A:R',
         valueInputOption: 'USER_ENTERED',
         requestBody: { values: [row] },
       });
@@ -371,11 +418,14 @@ export async function appendActivityRealtime(userId: string, act: any) {
 
     const { dayType, timeBucket } = computeTimeAndDayLabels(act.occurred_at || act.created_at);
     const catName = act.category || 'Umum';
+    const occurred = splitDateAndTime(act.occurred_at || act.created_at);
+    const created = splitDateAndTime(act.created_at || new Date());
 
     const row = [
       act.id || `ACT-${Date.now().toString(36).toUpperCase()}`,
       userId,
-      act.occurred_at ? new Date(act.occurred_at).toLocaleString('id-ID') : new Date().toLocaleString('id-ID'),
+      occurred.date,
+      occurred.time,
       act.title || '',
       act.description || '',
       act.status || 'scheduled',
@@ -384,7 +434,8 @@ export async function appendActivityRealtime(userId: string, act: any) {
       dayType,
       timeBucket,
       Array.isArray(act.tags) ? act.tags.join(', ') : '',
-      new Date().toLocaleString('id-ID'),
+      created.date,
+      created.time,
     ];
 
     const appsScriptUrl = process.env.GOOGLE_APPS_SCRIPT_URL;
@@ -406,7 +457,7 @@ export async function appendActivityRealtime(userId: string, act: any) {
     if (sheets) {
       await sheets.spreadsheets.values.append({
         spreadsheetId,
-        range: 'activities!A:L',
+        range: 'activities!A:N',
         valueInputOption: 'USER_ENTERED',
         requestBody: { values: [row] },
       });
