@@ -1,10 +1,7 @@
 -- ====================================================================
 -- SUPABASE MIGRATION: SEPARATE DATE & TIME COLUMNS + AI ANALYTICAL LABELS
 -- ====================================================================
--- Script ini menambahkan kolom Tanggal & Jam terpisah serta label analitik
--- pada tabel transactions dan activities di Supabase dengan zona waktu WIB (Asia/Jakarta).
---
--- Jalankan skrip ini di: Supabase Dashboard -> SQL Editor -> New Query -> Run.
+-- Script ini aman dijalankan dan khusus untuk tabel transactions & activities
 -- ====================================================================
 
 -- 1. TAMBAHKAN KOLOM PADA TABEL TRANSACTIONS
@@ -29,20 +26,7 @@ ALTER TABLE activities
   ADD COLUMN IF NOT EXISTS day_type TEXT,
   ADD COLUMN IF NOT EXISTS time_bucket TEXT;
 
--- 3. TAMBAHKAN KOLOM PADA TABEL INSTALLMENTS & SUBSCRIPTIONS
-ALTER TABLE installments
-  ADD COLUMN IF NOT EXISTS created_date DATE,
-  ADD COLUMN IF NOT EXISTS created_time TIME;
-
-ALTER TABLE subscriptions
-  ADD COLUMN IF NOT EXISTS created_date DATE,
-  ADD COLUMN IF NOT EXISTS created_time TIME;
-
--- ====================================================================
--- 4. BACKFILL DATA YANG SUDAH ADA (Konversi ke WIB Asia/Jakarta)
--- ====================================================================
-
--- Update transactions
+-- 3. BACKFILL DATA LAMA TRANSACTIONS (WIB Asia/Jakarta)
 UPDATE transactions
 SET 
   occurred_date = COALESCE((occurred_at AT TIME ZONE 'Asia/Jakarta')::date, (created_at AT TIME ZONE 'Asia/Jakarta')::date),
@@ -61,7 +45,7 @@ SET
   END
 WHERE occurred_date IS NULL OR created_date IS NULL;
 
--- Update activities
+-- 4. BACKFILL DATA LAMA ACTIVITIES (WIB Asia/Jakarta)
 UPDATE activities
 SET 
   occurred_date = COALESCE((occurred_at AT TIME ZONE 'Asia/Jakarta')::date, (created_at AT TIME ZONE 'Asia/Jakarta')::date),
@@ -80,23 +64,7 @@ SET
   END
 WHERE occurred_date IS NULL OR created_date IS NULL;
 
--- Update installments & subscriptions
-UPDATE installments
-SET 
-  created_date = (created_at AT TIME ZONE 'Asia/Jakarta')::date,
-  created_time = (created_at AT TIME ZONE 'Asia/Jakarta')::time
-WHERE created_date IS NULL;
-
-UPDATE subscriptions
-SET 
-  created_date = (created_at AT TIME ZONE 'Asia/Jakarta')::date,
-  created_time = (created_at AT TIME ZONE 'Asia/Jakarta')::time
-WHERE created_date IS NULL;
-
--- ====================================================================
--- 5. TRIGGER OTOMATIS: AUTO POPULATE SAAT DATA BARU MASUK KE SUPABASE
--- ====================================================================
-
+-- 5. TRIGGER OTOMATIS: AUTO POPULATE SAAT ADA DATA BARU MASUK
 CREATE OR REPLACE FUNCTION fn_auto_populate_datetime_labels()
 RETURNS TRIGGER AS $$
 DECLARE
@@ -104,16 +72,13 @@ DECLARE
   wib_dow INT;
   wib_hour INT;
 BEGIN
-  -- Tentukan timestamp referensi
   ref_ts := COALESCE(NEW.occurred_at, NEW.created_at, NOW());
   
-  -- Set kolom tanggal dan waktu spesifik
   NEW.occurred_date := (ref_ts AT TIME ZONE 'Asia/Jakarta')::date;
   NEW.occurred_time := (ref_ts AT TIME ZONE 'Asia/Jakarta')::time;
   NEW.created_date := (COALESCE(NEW.created_at, NOW()) AT TIME ZONE 'Asia/Jakarta')::date;
   NEW.created_time := (COALESCE(NEW.created_at, NOW()) AT TIME ZONE 'Asia/Jakarta')::time;
 
-  -- Set Day Type & Time Bucket
   wib_dow := EXTRACT(DOW FROM ref_ts AT TIME ZONE 'Asia/Jakarta');
   wib_hour := EXTRACT(HOUR FROM ref_ts AT TIME ZONE 'Asia/Jakarta');
 
@@ -137,14 +102,12 @@ BEGIN
 END;
 $$ LANGUAGE plpgsql;
 
--- Pasang Trigger pada transactions
 DROP TRIGGER IF EXISTS trg_transactions_datetime_labels ON transactions;
 CREATE TRIGGER trg_transactions_datetime_labels
 BEFORE INSERT OR UPDATE ON transactions
 FOR EACH ROW
 EXECUTE FUNCTION fn_auto_populate_datetime_labels();
 
--- Pasang Trigger pada activities
 DROP TRIGGER IF EXISTS trg_activities_datetime_labels ON activities;
 CREATE TRIGGER trg_activities_datetime_labels
 BEFORE INSERT OR UPDATE ON activities
