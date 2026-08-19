@@ -43,3 +43,5 @@ next-env.d.ts
 # WhatsApp export & scratch scripts
 WhatsApp Chat*.txt
 /scratch/
+manas-*.json
+*service-account*.json

@@ -28,6 +28,7 @@ import { getUserPreferences, saveUserPreference } from '@/lib/supabase/queries/p
 import { updateUserName } from '@/lib/supabase/queries/sessions';
 import { getUserCategories, getOrCreateCategory } from '@/lib/supabase/queries/categories';
 import { sendTelegramMessageBubbles, sendTelegramMessage, sendTelegramChatAction, sendTelegramDocument } from '@/lib/telegram/send-message';
+import { appendTransactionRealtime, appendActivityRealtime } from '@/lib/google-sheets/sync';
 import { sendTelegramChart } from '@/lib/telegram/send-chart';
 import { sendTelegramLocation } from '@/lib/telegram/send-location';
 import { buildConfirmationInlineKeyboard } from '@/lib/telegram/inline-keyboard';
@@ -181,6 +182,9 @@ export async function processChatRespondDirect(
               occurred_at: parseSafeIsoDate(tx.occurred_at),
             });
 
+            // Real-time Google Sheets Stream Sync (background non-blocking)
+            appendTransactionRealtime(userId, tx).catch((err) => console.error('[Google Sheets Realtime Error]:', err));
+
             // Real-time Financial Anomaly Detection
             const anomalyAlert = await checkTransactionAnomaly(userId, {
               amount: tx.amount,
@@ -211,6 +215,9 @@ export async function processChatRespondDirect(
               tags: act.tags || [],
               occurred_at: parseSafeIsoDate(act.occurred_at),
             });
+
+            // Real-time Google Sheets Stream Sync (background non-blocking)
+            appendActivityRealtime(userId, act).catch((err) => console.error('[Google Sheets Realtime Error]:', err));
 
             // Real-time Schedule Collision Detection
             const collisionAlert = await checkActivityCollision(userId, {
