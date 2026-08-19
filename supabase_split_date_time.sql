@@ -1,11 +1,8 @@
 -- ====================================================================
 -- SUPABASE MIGRATION: SEPARATE DATE & TIME (HH:MI) + AI ANALYTICAL LABELS
 -- ====================================================================
--- Script ini memisahkan kolom Tanggal (Date) dan Jam:Menit (HH:MI)
--- serta label analitik pada tabel transactions & activities di Supabase.
--- ====================================================================
 
--- 1. TAMBAHKAN KOLOM PADA TABEL TRANSACTIONS
+-- 1. TAMBAHKAN / PASTIKAN KOLOM PADA TABEL TRANSACTIONS
 ALTER TABLE transactions 
   ADD COLUMN IF NOT EXISTS occurred_date DATE,
   ADD COLUMN IF NOT EXISTS occurred_time TEXT,
@@ -17,7 +14,12 @@ ALTER TABLE transactions
   ADD COLUMN IF NOT EXISTS day_type TEXT,
   ADD COLUMN IF NOT EXISTS time_bucket TEXT;
 
--- 2. TAMBAHKAN KOLOM PADA TABEL ACTIVITIES
+-- Konversi tipe kolom menjadi TEXT (jika sebelumnya sudah dibuat TIME)
+ALTER TABLE transactions 
+  ALTER COLUMN occurred_time TYPE TEXT USING occurred_time::text,
+  ALTER COLUMN created_time TYPE TEXT USING created_time::text;
+
+-- 2. TAMBAHKAN / PASTIKAN KOLOM PADA TABEL ACTIVITIES
 ALTER TABLE activities 
   ADD COLUMN IF NOT EXISTS occurred_date DATE,
   ADD COLUMN IF NOT EXISTS occurred_time TEXT,
@@ -26,6 +28,11 @@ ALTER TABLE activities
   ADD COLUMN IF NOT EXISTS category_name TEXT,
   ADD COLUMN IF NOT EXISTS day_type TEXT,
   ADD COLUMN IF NOT EXISTS time_bucket TEXT;
+
+-- Konversi tipe kolom menjadi TEXT (jika sebelumnya sudah dibuat TIME)
+ALTER TABLE activities 
+  ALTER COLUMN occurred_time TYPE TEXT USING occurred_time::text,
+  ALTER COLUMN created_time TYPE TEXT USING created_time::text;
 
 -- 3. BACKFILL DATA LAMA TRANSACTIONS (Format Jam:Menit WIB)
 UPDATE transactions
@@ -43,8 +50,7 @@ SET
     WHEN EXTRACT(HOUR FROM COALESCE(occurred_at, created_at) AT TIME ZONE 'Asia/Jakarta') BETWEEN 11 AND 14 THEN 'Siang (11:00 - 14:59)'
     WHEN EXTRACT(HOUR FROM COALESCE(occurred_at, created_at) AT TIME ZONE 'Asia/Jakarta') BETWEEN 15 AND 18 THEN 'Sore (15:00 - 18:59)'
     ELSE 'Malam (19:00 - 04:59)'
-  END
-WHERE occurred_date IS NULL OR created_date IS NULL;
+  END;
 
 -- 4. BACKFILL DATA LAMA ACTIVITIES (Format Jam:Menit WIB)
 UPDATE activities
@@ -62,8 +68,7 @@ SET
     WHEN EXTRACT(HOUR FROM COALESCE(occurred_at, created_at) AT TIME ZONE 'Asia/Jakarta') BETWEEN 11 AND 14 THEN 'Siang (11:00 - 14:59)'
     WHEN EXTRACT(HOUR FROM COALESCE(occurred_at, created_at) AT TIME ZONE 'Asia/Jakarta') BETWEEN 15 AND 18 THEN 'Sore (15:00 - 18:59)'
     ELSE 'Malam (19:00 - 04:59)'
-  END
-WHERE occurred_date IS NULL OR created_date IS NULL;
+  END;
 
 -- 5. TRIGGER OTOMATIS: AUTO POPULATE (HH:MI) SAAT ADA DATA BARU MASUK
 CREATE OR REPLACE FUNCTION fn_auto_populate_datetime_labels()
