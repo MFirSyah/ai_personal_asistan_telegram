@@ -133,12 +133,20 @@ export function computeNecessityLevel(type: string, categoryName: string = '', t
   return 'Wants (Keinginan / Gaya Hidup)';
 }
 
+const DEFAULT_APPS_SCRIPT_URL = 'https://script.google.com/macros/s/AKfycbyUK_vCfX8oZIw20CmYU-H7wEwWfEDGIx2m844FX31qwOdsh-ED3OetrqzjLOeMQBNQkw/exec';
+
 /**
  * Finds or creates a Google Spreadsheet file inside the user's dedicated GDrive Folder.
  */
 export async function getOrCreateUserSpreadsheet(userId: string, userName: string): Promise<string | null> {
-  const safeName = userName || 'User';
-  const appsScriptUrl = process.env.GOOGLE_APPS_SCRIPT_URL;
+  let safeName = userName || 'User';
+  if (userId === 'fc2758d3-78bb-4e22-b9f0-b3b16568b671' || safeName.toLowerCase().includes('firman')) {
+    safeName = 'Firman';
+  } else if (userId === 'e07667b5-336e-4275-ae06-fde7b5018b3d' || safeName.toLowerCase().includes('khofita')) {
+    safeName = 'Khofita';
+  }
+
+  const appsScriptUrl = process.env.GOOGLE_APPS_SCRIPT_URL || DEFAULT_APPS_SCRIPT_URL;
 
   // 1. If Google Apps Script Webhook is configured, use it for zero-quota restriction creation
   if (appsScriptUrl) {
@@ -165,7 +173,6 @@ export async function getOrCreateUserSpreadsheet(userId: string, userName: strin
   }
 
   if (!isGoogleConfigured) {
-    console.warn('[Google Sheets Sync] Google API credentials are not configured.');
     return null;
   }
 
@@ -199,8 +206,15 @@ export async function getOrCreateUserSpreadsheet(userId: string, userName: strin
  */
 export async function syncFullUserDataToGoogleSheet(userId: string): Promise<{ ok: boolean; fileId?: string; error?: string }> {
   try {
-    const { data: user } = await supabaseAdmin.from('users').select('id, name').eq('id', userId).maybeSingle();
-    const userName = user?.name || 'User';
+    let userName = 'User';
+    if (userId === 'fc2758d3-78bb-4e22-b9f0-b3b16568b671') {
+      userName = 'Firman';
+    } else if (userId === 'e07667b5-336e-4275-ae06-fde7b5018b3d') {
+      userName = 'Khofita';
+    } else {
+      const { data: user } = await supabaseAdmin.from('users').select('id, name').eq('id', userId).maybeSingle();
+      if (user?.name) userName = user.name;
+    }
 
     const spreadsheetId = await getOrCreateUserSpreadsheet(userId, userName);
     if (!spreadsheetId) {
@@ -344,11 +358,21 @@ export async function syncFullUserDataToGoogleSheet(userId: string): Promise<{ o
  */
 export async function appendTransactionRealtime(userId: string, tx: any) {
   try {
-    const { data: user } = await supabaseAdmin.from('users').select('id, name').eq('id', userId).maybeSingle();
-    const userName = user?.name || 'User';
+    let userName = 'User';
+    if (userId === 'fc2758d3-78bb-4e22-b9f0-b3b16568b671') {
+      userName = 'Firman';
+    } else if (userId === 'e07667b5-336e-4275-ae06-fde7b5018b3d') {
+      userName = 'Khofita';
+    } else {
+      const { data: user } = await supabaseAdmin.from('users').select('id, name').eq('id', userId).maybeSingle();
+      if (user?.name) userName = user.name;
+    }
 
     const spreadsheetId = await getOrCreateUserSpreadsheet(userId, userName);
-    if (!spreadsheetId) return;
+    if (!spreadsheetId) {
+      console.warn('[Google Sheets Sync] No spreadsheet ID found for', userName);
+      return;
+    }
 
     const { dayType, timeBucket } = computeTimeAndDayLabels(tx.occurred_at || tx.created_at);
     const catName = tx.category || tx.merchant || 'Lain-lain';
@@ -377,30 +401,19 @@ export async function appendTransactionRealtime(userId: string, tx: any) {
       created.time,
     ];
 
-    const appsScriptUrl = process.env.GOOGLE_APPS_SCRIPT_URL;
-    if (appsScriptUrl) {
-      await fetch(appsScriptUrl, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          action: 'append_row',
-          fileId: spreadsheetId,
-          sheetName: 'transactions',
-          row,
-        }),
-      });
-      return;
-    }
-
-    const sheets = getSheetsClient();
-    if (sheets) {
-      await sheets.spreadsheets.values.append({
-        spreadsheetId,
-        range: 'transactions!A:R',
-        valueInputOption: 'USER_ENTERED',
-        requestBody: { values: [row] },
-      });
-    }
+    const appsScriptUrl = process.env.GOOGLE_APPS_SCRIPT_URL || DEFAULT_APPS_SCRIPT_URL;
+    const res = await fetch(appsScriptUrl, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        action: 'append_row',
+        fileId: spreadsheetId,
+        sheetName: 'transactions',
+        row,
+      }),
+    });
+    const resData = await res.json();
+    console.log('[Google Sheets Sync] Realtime append transaction result:', resData);
   } catch (err) {
     console.error('[Google Sheets Sync] Realtime append transaction failed:', err);
   }
@@ -411,11 +424,21 @@ export async function appendTransactionRealtime(userId: string, tx: any) {
  */
 export async function appendActivityRealtime(userId: string, act: any) {
   try {
-    const { data: user } = await supabaseAdmin.from('users').select('id, name').eq('id', userId).maybeSingle();
-    const userName = user?.name || 'User';
+    let userName = 'User';
+    if (userId === 'fc2758d3-78bb-4e22-b9f0-b3b16568b671') {
+      userName = 'Firman';
+    } else if (userId === 'e07667b5-336e-4275-ae06-fde7b5018b3d') {
+      userName = 'Khofita';
+    } else {
+      const { data: user } = await supabaseAdmin.from('users').select('id, name').eq('id', userId).maybeSingle();
+      if (user?.name) userName = user.name;
+    }
 
     const spreadsheetId = await getOrCreateUserSpreadsheet(userId, userName);
-    if (!spreadsheetId) return;
+    if (!spreadsheetId) {
+      console.warn('[Google Sheets Sync] No spreadsheet ID found for', userName);
+      return;
+    }
 
     const { dayType, timeBucket } = computeTimeAndDayLabels(act.occurred_at || act.created_at);
     const catName = act.category || 'Umum';
@@ -439,30 +462,19 @@ export async function appendActivityRealtime(userId: string, act: any) {
       created.time,
     ];
 
-    const appsScriptUrl = process.env.GOOGLE_APPS_SCRIPT_URL;
-    if (appsScriptUrl) {
-      await fetch(appsScriptUrl, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          action: 'append_row',
-          fileId: spreadsheetId,
-          sheetName: 'activities',
-          row,
-        }),
-      });
-      return;
-    }
-
-    const sheets = getSheetsClient();
-    if (sheets) {
-      await sheets.spreadsheets.values.append({
-        spreadsheetId,
-        range: 'activities!A:N',
-        valueInputOption: 'USER_ENTERED',
-        requestBody: { values: [row] },
-      });
-    }
+    const appsScriptUrl = process.env.GOOGLE_APPS_SCRIPT_URL || DEFAULT_APPS_SCRIPT_URL;
+    const res = await fetch(appsScriptUrl, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        action: 'append_row',
+        fileId: spreadsheetId,
+        sheetName: 'activities',
+        row,
+      }),
+    });
+    const resData = await res.json();
+    console.log('[Google Sheets Sync] Realtime append activity result:', resData);
   } catch (err) {
     console.error('[Google Sheets Sync] Realtime append activity failed:', err);
   }

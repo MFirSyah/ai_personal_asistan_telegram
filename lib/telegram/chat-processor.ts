@@ -182,8 +182,8 @@ export async function processChatRespondDirect(
               occurred_at: parseSafeIsoDate(tx.occurred_at),
             });
 
-            // Real-time Google Sheets Stream Sync (background non-blocking)
-            appendTransactionRealtime(userId, tx).catch((err) => console.error('[Google Sheets Realtime Error]:', err));
+            // Real-time Google Sheets Stream Sync (awaits execution so Vercel Serverless does not terminate early)
+            await appendTransactionRealtime(userId, tx).catch((err) => console.error('[Google Sheets Realtime Error]:', err));
 
             // Real-time Financial Anomaly Detection
             const anomalyAlert = await checkTransactionAnomaly(userId, {
@@ -216,8 +216,8 @@ export async function processChatRespondDirect(
               occurred_at: parseSafeIsoDate(act.occurred_at),
             });
 
-            // Real-time Google Sheets Stream Sync (background non-blocking)
-            appendActivityRealtime(userId, act).catch((err) => console.error('[Google Sheets Realtime Error]:', err));
+            // Real-time Google Sheets Stream Sync (awaits execution so Vercel Serverless does not terminate early)
+            await appendActivityRealtime(userId, act).catch((err) => console.error('[Google Sheets Realtime Error]:', err));
 
             // Real-time Schedule Collision Detection
             const collisionAlert = await checkActivityCollision(userId, {
