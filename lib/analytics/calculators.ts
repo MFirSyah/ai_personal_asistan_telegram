@@ -85,7 +85,12 @@ export async function calculate20Analytics(userId: string): Promise<InsightItem[
     .filter((t) => t.type === 'expense' && t.occurred_at >= currentMonthStart)
     .reduce((sum, t) => sum + Number(t.amount || 0), 0);
 
-  const dailyBurnRate = currentMonthExpenses / currentDayOfMonth;
+  // Robust Weighted Historical Smoothing for Early Month Days (Day 1-5)
+  let dailyBurnRate = currentMonthExpenses / currentDayOfMonth;
+  if (currentDayOfMonth <= 5 && totalExpense > 0) {
+    const historical30dAvg = Math.max(20000, totalExpense / Math.max(30, transactions.length));
+    dailyBurnRate = dailyBurnRate * 0.3 + historical30dAvg * 0.7;
+  }
   const projectedMonthEndExpense = Math.round(currentMonthExpenses + dailyBurnRate * remainingDaysInMonth);
 
   // Fix #17: Real financial health score calculation based on Savings Ratio

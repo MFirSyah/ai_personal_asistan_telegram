@@ -6,8 +6,8 @@ export interface RateLimitCheckResult {
   retryAfterSeconds?: number;
 }
 
-const MINUTE_LIMIT = 7;
-const DAY_LIMIT = 700;
+const MINUTE_LIMIT = 15;
+const DAY_LIMIT = 1000;
 
 export async function checkAndUpdateRateLimit(userId: string): Promise<RateLimitCheckResult> {
   const now = new Date();

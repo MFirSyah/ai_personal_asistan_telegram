@@ -139,12 +139,12 @@ const DEFAULT_APPS_SCRIPT_URL = 'https://script.google.com/macros/s/AKfycbyUK_vC
  * Finds or creates a Google Spreadsheet file inside the user's dedicated GDrive Folder.
  */
 export async function getOrCreateUserSpreadsheet(userId: string, userName: string): Promise<string | null> {
-  let safeName = userName || 'User';
-  if (userId === 'fc2758d3-78bb-4e22-b9f0-b3b16568b671' || safeName.toLowerCase().includes('firman')) {
-    safeName = 'Firman';
-  } else if (userId === 'e07667b5-336e-4275-ae06-fde7b5018b3d' || safeName.toLowerCase().includes('khofita')) {
-    safeName = 'Khofita';
+  let safeName = userName && userName !== 'User' && userName !== 'Teman' ? userName : '';
+  if (!safeName) {
+    const { data: userProfile } = await supabaseAdmin.from('users').select('name, email').eq('id', userId).maybeSingle();
+    safeName = userProfile?.name || userProfile?.email?.split('@')[0] || 'User';
   }
+  safeName = safeName.replace(/[^a-zA-Z0-9_-]/g, '').trim() || 'User';
 
   const appsScriptUrl = process.env.GOOGLE_APPS_SCRIPT_URL || DEFAULT_APPS_SCRIPT_URL;
 
@@ -207,13 +207,11 @@ export async function getOrCreateUserSpreadsheet(userId: string, userName: strin
 export async function syncFullUserDataToGoogleSheet(userId: string): Promise<{ ok: boolean; fileId?: string; error?: string }> {
   try {
     let userName = 'User';
-    if (userId === 'fc2758d3-78bb-4e22-b9f0-b3b16568b671') {
-      userName = 'Firman';
-    } else if (userId === 'e07667b5-336e-4275-ae06-fde7b5018b3d') {
-      userName = 'Khofita';
-    } else {
-      const { data: user } = await supabaseAdmin.from('users').select('id, name').eq('id', userId).maybeSingle();
-      if (user?.name) userName = user.name;
+    const { data: user } = await supabaseAdmin.from('users').select('id, name, email').eq('id', userId).maybeSingle();
+    if (user?.name) {
+      userName = user.name;
+    } else if (user?.email) {
+      userName = user.email.split('@')[0];
     }
 
     const spreadsheetId = await getOrCreateUserSpreadsheet(userId, userName);
@@ -359,13 +357,11 @@ export async function syncFullUserDataToGoogleSheet(userId: string): Promise<{ o
 export async function appendTransactionRealtime(userId: string, tx: any) {
   try {
     let userName = 'User';
-    if (userId === 'fc2758d3-78bb-4e22-b9f0-b3b16568b671') {
-      userName = 'Firman';
-    } else if (userId === 'e07667b5-336e-4275-ae06-fde7b5018b3d') {
-      userName = 'Khofita';
-    } else {
-      const { data: user } = await supabaseAdmin.from('users').select('id, name').eq('id', userId).maybeSingle();
-      if (user?.name) userName = user.name;
+    const { data: user } = await supabaseAdmin.from('users').select('id, name, email').eq('id', userId).maybeSingle();
+    if (user?.name) {
+      userName = user.name;
+    } else if (user?.email) {
+      userName = user.email.split('@')[0];
     }
 
     const spreadsheetId = await getOrCreateUserSpreadsheet(userId, userName);
@@ -425,13 +421,11 @@ export async function appendTransactionRealtime(userId: string, tx: any) {
 export async function appendActivityRealtime(userId: string, act: any) {
   try {
     let userName = 'User';
-    if (userId === 'fc2758d3-78bb-4e22-b9f0-b3b16568b671') {
-      userName = 'Firman';
-    } else if (userId === 'e07667b5-336e-4275-ae06-fde7b5018b3d') {
-      userName = 'Khofita';
-    } else {
-      const { data: user } = await supabaseAdmin.from('users').select('id, name').eq('id', userId).maybeSingle();
-      if (user?.name) userName = user.name;
+    const { data: user } = await supabaseAdmin.from('users').select('id, name, email').eq('id', userId).maybeSingle();
+    if (user?.name) {
+      userName = user.name;
+    } else if (user?.email) {
+      userName = user.email.split('@')[0];
     }
 
     const spreadsheetId = await getOrCreateUserSpreadsheet(userId, userName);

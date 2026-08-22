@@ -38,6 +38,21 @@ export async function processReceiptDirect(
     // 2. Process image with Gemini Vision OCR
     const ocrResult = await processReceiptImage(imageBuffer, 'image/jpeg');
 
+    // 2.5 Validation: Filter out invalid / unreadable non-receipt photos
+    if (ocrResult.totalAmount <= 0 && (!ocrResult.items || ocrResult.items.length === 0)) {
+      if (chatId) {
+        let warnMsg = `❌ **STRUK TIDAK TERBACA DENGAN JELAS**
+
+`;
+        warnMsg += `Foto yang kamu kirimkan tidak terdeteksi sebagai struk belanja valid atau nominal tidak ditemukan.
+
+`;
+        warnMsg += `💡 *Tips:* Pastikan foto struk tidak blur, pencahayaan cukup, dan baris total pembayaran terlihat jelas ya!`;
+        await sendTelegramMessage(chatId, warnMsg);
+      }
+      return null;
+    }
+
     // 3. Categorize merchant into a broad expense category
     const userCats = await getUserCategories(userId);
     const existingCatNames = userCats.map((c) => c.name);

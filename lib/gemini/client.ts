@@ -6,8 +6,10 @@ export const ai = new GoogleGenAI({ apiKey });
 
 // Model chain yang eksklusif hanya menggunakan seri Lite berkuota tinggi (500 RPD & 15 RPM)
 export const MODEL_FALLBACK_CHAIN = [
-  'gemini-3.5-flash-lite', // Model Utama (500 RPD)
-  'gemini-3.1-flash-lite', // Model Cadangan (500 RPD)
+  'gemini-3.5-flash-lite', // Model Utama Ultra-Fast (500 RPD & 15 RPM)
+  'gemini-3.1-flash-lite', // Model Cadangan Lite (500 RPD)
+  'gemini-3.6-flash',      // Model Cadangan Flagship (Vision & Deep Reasoning)
+  'gemini-3.5-flash',      // Model Cadangan Kapasitas Tinggi
 ];
 
 export const PRIMARY_MODEL = MODEL_FALLBACK_CHAIN[0];

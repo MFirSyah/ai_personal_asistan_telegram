@@ -3,13 +3,20 @@ import { calculate20Analytics } from '../analytics/calculators';
 import { getRecentTransactions } from '../supabase/queries/transactions';
 import { supabaseAdmin } from '../supabase/client';
 
+function sanitizeForPdf(str: any): string {
+  if (!str) return '';
+  return String(str)
+    .replace(/[^\x20-\x7E]/g, '') // Keep standard printable ASCII
+    .trim();
+}
+
 export async function generateMonthlyPdfReport(userId: string): Promise<{
   buffer: Buffer;
   filename: string;
   caption: string;
 }> {
   const { data: user } = await supabaseAdmin.from('users').select('name').eq('id', userId).single();
-  const userName = user?.name || 'Pengguna';
+  const userName = sanitizeForPdf(user?.name) || 'Pengguna';
 
   const [insights, txs] = await Promise.all([
     calculate20Analytics(userId),
@@ -77,7 +84,7 @@ export async function generateMonthlyPdfReport(userId: string): Promise<{
         const typeStr = t.type === 'income' ? '[PEMASUKAN]' : '[PENGELUARAN]';
         const color = t.type === 'income' ? '#059669' : '#e11d48';
         const rawName = t.merchant || t.description || 'Transaksi';
-        const cleanName = rawName.replace(/[^\x00-\x7F]/g, '').trim() || 'Transaksi';
+        const cleanName = sanitizeForPdf(rawName) || 'Transaksi';
         doc
           .fillColor(color)
           .fontSize(9)
