@@ -110,29 +110,38 @@ export async function checkActivityCollision(
       .limit(5);
 
     if (nearbyActs && nearbyActs.length > 0) {
-      const conflict = nearbyActs[0];
-      let conflictDate = new Date(conflict.occurred_at);
-      if (isNaN(conflictDate.getTime())) conflictDate = new Date();
+      const actDateStr = actTime.toLocaleDateString('en-CA', { timeZone: 'Asia/Jakarta' });
 
-      let formattedTime = '00.00 WIB';
-      try {
-        formattedTime =
-          conflictDate.toLocaleTimeString('id-ID', {
-            hour: '2-digit',
-            minute: '2-digit',
-            timeZone: 'Asia/Jakarta',
-          }) + ' WIB';
-      } catch (tErr) {
-        formattedTime = `${String(conflictDate.getHours()).padStart(2, '0')}:${String(conflictDate.getMinutes()).padStart(2, '0')} WIB`;
+      for (const conflict of nearbyActs) {
+        let conflictDate = new Date(conflict.occurred_at);
+        if (isNaN(conflictDate.getTime())) conflictDate = new Date();
+
+        const conflictDateStr = conflictDate.toLocaleDateString('en-CA', { timeZone: 'Asia/Jakarta' });
+        // Only trigger collision if on the EXACT SAME calendar date in WIB
+        if (actDateStr !== conflictDateStr) {
+          continue;
+        }
+
+        let formattedTime = '00.00 WIB';
+        try {
+          formattedTime =
+            conflictDate.toLocaleTimeString('id-ID', {
+              hour: '2-digit',
+              minute: '2-digit',
+              timeZone: 'Asia/Jakarta',
+            }) + ' WIB';
+        } catch (tErr) {
+          formattedTime = `${String(conflictDate.getHours()).padStart(2, '0')}:${String(conflictDate.getMinutes()).padStart(2, '0')} WIB`;
+        }
+
+        return {
+          isCollision: true,
+          title: `⚠️ PERINGATAN JADWAL BENTROK (COLLISION)!`,
+          conflictingTitle: conflict.title,
+          conflictingTime: formattedTime,
+          message: `Agenda baru **"${newAct.title}"** berdekatan/berbenturan waktu dengan agenda lain: **"${conflict.title}"** (Jam ${formattedTime}). Harap atur ulang jamnya agar tidak berbenturan.`,
+        };
       }
-
-      return {
-        isCollision: true,
-        title: `⚠️ PERINGATAN JADWAL BENTROK (COLLISION)!`,
-        conflictingTitle: conflict.title,
-        conflictingTime: formattedTime,
-        message: `Agenda baru **"${newAct.title}"** berdekatan/berbenturan waktu dengan agenda lain: **"${conflict.title}"** (Jam ${formattedTime}). Harap atur ulang jamnya agar tidak berbenturan.`,
-      };
     }
 
     return null;

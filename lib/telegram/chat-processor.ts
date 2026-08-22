@@ -15,6 +15,7 @@ import {
   saveChatMessage,
   insertTransaction,
   insertActivity,
+  upsertPlan,
   softDeleteTransactionByCriteria,
   randomizeTransactionTimestamps,
   randomizeActivityTimestamps,
@@ -37,8 +38,9 @@ import { generateExportFile } from '@/lib/export/export-data';
 import { checkTransactionAnomaly, checkActivityCollision } from '@/lib/analytics/anomalies';
 import { supabaseAdmin } from '@/lib/supabase/client';
 
-function parseSafeIsoDate(dateStr?: string): string {
-  if (!dateStr || !dateStr.trim()) return new Date().toISOString();
+function parseSafeIsoDate(dateStr?: string, defaultTimestampMs?: number): string {
+  const fallbackDate = defaultTimestampMs ? new Date(defaultTimestampMs) : new Date();
+  if (!dateStr || !dateStr.trim()) return fallbackDate.toISOString();
 
   const str = dateStr.trim();
 
@@ -57,7 +59,7 @@ function parseSafeIsoDate(dateStr?: string): string {
     const matchIndo = cleanStr.match(/^(\d{1,2})[-/](\d{1,2})[-/](\d{4})(?:[T\s](\d{1,2}):(\d{1,2}))?/);
 
     let year: number, month: number, day: number, wibHour: number, wibMin: number;
-    const now = new Date();
+    const now = defaultTimestampMs ? new Date(defaultTimestampMs) : new Date();
 
     if (matchIso) {
       year = parseInt(matchIso[1], 10);
@@ -74,14 +76,14 @@ function parseSafeIsoDate(dateStr?: string): string {
     } else {
       const d = new Date(str);
       if (!isNaN(d.getTime())) return d.toISOString();
-      return new Date().toISOString();
+      return fallbackDate.toISOString();
     }
 
     // Convert WIB hour to UTC hour (wibHour - 7)
     const d = new Date(Date.UTC(year, month, day, wibHour - 7, wibMin));
     if (!isNaN(d.getTime())) {
       if (d.getMonth() === 0 && d.getDate() === 1 && d.getUTCHours() === 0 && d.getUTCMinutes() === 0) {
-        return new Date().toISOString();
+        return fallbackDate.toISOString();
       }
       return d.toISOString();
     }
@@ -89,14 +91,15 @@ function parseSafeIsoDate(dateStr?: string): string {
     // Fallback to current time
   }
 
-  return new Date().toISOString();
+  return fallbackDate.toISOString();
 }
 
 export async function processChatRespondDirect(
   userId: string,
   chatId: number | string,
   userMessage: string,
-  userName?: string
+  userName?: string,
+  messageTimestampMs?: number
 ) {
   try {
     // Send typing action immediately
@@ -179,7 +182,7 @@ export async function processChatRespondDirect(
               location: tx.location,
               items: tx.items || [],
               tags: tx.tags || [],
-              occurred_at: parseSafeIsoDate(tx.occurred_at),
+              occurred_at: parseSafeIsoDate(tx.occurred_at, messageTimestampMs),
             });
 
             // Real-time Google Sheets Stream Sync (awaits execution so Vercel Serverless does not terminate early)
@@ -213,7 +216,7 @@ export async function processChatRespondDirect(
               status: act.status || 'scheduled',
               priority: act.priority || 'medium',
               tags: act.tags || [],
-              occurred_at: parseSafeIsoDate(act.occurred_at),
+              occurred_at: parseSafeIsoDate(act.occurred_at, messageTimestampMs),
             });
 
             // Real-time Google Sheets Stream Sync (awaits execution so Vercel Serverless does not terminate early)
@@ -229,6 +232,37 @@ export async function processChatRespondDirect(
             }
           } catch (actErr) {
             console.error('Error inserting individual activity:', actErr);
+          }
+        }
+      }
+
+      
+      // Plans — support array of life / trip / financial plans (0% Hallucination)
+      const planList = (ext as any).plans || ((ext as any).plan ? [(ext as any).plan] : []);
+      for (const p of planList) {
+        if (p && p.title) {
+          try {
+            let desc = p.description || '';
+            if (p.budget_breakdown && Array.isArray(p.budget_breakdown)) {
+              const breakdownStr = p.budget_breakdown.map((b: any) => `${b.item}: Rp ${Number(b.amount || 0).toLocaleString('id-ID')}`).join(', ');
+              desc = desc ? `${desc} | Rincian: ${breakdownStr}` : `Rincian: ${breakdownStr}`;
+            }
+            if (p.budget_total) {
+              desc = `${desc} | Total Budget: Rp ${Number(p.budget_total).toLocaleString('id-ID')}`;
+            }
+            if (p.strategy) {
+              desc = `${desc} | Strategi: ${p.strategy}`;
+            }
+
+            await upsertPlan(userId, {
+              user_id: userId,
+              title: p.title,
+              description: desc.trim(),
+              target_date: p.target_date,
+              status: p.status || 'planned',
+            });
+          } catch (planErr) {
+            console.error('Error saving plan to Supabase:', planErr);
           }
         }
       }
@@ -485,7 +519,12 @@ if ((ext as any).reconcile_wallet_balances && chatId) {
       if (result.location) {
         await sendTelegramLocation(chatId, result.location.lat, result.location.lng);
       }
-      if (result.follow_up_question) {
+      // Anti-duplicate bubble dispatch: only send if non-empty AND not already in message bubble
+      if (
+        result.follow_up_question &&
+        result.follow_up_question.trim().length > 0 &&
+        !result.messages?.some((m: string) => m.toLowerCase().includes(result.follow_up_question!.trim().toLowerCase()))
+      ) {
         await sendTelegramMessage(chatId, result.follow_up_question);
       }
     }

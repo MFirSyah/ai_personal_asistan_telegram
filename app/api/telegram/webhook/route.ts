@@ -165,7 +165,8 @@ export async function POST(req: NextRequest) {
         user.id,
         chatId,
         text,
-        user.name || message.from.first_name
+        user.name || message.from.first_name,
+        message.date ? message.date * 1000 : undefined
       );
     }
   });

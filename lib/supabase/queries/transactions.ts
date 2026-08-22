@@ -113,6 +113,36 @@ export async function insertActivity(activity: Partial<Activity>): Promise<Activ
   return data as Activity;
 }
 
+export async function upsertPlan(userId: string, plan: Partial<Plan>): Promise<Plan> {
+  const cleanTitle = (plan.title || '').trim();
+  const searchKeyword = cleanTitle.split(' ')[0] || cleanTitle;
+
+  const { data: existing } = await supabaseAdmin
+    .from('plans')
+    .select('id')
+    .eq('user_id', userId)
+    .ilike('title', `%${searchKeyword}%`)
+    .in('status', ['planned', 'in_progress'])
+    .limit(1);
+
+  if (existing && existing.length > 0) {
+    const { data: updated, error } = await supabaseAdmin
+      .from('plans')
+      .update({
+        title: plan.title,
+        description: plan.description,
+        target_date: plan.target_date,
+        status: plan.status || 'planned',
+      })
+      .eq('id', existing[0].id)
+      .select()
+      .single();
+    if (!error && updated) return updated as Plan;
+  }
+
+  return insertPlan({ ...plan, user_id: userId });
+}
+
 export async function insertPlan(plan: Partial<Plan>): Promise<Plan> {
   const { data, error } = await supabaseAdmin
     .from('plans')
