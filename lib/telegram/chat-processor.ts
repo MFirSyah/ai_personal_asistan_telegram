@@ -162,14 +162,52 @@ export async function processChatRespondDirect(
     // ⚡ FAST-PATH TELEGRAM DISPATCH (<2s): Send message bubbles to user IMMEDIATELY!
     // =========================================================================
     if (chatId) {
-      // 1. Send Intro Bubble Messages
-      if (result.messages && result.messages.length > 0) {
-        sendTelegramMessageBubbles(chatId, result.messages, 150).catch(console.error);
+      // 2. Evaluate Multi-Location Interactive Cards (Each location in its own bubble with Google Maps Button)
+      let effectiveLocations = result.locations && Array.isArray(result.locations) ? result.locations : [];
+
+      // Smart Fallback Splitter: If AI wrote multiple bullet places in message text instead of filling locations array
+      if (effectiveLocations.length === 0 && result.messages && result.messages.length > 0) {
+        const fullMsg = result.messages.join('\n');
+        const bulletMatches = fullMsg.split(/\n(?=[•\-\*]\s*[\p{Emoji}\w])/u).filter(b => b.trim().startsWith('•') || b.trim().startsWith('-') || b.trim().startsWith('*'));
+        if (bulletMatches.length >= 2) {
+          effectiveLocations = bulletMatches.map((b, i) => {
+            const cleaned = b.replace(/^[•\-\*]\s*/, '').trim();
+            const nameMatch = cleaned.match(/\*\*(.*?)\*\*/);
+            const name = nameMatch ? nameMatch[1].replace(/^[\p{Emoji}\s]+/u, '').replace(/:$/, '').trim() : `Rekomendasi ${i + 1}`;
+            return {
+              name,
+              category: 'Rekomendasi Pilihan',
+              address: 'Lokasi Strategis',
+              lat: 0,
+              lng: 0,
+              description: cleaned,
+              highlights: cleaned,
+              price_range: 'Standar / Terjangkau',
+              google_maps_url: `https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(name)}`
+            };
+          });
+        }
       }
 
-      // 2. Send Multi-Location Interactive Cards (Each location in its own bubble with Google Maps Button)
-      if (result.locations && Array.isArray(result.locations) && result.locations.length > 0) {
-        const locList = result.locations.slice(0, 20); // Cap at max 20 places
+      // 1. Send Intro Bubble Messages (Cleaned of duplicate bullet lists if locations cards are active)
+      if (result.messages && result.messages.length > 0) {
+        let introMessages = result.messages;
+        if (effectiveLocations.length > 0) {
+          introMessages = result.messages.map((m: string) => {
+            const bulletIdx = m.search(/\n\s*[•\-\*]\s*[\p{Emoji}\w]/u);
+            if (bulletIdx !== -1) {
+              return m.substring(0, bulletIdx).trim();
+            }
+            return m.replace(/\[🗺️ Buka Google Maps\].*$/gi, '').trim();
+          }).filter((m: string) => m.length > 0);
+        }
+        if (introMessages.length > 0) {
+          sendTelegramMessageBubbles(chatId, introMessages, 150).catch(console.error);
+        }
+      }
+
+      if (effectiveLocations.length > 0) {
+        const locList = effectiveLocations.slice(0, 20); // Cap at max 20 places
         (async () => {
           for (let idx = 0; idx < locList.length; idx++) {
             const loc = locList[idx];
@@ -181,7 +219,7 @@ export async function processChatRespondDirect(
             if (loc.highlights || loc.description) card += `💡 **Daya Tarik**: ${loc.highlights || loc.description}\n`;
             if (loc.price_range) card += `💵 **Estimasi Biaya**: ${loc.price_range}\n`;
 
-            const mapsQuery = loc.lat && loc.lng
+            const mapsQuery = loc.lat && loc.lng && loc.lat !== 0
               ? `${loc.lat},${loc.lng}`
               : encodeURIComponent(`${loc.name} ${loc.address || ''}`);
             const mapsUrl = loc.google_maps_url || `https://www.google.com/maps/search/?api=1&query=${mapsQuery}`;
