@@ -276,6 +276,15 @@ Bab ini memuat dokumentasi mendalam (*post-mortem*) mengenai setiap kesalahan ya
   2. Memastikan seluruh kartu (mulai nomor 1 hingga 20) selesai dikirimkan ke Telegram Bot API sebelum fungsi serverless menutup siklus hidupnya.
 
 
+
+### 2.19 Pembatasan Jumlah Item Rekomendasi Tempat Akibat 1-Item Example pada Template Prompt AI
+- **Gejala Kesalahan:** Ketika pengguna menanyakan tempat menarik, sentra kuliner, atau kantor terkenal (*"kantor kantor terkenal di jakarta apa saja"*), AI hanya menghasilkan 1 kartu lokasi saja (bukan 5 tempat).
+- **Akar Masalah Teknis:** Contoh JSON pada `buildFullPrompt` di `lib/gemini/prompts/chat.ts` hanya menyertakan 1 objek contoh di dalam array `locations: [{ "name": "Alun-Alun Tugu Malang" }]`. Model LLM Gemini secara otomatis meniru (*few-shot mirroring*) panjang array dari contoh tersebut sehingga hanya membuat 1 item saja.
+- **Solusi Permanen yang Telah Diterapkan:**
+  1. Memperluas skema contoh JSON pada prompt menjadi 5 objek tempat lengkap.
+  2. Menambahkan mandat eksplisit pada Aturan 23: *"WAJIB MENGHASILKAN MINIMAL 5 TEMPAT/DESTINASI BERBEDA pada array `locations` secara default (hingga maksimal 20 tempat jika diminta)"*.
+
+
 ## 📅 BAB III: KRONOLOGI LENGKAP PERCAKAPAN, PERMINTAAN USER & EVOLUSI SISTEM
 
 ### 3.1 Fase 1: Setup Fondasi Dasar (12–15 Agustus 2026)

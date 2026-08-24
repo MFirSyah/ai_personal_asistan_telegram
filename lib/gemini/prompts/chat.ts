@@ -302,6 +302,50 @@ Format JSON (WAJIB MURNI JSON):
       "highlights": "Kolam teratai, spot foto tugu, area jalan santai",
       "price_range": "Gratis (Parkir Rp 2.000)",
       "google_maps_url": "https://www.google.com/maps/search/?api=1&query=-7.9772,112.6341"
+    },
+    {
+      "name": "Kampung Warna-Warni Jodipan",
+      "category": "Wisata Edukasi & Spot Foto",
+      "address": "Gang 1, Jodipan, Blimbing, Kota Malang",
+      "lat": -7.9835,
+      "lng": 112.6375,
+      "description": "Perkampungan tematik di bantaran sungai dengan jembatan kaca ikonik.",
+      "highlights": "Jembatan kaca, lorong warna-warni, lukisan 3D",
+      "price_range": "Tiket Masuk Rp 5.000",
+      "google_maps_url": "https://www.google.com/maps/search/?api=1&query=-7.9835,112.6375"
+    },
+    {
+      "name": "Kawasan Kayutangan Heritage",
+      "category": "Wisata Sejarah & Kafe Retro",
+      "address": "Jl. Jenderal Basuki Rahmat, Kauman, Klojen, Kota Malang",
+      "lat": -7.9788,
+      "lng": 112.6301,
+      "description": "Pusat kawasan kota tua dengan deretan kafe estetik tempo dulu dan arsitektur kolonial.",
+      "highlights": "Bangunan kolonial, kafe vintage, spot jalan malam",
+      "price_range": "Area Publik Gratis (F&B Rp 15.000 - Rp 40.000)",
+      "google_maps_url": "https://www.google.com/maps/search/?api=1&query=-7.9788,112.6301"
+    },
+    {
+      "name": "Pasar Senggol Kuliner Malam Oro-Oro Dowo",
+      "category": "Pusat Kuliner Legendaris",
+      "address": "Jl. Guntur No.20, Oro-oro Dowo, Klojen, Kota Malang",
+      "lat": -7.9701,
+      "lng": 112.6288,
+      "description": "Sentra kuliner legendaris dengan aneka jajanan pasar, bakso bakar, dan wedang ronde.",
+      "highlights": "Jajanan tradisional, bakso bakar legendaris, wedang jahe",
+      "price_range": "Rp 10.000 - Rp 25.000",
+      "google_maps_url": "https://www.google.com/maps/search/?api=1&query=-7.9701,112.6288"
+    },
+    {
+      "name": "Museum Angkut & Jatim Park Zone",
+      "category": "Wisata Rekreasi & Transportasi",
+      "address": "Jl. Terusan Sultan Agung No.2, Ngaglik, Kota Batu",
+      "lat": -7.8785,
+      "lng": 112.5186,
+      "description": "Museum transportasi modern pertama di Asia Tenggara dengan zona tematik dunia.",
+      "highlights": "Koleksi mobil klasik dunia, zona Gangster Broadway, pasar apung",
+      "price_range": "Tiket Masuk Rp 100.000 - Rp 120.000",
+      "google_maps_url": "https://www.google.com/maps/search/?api=1&query=-7.8785,112.5186"
     }
   ],
   "sources": []
@@ -517,6 +561,50 @@ FORMAT OUTPUT (WAJIB JSON VALID TANPA MARKDOWN BACKTICKS):
       "highlights": "Kolam teratai, spot foto tugu, area jalan santai",
       "price_range": "Gratis (Parkir Rp 2.000)",
       "google_maps_url": "https://www.google.com/maps/search/?api=1&query=-7.9772,112.6341"
+    },
+    {
+      "name": "Kampung Warna-Warni Jodipan",
+      "category": "Wisata Edukasi & Spot Foto",
+      "address": "Gang 1, Jodipan, Blimbing, Kota Malang",
+      "lat": -7.9835,
+      "lng": 112.6375,
+      "description": "Perkampungan tematik di bantaran sungai dengan jembatan kaca ikonik.",
+      "highlights": "Jembatan kaca, lorong warna-warni, lukisan 3D",
+      "price_range": "Tiket Masuk Rp 5.000",
+      "google_maps_url": "https://www.google.com/maps/search/?api=1&query=-7.9835,112.6375"
+    },
+    {
+      "name": "Kawasan Kayutangan Heritage",
+      "category": "Wisata Sejarah & Kafe Retro",
+      "address": "Jl. Jenderal Basuki Rahmat, Kauman, Klojen, Kota Malang",
+      "lat": -7.9788,
+      "lng": 112.6301,
+      "description": "Pusat kawasan kota tua dengan deretan kafe estetik tempo dulu dan arsitektur kolonial.",
+      "highlights": "Bangunan kolonial, kafe vintage, spot jalan malam",
+      "price_range": "Area Publik Gratis (F&B Rp 15.000 - Rp 40.000)",
+      "google_maps_url": "https://www.google.com/maps/search/?api=1&query=-7.9788,112.6301"
+    },
+    {
+      "name": "Pasar Senggol Kuliner Malam Oro-Oro Dowo",
+      "category": "Pusat Kuliner Legendaris",
+      "address": "Jl. Guntur No.20, Oro-oro Dowo, Klojen, Kota Malang",
+      "lat": -7.9701,
+      "lng": 112.6288,
+      "description": "Sentra kuliner legendaris dengan aneka jajanan pasar, bakso bakar, dan wedang ronde.",
+      "highlights": "Jajanan tradisional, bakso bakar legendaris, wedang jahe",
+      "price_range": "Rp 10.000 - Rp 25.000",
+      "google_maps_url": "https://www.google.com/maps/search/?api=1&query=-7.9701,112.6288"
+    },
+    {
+      "name": "Museum Angkut & Jatim Park Zone",
+      "category": "Wisata Rekreasi & Transportasi",
+      "address": "Jl. Terusan Sultan Agung No.2, Ngaglik, Kota Batu",
+      "lat": -7.8785,
+      "lng": 112.5186,
+      "description": "Museum transportasi modern pertama di Asia Tenggara dengan zona tematik dunia.",
+      "highlights": "Koleksi mobil klasik dunia, zona Gangster Broadway, pasar apung",
+      "price_range": "Tiket Masuk Rp 100.000 - Rp 120.000",
+      "google_maps_url": "https://www.google.com/maps/search/?api=1&query=-7.8785,112.5186"
     }
   ],
   "sources": []
