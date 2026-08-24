@@ -257,6 +257,16 @@ Bab ini memuat dokumentasi mendalam (*post-mortem*) mengenai setiap kesalahan ya
 
 ---
 
+
+### 2.17 Kegagalan Passing Object `locations` pada Return `runChatOrchestration`
+- **Gejala Kesalahan:** Ketika pengguna meminta daftar rekomendasi tempat di suatu kota (misal *"Di kota Malang ada apa saja?"*), bot masih membalas dalam 1 bubble teks panjang disertai 1 gambar peta statis raksasa Telegram.
+- **Akar Masalah Teknis:** Properti `locations: parsed.locations || null` belum disertakan di objek return `runChatOrchestration` pada `lib/gemini/prompts/chat.ts`, sehingga `result.locations` di `chat-processor.ts` selalu bernilai `undefined` dan memicu fallback peta tunggal `sendTelegramLocation`.
+- **Solusi Permanen yang Telah Diterapkan:**
+  1. Menambahkan `locations: parsed.locations` secara eksplisit pada return statement `runChatOrchestration`.
+  2. Menonaktifkan `sendTelegramLocation` jika rekomendasi multi-tempat aktif.
+  3. Menyaring teks pengantar (`introMessages`) agar daftar poin dipotong dan hanya dikirimkan melalui kartu bubble Google Maps terpisah.
+
+
 ## 📅 BAB III: KRONOLOGI LENGKAP PERCAKAPAN, PERMINTAAN USER & EVOLUSI SISTEM
 
 ### 3.1 Fase 1: Setup Fondasi Dasar (12–15 Agustus 2026)

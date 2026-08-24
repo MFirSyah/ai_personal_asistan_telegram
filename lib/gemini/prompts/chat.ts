@@ -592,7 +592,8 @@ export async function runChatOrchestration(
       extracted_data: parsed.extracted_data || null,
       reasoning: parsed.reasoning || '',
       chart: parsed.chart || null,
-      location: parsed.location || null,
+      location: (parsed.locations && Array.isArray(parsed.locations) && parsed.locations.length > 0) ? null : (parsed.location || null),
+      locations: parsed.locations && Array.isArray(parsed.locations) ? parsed.locations : null,
       sources: parsed.sources || [],
     };
   } catch (error: any) {

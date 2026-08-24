@@ -162,11 +162,12 @@ export async function processChatRespondDirect(
     // ⚡ FAST-PATH TELEGRAM DISPATCH (<2s): Send message bubbles to user IMMEDIATELY!
     // =========================================================================
     if (chatId) {
-      // 2. Evaluate Multi-Location Interactive Cards (Each location in its own bubble with Google Maps Button)
-      let effectiveLocations = result.locations && Array.isArray(result.locations) ? result.locations : [];
-
-      // Smart Fallback Splitter: If AI wrote multiple bullet places in message text instead of filling locations array
-      if (effectiveLocations.length === 0 && result.messages && result.messages.length > 0) {
+      // 1. Evaluate Multi-Location Interactive Cards (Each location in its own bubble with Google Maps Button)
+      let effectiveLocations: any[] = [];
+      if (result.locations && Array.isArray(result.locations) && result.locations.length > 0) {
+        effectiveLocations = result.locations;
+      } else if (result.messages && result.messages.length > 0) {
+        // Smart Splitter Fallback: If AI put multiple bullet points into message text
         const fullMsg = result.messages.join('\n');
         const bulletMatches = fullMsg.split(/\n(?=[•\-\*]\s*[\p{Emoji}\w])/u).filter(b => b.trim().startsWith('•') || b.trim().startsWith('-') || b.trim().startsWith('*'));
         if (bulletMatches.length >= 2) {
@@ -189,7 +190,7 @@ export async function processChatRespondDirect(
         }
       }
 
-      // 1. Send Intro Bubble Messages (Cleaned of duplicate bullet lists if locations cards are active)
+      // 2. Send Clean Intro Message (Remove huge inline bullet lists so cards can be sent individually)
       if (result.messages && result.messages.length > 0) {
         let introMessages = result.messages;
         if (effectiveLocations.length > 0) {
@@ -198,7 +199,7 @@ export async function processChatRespondDirect(
             if (bulletIdx !== -1) {
               return m.substring(0, bulletIdx).trim();
             }
-            return m.replace(/\[🗺️ Buka Google Maps\].*$/gi, '').trim();
+            return m.replace(/\[🗺️ Buka Google Maps\].*$/gi, '').replace(/🗺️ Buka Google Maps.*$/gi, '').trim();
           }).filter((m: string) => m.length > 0);
         }
         if (introMessages.length > 0) {
@@ -206,8 +207,9 @@ export async function processChatRespondDirect(
         }
       }
 
+      // 3. Dispatch Individual Location Cards (<20 items) with Google Maps button
       if (effectiveLocations.length > 0) {
-        const locList = effectiveLocations.slice(0, 20); // Cap at max 20 places
+        const locList = effectiveLocations.slice(0, 20);
         (async () => {
           for (let idx = 0; idx < locList.length; idx++) {
             const loc = locList[idx];
@@ -238,17 +240,17 @@ export async function processChatRespondDirect(
         })().catch((err) => console.error('Error dispatching location cards:', err));
       }
 
-      // 3. Send Chart if present
+      // 4. Send Chart if present
       if (result.chart) {
         sendTelegramChart(chatId, result.chart, result.chart.title || 'Visualisasi Grafik').catch(console.error);
       }
 
-      // 4. Send Single Location if present (fallback)
-      if (result.location && (!result.locations || result.locations.length === 0)) {
+      // 5. Send Single Location if present AND no multi-locations
+      if (result.location && effectiveLocations.length === 0) {
         sendTelegramLocation(chatId, result.location.lat, result.location.lng).catch(console.error);
       }
 
-      // 5. Anti-duplicate bubble dispatch: only send if non-empty AND not already in message bubble
+      // 6. Anti-duplicate follow-up dispatch
       if (
         result.follow_up_question &&
         result.follow_up_question.trim().length > 0 &&
