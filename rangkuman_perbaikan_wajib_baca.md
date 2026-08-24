@@ -285,6 +285,16 @@ Bab ini memuat dokumentasi mendalam (*post-mortem*) mengenai setiap kesalahan ya
   2. Menambahkan mandat eksplisit pada Aturan 23: *"WAJIB MENGHASILKAN MINIMAL 5 TEMPAT/DESTINASI BERBEDA pada array `locations` secara default (hingga maksimal 20 tempat jika diminta)"*.
 
 
+
+### 2.20 Resilient Multi-Location Resolver & Fallback Splitter 100% Anti-Truncation
+- **Gejala Kesalahan:** Ketika pengguna menanyakan daftar kantor atau kuliner (*"kantor kantor terkenal di jakarta apa saja"*), sistem hanya mengirimkan 1 kartu dan mengabaikan sisa daftar tempat.
+- **Akar Masalah Teknis:** LLM Gemini cenderung menghasilkan daftar tempat berupa bullet points di dalam teks pesan (`messages`), namun hanya mengisi 1 item pertama pada array terstruktur `locations`. Logika dispatcher lama hanya membaca salah satu (jika `locations` ada 1 item, maka fallback pemecah bullet point tidak berjalan).
+- **Solusi Permanen yang Telah Diterapkan:**
+  1. Mengimplementasikan *Dual-Engine Location Resolver*: Sistem mengevaluasi baik array terstruktur `locations` maupun poin-poin daftar pada teks pesan `messages`.
+  2. Secara otomatis memilih daftar yang paling lengkap dan mengekstrak seluruh tempat (4 s.d. 5 tempat, atau hingga 20 jika diminta).
+  3. Mengawinkan (*cross-match*) nama tempat hasil ekstrak dengan koordinat GPS dan URL Google Maps resmi.
+
+
 ## 📅 BAB III: KRONOLOGI LENGKAP PERCAKAPAN, PERMINTAAN USER & EVOLUSI SISTEM
 
 ### 3.1 Fase 1: Setup Fondasi Dasar (12–15 Agustus 2026)

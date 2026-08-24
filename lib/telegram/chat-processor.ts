@@ -164,31 +164,48 @@ export async function processChatRespondDirect(
     if (chatId) {
       // 1. Evaluate Multi-Location Interactive Cards (Each location in its own bubble with Google Maps Button)
       let effectiveLocations: any[] = [];
-      if (result.locations && Array.isArray(result.locations) && result.locations.length > 0) {
-        effectiveLocations = result.locations;
-      } else if (result.messages && result.messages.length > 0) {
-        // Smart Splitter Fallback: If AI put multiple bullet points into message text
+      
+      // Check if message text has bullet point places (e.g. • 🏢 **SCBD**, • 🍲 **Pusat Kuliner**)
+      let bulletLocations: any[] = [];
+      if (result.messages && result.messages.length > 0) {
         const fullMsg = result.messages.join('\n');
-        const bulletMatches = fullMsg.split(/\n(?=[•\-\*]\s*[\p{Emoji}\w])/u).filter(b => b.trim().startsWith('•') || b.trim().startsWith('-') || b.trim().startsWith('*'));
+        // Split on newlines preceding a bullet
+        const bulletMatches = fullMsg
+          .split(/\n(?=[•\-\*]\s*[\p{Emoji}\w])/u)
+          .filter(b => b.trim().startsWith('•') || b.trim().startsWith('-') || b.trim().startsWith('*'));
+
         if (bulletMatches.length >= 2) {
-          effectiveLocations = bulletMatches.map((b, i) => {
+          bulletLocations = bulletMatches.map((b, i) => {
             const cleaned = b.replace(/^[•\-\*]\s*/, '').trim();
             const nameMatch = cleaned.match(/\*\*(.*?)\*\*/);
             const name = nameMatch ? nameMatch[1].replace(/^[\p{Emoji}\s]+/u, '').replace(/:$/, '').trim() : `Rekomendasi ${i + 1}`;
             const desc = cleaned.replace(/^[\p{Emoji}\s]*\*\*.*?\*\*[:\s]*/u, '').trim() || cleaned;
+            
+            // Try to match with any coordinates returned in result.locations
+            const matchedLoc = result.locations?.find((l: any) => l.name && (l.name.toLowerCase().includes(name.toLowerCase()) || name.toLowerCase().includes(l.name.toLowerCase())));
+            
             return {
               name,
-              category: 'Rekomendasi Pilihan',
-              address: 'Lokasi Strategis',
-              lat: 0,
-              lng: 0,
+              category: matchedLoc?.category || 'Rekomendasi Pilihan',
+              address: matchedLoc?.address || 'Lokasi Strategis',
+              lat: matchedLoc?.lat || 0,
+              lng: matchedLoc?.lng || 0,
               description: desc,
-              highlights: desc,
-              price_range: 'Standar / Terjangkau',
-              google_maps_url: `https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(name)}`
+              highlights: matchedLoc?.highlights || desc,
+              price_range: matchedLoc?.price_range || 'Standar / Terjangkau',
+              google_maps_url: matchedLoc?.google_maps_url || (matchedLoc?.lat && matchedLoc?.lng ? `https://www.google.com/maps/search/?api=1&query=${matchedLoc.lat},${matchedLoc.lng}` : `https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(name)}`)
             };
           });
         }
+      }
+
+      // Prioritize whichever list has the most complete places (structured locations array vs bullet points in text)
+      if (result.locations && Array.isArray(result.locations) && result.locations.length >= 2 && result.locations.length >= bulletLocations.length) {
+        effectiveLocations = result.locations;
+      } else if (bulletLocations.length >= 2) {
+        effectiveLocations = bulletLocations;
+      } else if (result.locations && Array.isArray(result.locations) && result.locations.length > 0) {
+        effectiveLocations = result.locations;
       }
 
       // 2. Send Clean Intro Message (Remove huge inline bullet lists so cards can be sent individually)
