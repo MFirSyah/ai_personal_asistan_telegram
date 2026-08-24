@@ -540,6 +540,21 @@ function sanitizeForPdf(str: any): string {
 
 ---
 
+
+### 4.14 Fitur Rekomendasi Tempat & Eksplorasi Kota Multi-Bubble Google Maps (`locations`)
+- **Fungsi**: Ketika pengguna menanyakan tempat, wisata, kuliner, kafe, atau eksplorasi di suatu kota/wilayah (contoh: *"Di Malang ada apa saja?"*):
+  1. AI menghasilkan default **5 tempat terbaik & ikonik** (bisa dikustomisasi pengguna hingga **maksimal 20 tempat**).
+  2. Mengirimkan **1 bubble kartu terpisah per tempat** dengan format:
+     ```text
+     📍 **1. ALUN-ALUN TUGU MALANG**
+     🏛️ **Kategori**: Wisata Sejarah & Ikon Kota
+     📌 **Alamat**: Jl. Tugu, Kiduldalem, Klojen, Kota Malang
+     💡 **Daya Tarik**: Monumen Tugu bersejarah dikelilingi kolam teratai indah...
+     💵 **Estimasi Biaya**: Gratis (Parkir Rp 2.000 - Rp 5.000)
+     ```
+  3. Dilengkapi tombol Inline Keyboard interaktif: `[ 🗺️ Buka di Google Maps ]` dengan URL GPS koordinat (`lat,lng`) presisi asli Google Maps.
+
+
 ## 💰 BAB V: FAKTA KUNCI KEUANGAN, DOMPET, PINJAMAN & RENCANA HIDUP PENGGUNA
 
 ### 5.1 Struktur Saldo & Karakteristik Peranakan Dompet

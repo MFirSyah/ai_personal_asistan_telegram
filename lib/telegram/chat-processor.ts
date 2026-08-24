@@ -162,16 +162,55 @@ export async function processChatRespondDirect(
     // ⚡ FAST-PATH TELEGRAM DISPATCH (<2s): Send message bubbles to user IMMEDIATELY!
     // =========================================================================
     if (chatId) {
+      // 1. Send Intro Bubble Messages
       if (result.messages && result.messages.length > 0) {
         sendTelegramMessageBubbles(chatId, result.messages, 150).catch(console.error);
       }
+
+      // 2. Send Multi-Location Interactive Cards (Each location in its own bubble with Google Maps Button)
+      if (result.locations && Array.isArray(result.locations) && result.locations.length > 0) {
+        const locList = result.locations.slice(0, 20); // Cap at max 20 places
+        (async () => {
+          for (let idx = 0; idx < locList.length; idx++) {
+            const loc = locList[idx];
+            if (!loc || !loc.name) continue;
+
+            let card = `📍 **${idx + 1}. ${loc.name.toUpperCase()}**\n`;
+            if (loc.category) card += `🏛️ **Kategori**: ${loc.category}\n`;
+            if (loc.address) card += `📌 **Alamat**: ${loc.address}\n`;
+            if (loc.highlights || loc.description) card += `💡 **Daya Tarik**: ${loc.highlights || loc.description}\n`;
+            if (loc.price_range) card += `💵 **Estimasi Biaya**: ${loc.price_range}\n`;
+
+            const mapsQuery = loc.lat && loc.lng
+              ? `${loc.lat},${loc.lng}`
+              : encodeURIComponent(`${loc.name} ${loc.address || ''}`);
+            const mapsUrl = loc.google_maps_url || `https://www.google.com/maps/search/?api=1&query=${mapsQuery}`;
+
+            const replyMarkup = {
+              inline_keyboard: [
+                [{ text: '🗺️ Buka di Google Maps', url: mapsUrl }]
+              ]
+            };
+
+            await sendTelegramMessage(chatId, card.trim(), replyMarkup);
+            if (idx < locList.length - 1) {
+              await new Promise((r) => setTimeout(r, 150));
+            }
+          }
+        })().catch((err) => console.error('Error dispatching location cards:', err));
+      }
+
+      // 3. Send Chart if present
       if (result.chart) {
         sendTelegramChart(chatId, result.chart, result.chart.title || 'Visualisasi Grafik').catch(console.error);
       }
-      if (result.location) {
+
+      // 4. Send Single Location if present (fallback)
+      if (result.location && (!result.locations || result.locations.length === 0)) {
         sendTelegramLocation(chatId, result.location.lat, result.location.lng).catch(console.error);
       }
-      // Anti-duplicate bubble dispatch: only send if non-empty AND not already in message bubble
+
+      // 5. Anti-duplicate bubble dispatch: only send if non-empty AND not already in message bubble
       if (
         result.follow_up_question &&
         result.follow_up_question.trim().length > 0 &&

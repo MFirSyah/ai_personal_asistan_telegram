@@ -136,6 +136,17 @@ export interface ChatOrchestrationResult {
     lat: number;
     lng: number;
   } | null;
+  locations?: Array<{
+    name: string;
+    category?: string;
+    address?: string;
+    lat: number;
+    lng: number;
+    description: string;
+    highlights?: string;
+    price_range?: string;
+    google_maps_url?: string;
+  }> | null;
   sources?: { title: string; url: string }[];
 }
 
@@ -280,6 +291,19 @@ Format JSON (WAJIB MURNI JSON):
   "reasoning": "",
   "chart": null,
   "location": null,
+  "locations": [
+    {
+      "name": "Alun-Alun Tugu Malang",
+      "category": "Wisata Sejarah & Ikon Kota",
+      "address": "Jl. Tugu, Kiduldalem, Klojen, Kota Malang",
+      "lat": -7.9772,
+      "lng": 112.6341,
+      "description": "Ikon tugu bersejarah dikelilingi kolam teratai dan lampu taman estetik.",
+      "highlights": "Kolam teratai, spot foto tugu, area jalan santai",
+      "price_range": "Gratis (Parkir Rp 2.000)",
+      "google_maps_url": "https://www.google.com/maps/search/?api=1&query=-7.9772,112.6341"
+    }
+  ],
   "sources": []
 }
 `;
@@ -482,6 +506,19 @@ FORMAT OUTPUT (WAJIB JSON VALID TANPA MARKDOWN BACKTICKS):
   "reasoning": "Alasan singkat",
   "chart": null,
   "location": null,
+  "locations": [
+    {
+      "name": "Alun-Alun Tugu Malang",
+      "category": "Wisata Sejarah & Ikon Kota",
+      "address": "Jl. Tugu, Kiduldalem, Klojen, Kota Malang",
+      "lat": -7.9772,
+      "lng": 112.6341,
+      "description": "Ikon tugu bersejarah dikelilingi kolam teratai dan lampu taman estetik.",
+      "highlights": "Kolam teratai, spot foto tugu, area jalan santai",
+      "price_range": "Gratis (Parkir Rp 2.000)",
+      "google_maps_url": "https://www.google.com/maps/search/?api=1&query=-7.9772,112.6341"
+    }
+  ],
   "sources": []
 }
 `;
