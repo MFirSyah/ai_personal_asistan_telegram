@@ -243,6 +243,14 @@ Bab ini memuat dokumentasi mendalam (*post-mortem*) mengenai setiap kesalahan ya
 - **Kronologi Kejadian:** Bayar sewa kos Rp 500.000 pada tanggal 1 membuat proyeksi akhir bulan meledak menjadi Rp 15.000.000.
 - **Solusi Definitif:** Menerapkan *weighted historical smoothing* pada tanggal 1–5 awal bulan (70% riwayat 30 hari + 30% hari berjalan).
 
+
+### 2.16 Latensi Respons Telegram Akibat Loop Google Sheets Sinkron Berurutan
+- **Gejala Kesalahan:** Ketika pengguna mengirim pesan yang memuat lebih dari 1 transaksi (misal 3 transaksi sekaligus), bot membutuhkan waktu 14–18 detik untuk membalas ke Telegram.
+- **Akar Masalah Teknis:** Di `chat-processor.ts`, fungsi menunggu (`await`) seluruh panggilan Google Apps Script secara sekuensial per transaksi sebelum mengirimkan bubble pesan balasan ke Telegram (`sendTelegramMessageBubbles`).
+- **Solusi Permanen yang Telah Diterapkan:**
+  1. Menerapkan **Fast-Path Telegram Dispatch**: Bubble pesan balasan langsung dikirimkan ke Telegram Mas Firman segera setelah AI Gemini selesai menghasilkan respon (<2 detik).
+  2. Menjalankan seluruh proses penyimpanan Supabase dan Google Sheets secara paralel di latar belakang menggunakan `Promise.allSettled`.
+
 ### 2.15 Crash PDFKit Akibat Karakter Unicode / Emoji
 - **Kronologi Kejadian:** Karakter emoji pada nama merchant menyebabkan crash pada PDFKit.
 - **Solusi Definitif:** Membuat fungsi `sanitizeForPdf` untuk membersihkan karakter non-ASCII sebelum dicetak ke dokumen PDF.

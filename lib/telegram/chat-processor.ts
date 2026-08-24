@@ -158,131 +158,151 @@ export async function processChatRespondDirect(
       existingCategories: catNames,
     });
 
-    // 3. Process Extracted Data (single API pass result)
+    // =========================================================================
+    // ⚡ FAST-PATH TELEGRAM DISPATCH (<2s): Send message bubbles to user IMMEDIATELY!
+    // =========================================================================
+    if (chatId) {
+      if (result.messages && result.messages.length > 0) {
+        sendTelegramMessageBubbles(chatId, result.messages, 150).catch(console.error);
+      }
+      if (result.chart) {
+        sendTelegramChart(chatId, result.chart, result.chart.title || 'Visualisasi Grafik').catch(console.error);
+      }
+      if (result.location) {
+        sendTelegramLocation(chatId, result.location.lat, result.location.lng).catch(console.error);
+      }
+      // Anti-duplicate bubble dispatch: only send if non-empty AND not already in message bubble
+      if (
+        result.follow_up_question &&
+        result.follow_up_question.trim().length > 0 &&
+        !result.messages?.some((m: string) => m.toLowerCase().includes(result.follow_up_question!.trim().toLowerCase()))
+      ) {
+        sendTelegramMessage(chatId, result.follow_up_question).catch(console.error);
+      }
+    }
+
+    // 3. Concurrently Process Extracted Data & Database Persistences in Parallel
     if (result.extracted_data) {
       const ext = result.extracted_data;
 
-      // Transactions — support array of items (Fix for multi-transaction text journal)
+      // Parallel Transaction Processing
       const txList = ext.transactions || (ext.transaction ? [ext.transaction] : []);
-      for (const tx of txList) {
-        if (tx && tx.amount > 0) {
-          try {
-            const categoryName = tx.category || tx.merchant || 'Lain-lain';
-            const category = await getOrCreateCategory(userId, categoryName);
+      const txPromises = txList.map(async (tx) => {
+        if (!tx || tx.amount <= 0) return;
+        try {
+          const categoryName = tx.category || tx.merchant || 'Lain-lain';
+          const category = await getOrCreateCategory(userId, categoryName);
 
-            await insertTransaction({
-              user_id: userId,
-              category_id: category.id,
-              amount: tx.amount,
-              type: tx.type || 'expense',
-              merchant: tx.merchant,
-              description: tx.description,
-              source: 'chat_manual',
-              payment_method: tx.payment_method,
-              location: tx.location,
-              items: tx.items || [],
-              tags: tx.tags || [],
-              occurred_at: parseSafeIsoDate(tx.occurred_at, messageTimestampMs),
-            });
+          await insertTransaction({
+            user_id: userId,
+            category_id: category.id,
+            amount: tx.amount,
+            type: tx.type || 'expense',
+            merchant: tx.merchant,
+            description: tx.description,
+            source: 'chat_manual',
+            payment_method: tx.payment_method,
+            location: tx.location,
+            items: tx.items || [],
+            tags: tx.tags || [],
+            occurred_at: parseSafeIsoDate(tx.occurred_at, messageTimestampMs),
+          });
 
-            // Real-time Google Sheets Stream Sync (awaits execution so Vercel Serverless does not terminate early)
-            await appendTransactionRealtime(userId, tx).catch((err) => console.error('[Google Sheets Realtime Error]:', err));
+          // Real-time Google Sheets Stream Sync (runs in background)
+          appendTransactionRealtime(userId, tx).catch((err) => console.error('[Google Sheets Realtime Error]:', err));
 
-            // Real-time Financial Anomaly Detection
-            const anomalyAlert = await checkTransactionAnomaly(userId, {
-              amount: tx.amount,
-              type: tx.type || 'expense',
-              merchant: tx.merchant,
-              occurred_at: tx.occurred_at,
-            });
-            if (anomalyAlert && chatId) {
-              await sendTelegramMessage(chatId, `${anomalyAlert.title}\n\n${anomalyAlert.message}`);
-            }
-          } catch (txErr) {
-            console.error('Error inserting individual transaction:', txErr);
+          // Real-time Financial Anomaly Detection
+          const anomalyAlert = await checkTransactionAnomaly(userId, {
+            amount: tx.amount,
+            type: tx.type || 'expense',
+            merchant: tx.merchant,
+            occurred_at: tx.occurred_at,
+          });
+          if (anomalyAlert && chatId) {
+            await sendTelegramMessage(chatId, `${anomalyAlert.title}\n\n${anomalyAlert.message}`);
           }
+        } catch (txErr) {
+          console.error('Error inserting individual transaction:', txErr);
         }
-      }
+      });
 
-      // Activities — support array of items
+      // Parallel Activity Processing
       const actList = ext.activities || (ext.activity ? [ext.activity] : []);
-      for (const act of actList) {
-        if (act && act.title) {
-          try {
-            await insertActivity({
-              user_id: userId,
-              title: act.title,
-              description: act.description,
-              status: act.status || 'scheduled',
-              priority: act.priority || 'medium',
-              tags: act.tags || [],
-              occurred_at: parseSafeIsoDate(act.occurred_at, messageTimestampMs),
-            });
+      const actPromises = actList.map(async (act) => {
+        if (!act || !act.title) return;
+        try {
+          await insertActivity({
+            user_id: userId,
+            title: act.title,
+            description: act.description,
+            status: act.status || 'scheduled',
+            priority: act.priority || 'medium',
+            tags: act.tags || [],
+            occurred_at: parseSafeIsoDate(act.occurred_at, messageTimestampMs),
+          });
 
-            // Real-time Google Sheets Stream Sync (awaits execution so Vercel Serverless does not terminate early)
-            await appendActivityRealtime(userId, act).catch((err) => console.error('[Google Sheets Realtime Error]:', err));
+          // Real-time Google Sheets Stream Sync (runs in background)
+          appendActivityRealtime(userId, act).catch((err) => console.error('[Google Sheets Realtime Error]:', err));
 
-            // Real-time Schedule Collision Detection
-            const collisionAlert = await checkActivityCollision(userId, {
-              title: act.title,
-              occurred_at: act.occurred_at,
-            });
-            if (collisionAlert && chatId) {
-              await sendTelegramMessage(chatId, `${collisionAlert.title}\n\n${collisionAlert.message}`);
-            }
-          } catch (actErr) {
-            console.error('Error inserting individual activity:', actErr);
+          // Real-time Schedule Collision Detection
+          const collisionAlert = await checkActivityCollision(userId, {
+            title: act.title,
+            occurred_at: act.occurred_at,
+          });
+          if (collisionAlert && chatId) {
+            await sendTelegramMessage(chatId, `${collisionAlert.title}\n\n${collisionAlert.message}`);
           }
+        } catch (actErr) {
+          console.error('Error inserting individual activity:', actErr);
         }
-      }
+      });
 
-      
-      // Plans — support array of life / trip / financial plans (0% Hallucination)
+      // Parallel Plans Processing
       const planList = (ext as any).plans || ((ext as any).plan ? [(ext as any).plan] : []);
-      for (const p of planList) {
-        if (p && p.title) {
-          try {
-            let desc = p.description || '';
-            if (p.budget_breakdown && Array.isArray(p.budget_breakdown)) {
-              const breakdownStr = p.budget_breakdown.map((b: any) => `${b.item}: Rp ${Number(b.amount || 0).toLocaleString('id-ID')}`).join(', ');
-              desc = desc ? `${desc} | Rincian: ${breakdownStr}` : `Rincian: ${breakdownStr}`;
-            }
-            if (p.budget_total) {
-              desc = `${desc} | Total Budget: Rp ${Number(p.budget_total).toLocaleString('id-ID')}`;
-            }
-            if (p.strategy) {
-              desc = `${desc} | Strategi: ${p.strategy}`;
-            }
-
-            await upsertPlan(userId, {
-              user_id: userId,
-              title: p.title,
-              description: desc.trim(),
-              target_date: p.target_date,
-              status: p.status || 'planned',
-            });
-          } catch (planErr) {
-            console.error('Error saving plan to Supabase:', planErr);
+      const planPromises = planList.map(async (p: any) => {
+        if (!p || !p.title) return;
+        try {
+          let desc = p.description || '';
+          if (p.budget_breakdown && Array.isArray(p.budget_breakdown)) {
+            const breakdownStr = p.budget_breakdown.map((b: any) => `${b.item}: Rp ${Number(b.amount || 0).toLocaleString('id-ID')}`).join(', ');
+            desc = desc ? `${desc} | Rincian: ${breakdownStr}` : `Rincian: ${breakdownStr}`;
           }
-        }
-      }
+          if (p.budget_total) {
+            desc = `${desc} | Total Budget: Rp ${Number(p.budget_total).toLocaleString('id-ID')}`;
+          }
+          if (p.strategy) {
+            desc = `${desc} | Strategi: ${p.strategy}`;
+          }
 
-      // Preferences — support array of learned preferences
+          await upsertPlan(userId, {
+            user_id: userId,
+            title: p.title,
+            description: desc.trim(),
+            target_date: p.target_date,
+            status: p.status || 'planned',
+          });
+        } catch (planErr) {
+          console.error('Error saving plan to Supabase:', planErr);
+        }
+      });
+
+      // Parallel Preferences Processing
       const prefList = ext.preferences || (ext.preference ? [ext.preference] : []);
-      for (const pref of prefList) {
-        if (pref && pref.key) {
-          await saveUserPreference(userId, pref.key, pref.value, pref.learned_from || userMessage);
+      const prefPromises = prefList.map(async (pref: any) => {
+        if (!pref || !pref.key) return;
+        await saveUserPreference(userId, pref.key, pref.value, pref.learned_from || userMessage);
 
-          // Sync name preference directly to users.name column in database
-          const keyLower = pref.key.toLowerCase();
-          if (keyLower.includes('nama') || keyLower.includes('name') || keyLower.includes('panggilan')) {
-            const cleanName = String(pref.value || '').trim().replace(/^["']|["']$/g, '');
-            if (cleanName) {
-              await updateUserName(userId, cleanName);
-            }
+        const keyLower = pref.key.toLowerCase();
+        if (keyLower.includes('nama') || keyLower.includes('name') || keyLower.includes('panggilan')) {
+          const cleanName = String(pref.value || '').trim().replace(/^["']|["']$/g, '');
+          if (cleanName) {
+            await updateUserName(userId, cleanName);
           }
         }
-      }
+      });
+
+      // Await all parallel operations
+      await Promise.allSettled([...txPromises, ...actPromises, ...planPromises, ...prefPromises]);
 
       // Edit Record by ID (TX-XXXX or ACT-XXXX)
       if ((ext as any).edit_record) {
@@ -364,8 +384,6 @@ export async function processChatRespondDirect(
         }
       }
 
-      // Reconcile Wallet Balances Request
-      
       // Simulation / What-If Request
       if ((ext as any).run_simulation_request && chatId) {
         try {
@@ -438,7 +456,6 @@ export async function processChatRespondDirect(
         }
       }
 
-
       // Loan Risk & Pinjol Stress Test Request
       if ((ext as any).check_loan_risk_request && chatId) {
         try {
@@ -463,7 +480,8 @@ export async function processChatRespondDirect(
         }
       }
 
-if ((ext as any).reconcile_wallet_balances && chatId) {
+      // Reconcile Wallet Balances Request
+      if ((ext as any).reconcile_wallet_balances && chatId) {
         try {
           const { mergedCount, newRecordId } = await consolidateDuplicateCashTransactions(userId);
           const msg = mergedCount > 0
@@ -508,26 +526,6 @@ if ((ext as any).reconcile_wallet_balances && chatId) {
     const fullAssistantText = [...(result.messages || []), result.follow_up_question].filter(Boolean).join('\n');
     saveChatMessage(userId, 'assistant', fullAssistantText).catch(console.error);
 
-    // 5. Send Rich Responses to Telegram (Fix #6: 150ms bubble delay)
-    if (chatId) {
-      if (result.messages && result.messages.length > 0) {
-        await sendTelegramMessageBubbles(chatId, result.messages, 150);
-      }
-      if (result.chart) {
-        await sendTelegramChart(chatId, result.chart, result.chart.title || 'Visualisasi Grafik');
-      }
-      if (result.location) {
-        await sendTelegramLocation(chatId, result.location.lat, result.location.lng);
-      }
-      // Anti-duplicate bubble dispatch: only send if non-empty AND not already in message bubble
-      if (
-        result.follow_up_question &&
-        result.follow_up_question.trim().length > 0 &&
-        !result.messages?.some((m: string) => m.toLowerCase().includes(result.follow_up_question!.trim().toLowerCase()))
-      ) {
-        await sendTelegramMessage(chatId, result.follow_up_question);
-      }
-    }
   } catch (error) {
     console.error('Error in processChatRespondDirect:', error);
     if (chatId) {
