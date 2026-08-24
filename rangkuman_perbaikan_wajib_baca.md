@@ -267,6 +267,15 @@ Bab ini memuat dokumentasi mendalam (*post-mortem*) mengenai setiap kesalahan ya
   3. Menyaring teks pengantar (`introMessages`) agar daftar poin dipotong dan hanya dikirimkan melalui kartu bubble Google Maps terpisah.
 
 
+
+### 2.18 Pemutusan Dini Pengiriman Kartu Lokasi Akibat Un-awaited IIFE pada Serverless Vercel
+- **Gejala Kesalahan:** Ketika sistem ingin mengirimkan 5 kartu bubble rekomendasi tempat, hanya kartu nomor 1 yang berhasil terkirim ke Telegram, sedangkan kartu nomor 2, 3, 4, 5 tidak muncul sama sekali.
+- **Akar Masalah Teknis:** Di `lib/telegram/chat-processor.ts`, perulangan pengiriman kartu tempat (`for let idx = 0; ...`) dibungkus dalam *Immediately Invoked Function Expression* yang tidak di-`await` (`(async () => { ... })()`). Akibatnya, segera setelah kartu ke-1 dikirim, fungsi utama `processChatRespondDirect` selesai dan platform serverless Vercel langsung membekukan/mematikan (*freeze/kill*) kontainer sebelum kartu 2–5 sempat dikirim.
+- **Solusi Permanen yang Telah Diterapkan:**
+  1. Mengubah perulangan pengiriman kartu lokasi menjadi `await` sinkron berurutan langsung di dalam thread utama prosesor.
+  2. Memastikan seluruh kartu (mulai nomor 1 hingga 20) selesai dikirimkan ke Telegram Bot API sebelum fungsi serverless menutup siklus hidupnya.
+
+
 ## 📅 BAB III: KRONOLOGI LENGKAP PERCAKAPAN, PERMINTAAN USER & EVOLUSI SISTEM
 
 ### 3.1 Fase 1: Setup Fondasi Dasar (12–15 Agustus 2026)

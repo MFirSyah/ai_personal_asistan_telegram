@@ -175,14 +175,15 @@ export async function processChatRespondDirect(
             const cleaned = b.replace(/^[•\-\*]\s*/, '').trim();
             const nameMatch = cleaned.match(/\*\*(.*?)\*\*/);
             const name = nameMatch ? nameMatch[1].replace(/^[\p{Emoji}\s]+/u, '').replace(/:$/, '').trim() : `Rekomendasi ${i + 1}`;
+            const desc = cleaned.replace(/^[\p{Emoji}\s]*\*\*.*?\*\*[:\s]*/u, '').trim() || cleaned;
             return {
               name,
               category: 'Rekomendasi Pilihan',
               address: 'Lokasi Strategis',
               lat: 0,
               lng: 0,
-              description: cleaned,
-              highlights: cleaned,
+              description: desc,
+              highlights: desc,
               price_range: 'Standar / Terjangkau',
               google_maps_url: `https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(name)}`
             };
@@ -207,37 +208,36 @@ export async function processChatRespondDirect(
         }
       }
 
-      // 3. Dispatch Individual Location Cards (<20 items) with Google Maps button
+      // 3. Dispatch Individual Location Cards (<20 items) with Google Maps button (SYNCHRONOUS AWAIT to prevent Vercel Serverless early kill)
       if (effectiveLocations.length > 0) {
         const locList = effectiveLocations.slice(0, 20);
-        (async () => {
-          for (let idx = 0; idx < locList.length; idx++) {
-            const loc = locList[idx];
-            if (!loc || !loc.name) continue;
+        for (let idx = 0; idx < locList.length; idx++) {
+          const loc = locList[idx];
+          if (!loc || !loc.name) continue;
 
-            let card = `📍 **${idx + 1}. ${loc.name.toUpperCase()}**\n`;
-            if (loc.category) card += `🏛️ **Kategori**: ${loc.category}\n`;
-            if (loc.address) card += `📌 **Alamat**: ${loc.address}\n`;
-            if (loc.highlights || loc.description) card += `💡 **Daya Tarik**: ${loc.highlights || loc.description}\n`;
-            if (loc.price_range) card += `💵 **Estimasi Biaya**: ${loc.price_range}\n`;
+          let card = `📍 **${idx + 1}. ${loc.name.toUpperCase()}**\n`;
+          if (loc.category) card += `🏛️ **Kategori**: ${loc.category}\n`;
+          if (loc.address) card += `📌 **Alamat**: ${loc.address}\n`;
+          if (loc.highlights || loc.description) card += `💡 **Daya Tarik**: ${loc.highlights || loc.description}\n`;
+          if (loc.price_range) card += `💵 **Estimasi Biaya**: ${loc.price_range}\n`;
 
-            const mapsQuery = loc.lat && loc.lng && loc.lat !== 0
-              ? `${loc.lat},${loc.lng}`
-              : encodeURIComponent(`${loc.name} ${loc.address || ''}`);
-            const mapsUrl = loc.google_maps_url || `https://www.google.com/maps/search/?api=1&query=${mapsQuery}`;
+          const mapsQuery = loc.lat && loc.lng && loc.lat !== 0
+            ? `${loc.lat},${loc.lng}`
+            : encodeURIComponent(`${loc.name} ${loc.address || ''}`);
+          const mapsUrl = loc.google_maps_url || `https://www.google.com/maps/search/?api=1&query=${mapsQuery}`;
 
-            const replyMarkup = {
-              inline_keyboard: [
-                [{ text: '🗺️ Buka di Google Maps', url: mapsUrl }]
-              ]
-            };
+          const replyMarkup = {
+            inline_keyboard: [
+              [{ text: '🗺️ Buka di Google Maps', url: mapsUrl }]
+            ]
+          };
 
+          try {
             await sendTelegramMessage(chatId, card.trim(), replyMarkup);
-            if (idx < locList.length - 1) {
-              await new Promise((r) => setTimeout(r, 150));
-            }
+          } catch (sendErr) {
+            console.error('Failed to send location card:', sendErr);
           }
-        })().catch((err) => console.error('Error dispatching location cards:', err));
+        }
       }
 
       // 4. Send Chart if present
