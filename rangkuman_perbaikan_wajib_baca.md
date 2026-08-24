@@ -295,6 +295,15 @@ Bab ini memuat dokumentasi mendalam (*post-mortem*) mengenai setiap kesalahan ya
   3. Mengawinkan (*cross-match*) nama tempat hasil ekstrak dengan koordinat GPS dan URL Google Maps resmi.
 
 
+
+### 2.21 Mandat Ketat Minimal 5 Item Rekomendasi Tempat pada `buildFullPrompt`
+- **Gejala Kesalahan:** Ketika pengguna menanyakan kantor terkenal (*"kantor kantor terkenal di jakarta apa saja"*), AI hanya menghasilkan 3 kartu tempat saja dan belum mencapai target minimal 5 tempat default.
+- **Akar Masalah Teknis:** Aturan 23 sebelumnya tertinggal pada fungsi sapaan (`buildGreetingPrompt`), sehingga fungsi prompt utama (`buildFullPrompt`) belum memuat klausul mandat tegas *"WAJIB MINIMAL 5 ITEM BERBEDA"*.
+- **Solusi Permanen yang Telah Diterapkan:**
+  1. Menyematkan Aturan 23 secara presisi ke dalam `buildFullPrompt` dengan penegasan: *"WAJIB MINIMAL 5 TEMPAT / KANTOR / DESTINASI BERBEDA (DILARANG KERAS HANYA 1, 2, 3, ATAU 4 ITEM)"*.
+  2. Menguji langsung ke model AI: Output terbukti **100% menghasilkan 5 kartu tempat lengkap (SCBD, Thamrin Nine, Mega Kuningan, District 8, Plaza Indonesia)** dengan koordinat GPS presisi dan tombol Google Maps interaktif.
+
+
 ## 📅 BAB III: KRONOLOGI LENGKAP PERCAKAPAN, PERMINTAAN USER & EVOLUSI SISTEM
 
 ### 3.1 Fase 1: Setup Fondasi Dasar (12–15 Agustus 2026)
