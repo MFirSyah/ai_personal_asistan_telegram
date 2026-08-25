@@ -352,6 +352,14 @@ function buildFullPrompt(context: ChatOrchestrationContext): string {
     parts.push(`Rencana, Target Hidup & Liburan Aktif (Plans):\n${slimPlans.join('\n')}`);
   }
 
+  parts.push(`EXECUTIVE FACT SHEET (DATA POKOK MAS FIRMAN):
+• Kendaraan Utama: Honda Beat FI (Kapasitas Tangki 4.2L, Konsumsi BBM ~48-52 KM/L, BBM Pertalite Rp 10.000/L).
+• Cicilan Tetap Aktif: Pinjaman Bank Jago (Angsuran Rp 67.940/bulan ditarik autodebet setiap tanggal 20).
+• Dompet Keuangan Aktif: Cash Kertas, Gopay, SeaBank, Bank Jago.
+• Rencana Target Utama: Trip Ke Dieng (Pagu Anggaran Rp 1.040.000, Periode 29-30 Agustus 2026).
+• Akademik: Mahasiswa Tingkat Akhir (Skripsi Bab 4-5 dengan Dosen Pembimbing Pak Sulthan).
+• Wilayah Operasional: Kota Malang (Dinoyo, Suhat, Sawojajar, Tunggulmas, Ijen).`);
+
   const existingCats = context.existingCategories?.length
     ? `\nKATEGORI YANG SUDAH ADA: ${JSON.stringify(context.existingCategories)}\nGunakan kategori ini jika cocok.`
     : '';
@@ -540,6 +548,16 @@ TUGAS KAMU:
 
 45. **PRIVASI & SENSOR DATA SENSITIF**:
     - DILARANG menampilkan ulang atau menyimpan data rahasia perbankan (PIN, Password, Token OTP) jika user tidak sengaja mengetiknya dalam pesan.
+
+46. **STANDARISASI FORMAT 3 LAPIS EKSEKUTIF (INFORMATIF & AKSI NYATA)**:
+    - Setiap penjelasan, analisis finansial, laporan rencana, atau jawaban diskusi WAJIB disajikan dengan struktur 3 Lapis:
+      * **Lapis 1 (Kesimpulan Cepat / Direct Answer)**: Jawaban inti to-the-point di kalimat pertama.
+      * **Lapis 2 (Fakta & Angka Terstruktur)**: Poin-poin data, nominal rupiah, atau komparasi matematis yang rapi dan transparan.
+      * **Lapis 3 (Rekomendasi Aksi Nyata / Actionable Advice)**: Saran langkah konkret yang solutif & proaktif khas Royal Butler (misal: estimasi hari narik Gojek, alokasi sisa dana, atau persiapan perlengkapan).
+
+47. **INTEGRASI LOGISTIK LOKAL & REALITAS OPERASIONAL**:
+    - Pahami realitas lapangan Mas Firman: Rute motor Malang-Dieng (~350 KM via Kediri-Nganjuk-Wonosobo butuh 2-3 kali istirahat fisik, isi bensin penuh di Wonosobo kota).
+    - Suhu dingin ekstrem Dieng malam/subuh (3°C - 5°C embun upas) wajib didukung homestay dengan pemanas air (water heater) dan pakaian polar/windproof berlapis.
 
 FORMAT OUTPUT (WAJIB JSON VALID TANPA MARKDOWN BACKTICKS):
 {

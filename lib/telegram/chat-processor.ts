@@ -1,3 +1,4 @@
+import { fetchLiveWeather, OFFICIAL_FACTS } from '@/lib/services/live-grounding';
 
 import {
   runFinancialSimulation,
@@ -145,14 +146,35 @@ export async function processChatRespondDirect(
     // Save user message to history asynchronously
     saveChatMessage(userId, 'user', userMessage).catch(console.error);
 
-    // 2. Run Gemini AI Orchestration with existing category list
+    // 2. Proactive Grounding: Fetch Live Weather if relevant to outdoor/trips/gojek
+    let runtimePrefs = [...preferences];
+    const isOutdoorOrTripQuery = /(cuaca|hujan|narik|gojek|dieng|bromo|trip|liburan|bensin|jalan|sore|pagi|malam|otw)/i.test(userMessage);
+    if (isOutdoorOrTripQuery) {
+      const locKey = /dieng/i.test(userMessage) ? 'dieng' : (/bromo/i.test(userMessage) ? 'bromo' : 'malang');
+      try {
+        const liveWeather = await fetchLiveWeather(locKey);
+        if (liveWeather) {
+          runtimePrefs.push({
+            id: 'live-weather',
+            user_id: userId,
+            key: `Kondisi Cuaca Realtime (${liveWeather.city})`,
+            value: `Suhu: ${liveWeather.temperatureC}°C, Kondisi: ${liveWeather.weatherDescription}, Kelembaban: ${liveWeather.humidityPct}%, Saran: ${liveWeather.advice}`,
+            updated_at: new Date().toISOString(),
+          });
+        }
+      } catch (wErr) {
+        console.warn('Live weather grounding fetch skipped:', wErr);
+      }
+    }
+
+    // Run Gemini AI Orchestration with existing category list and live grounding
     const catNames = categories.map((c) => c.name);
     const result = await runChatOrchestration({
       userMessage,
       recentTransactions: transactions,
       recentActivities: activities,
       activePlans: plans,
-      preferences,
+      preferences: runtimePrefs,
       chatHistory: history,
       userName,
       existingCategories: catNames,
