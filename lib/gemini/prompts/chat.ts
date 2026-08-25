@@ -146,6 +146,8 @@ export interface ChatOrchestrationResult {
     highlights?: string;
     price_range?: string;
     google_maps_url?: string;
+    formatted_card?: string;
+    custom_details?: Record<string, string>;
   }> | null;
   sources?: { title: string; url: string }[];
 }

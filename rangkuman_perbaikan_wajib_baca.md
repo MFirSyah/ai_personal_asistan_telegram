@@ -304,6 +304,15 @@ Bab ini memuat dokumentasi mendalam (*post-mortem*) mengenai setiap kesalahan ya
   2. Menguji langsung ke model AI: Output terbukti **100% menghasilkan 5 kartu tempat lengkap (SCBD, Thamrin Nine, Mega Kuningan, District 8, Plaza Indonesia)** dengan koordinat GPS presisi dan tombol Google Maps interaktif.
 
 
+
+### 2.22 Dynamic Schema-Agnostic Custom Attributes Engine (Atribut Bebas On-The-Fly Tanpa Koding)
+- **Kebutuhan Pengguna:** Pengguna dapat sewaktu-waktu meminta atribut/informasi tambahan yang unik pada kartu rekomendasi (misal: *"sertakan Spot Foto Terbaik"*, *"info Wifi & Colokan"*, *"Waktu Terbaik Berkunjung"*, *"Menu Halal / Andalan"*, dsb) tanpa harus merombak kode backend (*Zero-Code Schema Extensibility*).
+- **Arsitektur Solusi:**
+  1. Pada `lib/gemini/prompts/chat.ts`, skema `locations` dilengkapi properti dinamis `custom_details?: Record<string, string>`.
+  2. Pada `lib/telegram/chat-processor.ts`, kartu lokasi tidak lagi kaku pada 4 atribut saja. Bot secara otomatis me-looping dan menampilkan seluruh kunci atribut kustom (`custom_details`) yang dihasilkan oleh AI sesuai permintaan unik Mas Firman.
+  3. Format tampilannya otomatis rapi dan presisi: `• **[Nama Atribut Kustom]**: [Isi Info]`.
+
+
 ## 📅 BAB III: KRONOLOGI LENGKAP PERCAKAPAN, PERMINTAAN USER & EVOLUSI SISTEM
 
 ### 3.1 Fase 1: Setup Fondasi Dasar (12–15 Agustus 2026)

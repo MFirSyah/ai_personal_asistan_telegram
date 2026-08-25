@@ -238,6 +238,16 @@ export async function processChatRespondDirect(
           if (loc.highlights || loc.description) card += `💡 **Daya Tarik**: ${loc.highlights || loc.description}\n`;
           if (loc.price_range) card += `💵 **Estimasi Biaya**: ${loc.price_range}\n`;
 
+          // Dynamic Custom Details (On-The-Fly Attributes requested by user, e.g. Spot Foto, Jam Kunjung, Wifi, Menu, etc.)
+          if (loc.custom_details && typeof loc.custom_details === 'object') {
+            for (const [key, val] of Object.entries(loc.custom_details)) {
+              if (val && typeof val === 'string' && val.trim().length > 0) {
+                const cleanKey = key.replace(/^•\s*/, '').replace(/\*\*/g, '').trim();
+                card += `• **${cleanKey}**: ${val}\n`;
+              }
+            }
+          }
+
           const mapsQuery = loc.lat && loc.lng && loc.lat !== 0
             ? `${loc.lat},${loc.lng}`
             : encodeURIComponent(`${loc.name} ${loc.address || ''}`);
