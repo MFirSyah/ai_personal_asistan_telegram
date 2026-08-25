@@ -412,6 +412,15 @@ Bab ini memuat dokumentasi mendalam (*post-mortem*) mengenai setiap kesalahan ya
 - **Hasil Verifikasi Otomatis:** Master suite pengujian 305 poin lolos **5 / 5 PASSED (100% Sukses)** dan kompilasi TypeScript `npx tsc --noEmit` lolos **0 Error**.
 
 
+
+### 2.28 Pemisahan Tegas Antara Kartu Rekomendasi Tempat Fisik vs Bubble Diskusi & Kalkulasi Finansial
+- **Masalah:** Ketika pengguna bertanya progres/sisa dana liburan (*"uang saya ke dieng sisa berapa lagi?"*), poin-poin rincian kalkulasi sebelumnya sempat salah dipecah menjadi kartu tempat wisata fiktif terpisah dengan tombol Google Maps karena parser bullet list mengira semua bullet poin adalah daftar tempat fisik.
+- **Solusi & Penguatan:**
+  1. **Place Query Discriminator (`lib/telegram/chat-processor.ts`):** Kartu terpisah dengan tombol Google Maps HANYA diaktifkan secara eksklusif jika pengguna secara nyata meminta rekomendasi tempat fisik (*rekomendasi, tempat, lokasi, wisata, kafe, resto, kuliner, hotel, spot*).
+  2. **Pantangan Mutlak AI (Aturan 23 `lib/gemini/prompts/chat.ts`):** Mengunci larangan mengisi array `locations` untuk pertanyaan kalkulasi finansial, saldo, hutang, atau diskusi rencana trip. Seluruh rincian perhitungan kini disajikan utuh dalam 1 bubble pesan percakapan yang rapi dan elegan.
+- **Hasil Verifikasi:** Uji pertanyaan *"uang saya ke dieng sisa berapa lagi?"* lolos **100% Utuh dalam 1 Bubble**, dan uji *"rekomendasi 5 kafe"* tetap menghasilkan **5 Kartu Terpisah dengan Tombol Google Maps**.
+
+
 ## 📅 BAB III: KRONOLOGI LENGKAP PERCAKAPAN, PERMINTAAN USER & EVOLUSI SISTEM
 
 ### 3.1 Fase 1: Setup Fondasi Dasar (12–15 Agustus 2026)
