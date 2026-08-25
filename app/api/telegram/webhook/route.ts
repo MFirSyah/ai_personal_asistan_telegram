@@ -77,6 +77,14 @@ export async function POST(req: NextRequest) {
       await processChatRespondDirect(user.id, fromId, 'rincian plan trip dieng dan progres tabunganku', user.name || 'User');
     } else if (data === 'qa_laporan') {
       await handleFinancialCommands('/ringkasan', fromId, user, fromId);
+    } else if (data === 'chip_bensin') {
+      await processChatRespondDirect(user.id, fromId, 'catat pengeluaran bensin 25rb pake cash', user.name || 'User');
+    } else if (data === 'chip_makan') {
+      await processChatRespondDirect(user.id, fromId, 'catat makan siang 20rb', user.name || 'User');
+    } else if (data === 'chip_parkir') {
+      await processChatRespondDirect(user.id, fromId, 'catat bayar parkir 2000 cash', user.name || 'User');
+    } else if (data === 'chip_gojek') {
+      await processChatRespondDirect(user.id, fromId, 'tampilkan evaluasi performa narik gojek dan efisiensi bensin', user.name || 'User');
     } else if (data === 'confirm_delete_all') {
       const nowIso = new Date().toISOString();
       await Promise.all([

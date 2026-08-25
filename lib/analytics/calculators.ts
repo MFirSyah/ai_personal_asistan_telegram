@@ -699,3 +699,74 @@ export async function calculateLoanRisk(
     butlerAdvice: advice,
   };
 }
+
+export interface GojekEfficiencyResult {
+  fuelExpense: number;
+  dailyIncome: number;
+  fuelCostRatioPct: number;
+  netDailyProfit: number;
+  estimatedKmPerLiter?: number;
+  evaluation: 'SANGAT_EFISIEN' | 'WAJAR' | 'BOROS_PERLU_SERVIS';
+  advice: string;
+}
+
+export function calculateGojekEfficiency(
+  fuelExpense: number,
+  dailyIncome: number,
+  estimatedKm: number = 70
+): GojekEfficiencyResult {
+  const fuelCostRatioPct = dailyIncome > 0 ? (fuelExpense / dailyIncome) * 100 : 0;
+  const netDailyProfit = Math.max(0, dailyIncome - fuelExpense);
+  const liters = fuelExpense > 0 ? fuelExpense / 10000 : 0; // Asumsi Pertalite ~Rp 10.000/L
+  const estimatedKmPerLiter = liters > 0 ? Math.round(estimatedKm / liters) : 0;
+
+  let evaluation: 'SANGAT_EFISIEN' | 'WAJAR' | 'BOROS_PERLU_SERVIS' = 'WAJAR';
+  let advice = '';
+
+  if (fuelCostRatioPct <= 15) {
+    evaluation = 'SANGAT_EFISIEN';
+    advice = `Efisiensi bensin sangat baik (${fuelCostRatioPct.toFixed(1)}% dari pendapatan). Estimasi konsumsi ~${estimatedKmPerLiter} KM/liter. Pertahankan rute operasional ini!`;
+  } else if (fuelCostRatioPct <= 25) {
+    evaluation = 'WAJAR';
+    advice = `Biaya bensin masih dalam batas wajar (${fuelCostRatioPct.toFixed(1)}% dari pendapatan harian).`;
+  } else {
+    evaluation = 'BOROS_PERLU_SERVIS';
+    advice = `Biaya bensin menembus ${fuelCostRatioPct.toFixed(1)}% dari pendapatan. Disarankan memeriksa tekanan angin ban, busi, dan filter udara motor Anda.`;
+  }
+
+  return {
+    fuelExpense,
+    dailyIncome,
+    fuelCostRatioPct,
+    netDailyProfit,
+    estimatedKmPerLiter,
+    evaluation,
+    advice,
+  };
+}
+
+export async function calculateNetWorth(userId: string): Promise<{ totalCashAssets: number; totalDebts: number; netWorth: number }> {
+  const [txs, debts] = await Promise.all([
+    supabaseAdmin.from('transactions').select('amount, type').eq('user_id', userId).is('deleted_at', null),
+    supabaseAdmin.from('debts').select('amount').eq('user_id', userId).eq('status', 'unpaid').eq('type', 'i_owe'),
+  ]);
+
+  let totalIncome = 0;
+  let totalExpense = 0;
+  (txs.data || []).forEach((t) => {
+    if (t.type === 'income') totalIncome += Number(t.amount);
+    else totalExpense += Number(t.amount);
+  });
+
+  const totalCashAssets = Math.max(0, totalIncome - totalExpense);
+  let totalDebts = 0;
+  (debts.data || []).forEach((d) => {
+    totalDebts += Number(d.amount);
+  });
+
+  return {
+    totalCashAssets,
+    totalDebts,
+    netWorth: totalCashAssets - totalDebts,
+  };
+}

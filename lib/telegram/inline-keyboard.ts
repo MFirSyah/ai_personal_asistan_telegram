@@ -39,3 +39,21 @@ export function buildQuickActionKeyboard() {
     ],
   };
 }
+
+export function buildCategoryQuickChipsKeyboard() {
+  return {
+    inline_keyboard: [
+      [
+        { text: '💵 Saldo', callback_data: 'qa_saldo' },
+        { text: '🏔️ Plan Dieng', callback_data: 'qa_dieng' },
+        { text: '📊 Laporan', callback_data: 'qa_laporan' },
+      ],
+      [
+        { text: '⛽ Bensin', callback_data: 'chip_bensin' },
+        { text: '🍔 Makan', callback_data: 'chip_makan' },
+        { text: '🅿️ Parkir', callback_data: 'chip_parkir' },
+        { text: '🛵 Gojek', callback_data: 'chip_gojek' },
+      ],
+    ],
+  };
+}

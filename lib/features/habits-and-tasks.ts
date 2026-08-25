@@ -29,12 +29,33 @@ export async function checkInHabit(userId: string, habitId: string): Promise<Hab
   const { data: habit } = await supabaseAdmin.from('habits').select('*').eq('id', habitId).eq('user_id', userId).single();
   if (!habit) throw new Error('Habit not found');
 
-  const newStreak = (habit.streak_count || 0) + 1;
+  const now = new Date();
+  const nowWib = new Date(now.toLocaleString('en-US', { timeZone: 'Asia/Jakarta' }));
+  const todayDateStr = `${nowWib.getFullYear()}-${String(nowWib.getMonth() + 1).padStart(2, '0')}-${String(nowWib.getDate()).padStart(2, '0')}`;
+
+  let newStreak = 1;
+  if (habit.last_completed_at) {
+    const lastDate = new Date(new Date(habit.last_completed_at).toLocaleString('en-US', { timeZone: 'Asia/Jakarta' }));
+    const lastDateStr = `${lastDate.getFullYear()}-${String(lastDate.getMonth() + 1).padStart(2, '0')}-${String(lastDate.getDate()).padStart(2, '0')}`;
+
+    if (lastDateStr === todayDateStr) {
+      // Already checked in today, maintain current streak
+      return habit as Habit;
+    }
+
+    const dayDiff = Math.floor((nowWib.getTime() - lastDate.getTime()) / (1000 * 60 * 60 * 24));
+    if (dayDiff <= 1) {
+      newStreak = (habit.streak_count || 0) + 1;
+    } else {
+      newStreak = 1; // Streak reset if missed more than 1 calendar day
+    }
+  }
+
   const { data, error } = await supabaseAdmin
     .from('habits')
     .update({
       streak_count: newStreak,
-      last_completed_at: new Date().toISOString(),
+      last_completed_at: now.toISOString(),
     })
     .eq('id', habitId)
     .select()
