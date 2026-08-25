@@ -28,9 +28,10 @@ export async function linkPartnerAccounts(userId: string, partnerTelegramIdOrNam
 
   let partnerQuery = supabaseAdmin.from('users').select('id, name');
   if (isNumeric) {
-    partnerQuery = partnerQuery.or(`name.ilike.%${cleanTerm}%,telegram_id.eq.${cleanTerm}`);
+    partnerQuery = partnerQuery.eq('telegram_id', Number(cleanTerm));
   } else {
-    partnerQuery = partnerQuery.ilike('name', `%${cleanTerm}%`);
+    const safeTerm = cleanTerm.replace(/[%_]/g, '');
+    partnerQuery = partnerQuery.ilike('name', `%${safeTerm}%`);
   }
 
   const { data: partner } = await partnerQuery.maybeSingle();

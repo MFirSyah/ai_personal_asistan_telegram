@@ -61,7 +61,23 @@ export async function POST(req: NextRequest) {
       return NextResponse.json({ ok: true });
     }
 
-    if (data === 'confirm_delete_all') {
+    // Instant Haptic Answer to Telegram Callback Query
+    const botToken = process.env.TELEGRAM_BOT_TOKEN;
+    if (botToken && cb.id) {
+      fetch(`https://api.telegram.org/bot${botToken}/answerCallbackQuery`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ callback_query_id: cb.id }),
+      }).catch(() => {});
+    }
+
+    if (data === 'qa_saldo') {
+      await processChatRespondDirect(user.id, fromId, 'tampilkan ringkasan saldo semua dompet saya', user.name || 'User');
+    } else if (data === 'qa_dieng') {
+      await processChatRespondDirect(user.id, fromId, 'rincian plan trip dieng dan progres tabunganku', user.name || 'User');
+    } else if (data === 'qa_laporan') {
+      await handleFinancialCommands('/ringkasan', fromId, user, fromId);
+    } else if (data === 'confirm_delete_all') {
       const nowIso = new Date().toISOString();
       await Promise.all([
         supabaseAdmin.from('transactions').update({ deleted_at: nowIso }).eq('user_id', user.id).is('deleted_at', null),

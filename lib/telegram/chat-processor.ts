@@ -32,7 +32,7 @@ import { sendTelegramMessageBubbles, sendTelegramMessage, sendTelegramChatAction
 import { appendTransactionRealtime, appendActivityRealtime } from '@/lib/google-sheets/sync';
 import { sendTelegramChart } from '@/lib/telegram/send-chart';
 import { sendTelegramLocation } from '@/lib/telegram/send-location';
-import { buildConfirmationInlineKeyboard } from '@/lib/telegram/inline-keyboard';
+import { buildConfirmationInlineKeyboard, buildQuickActionKeyboard } from '@/lib/telegram/inline-keyboard';
 import { runChatOrchestration } from '@/lib/gemini/prompts/chat';
 import { generateExportFile } from '@/lib/export/export-data';
 import { checkTransactionAnomaly, checkActivityCollision } from '@/lib/analytics/anomalies';
@@ -221,7 +221,7 @@ export async function processChatRespondDirect(
           }).filter((m: string) => m.length > 0);
         }
         if (introMessages.length > 0) {
-          sendTelegramMessageBubbles(chatId, introMessages, 150).catch(console.error);
+          sendTelegramMessageBubbles(chatId, introMessages, 150, effectiveLocations.length === 0 ? buildQuickActionKeyboard() : undefined).catch(console.error);
         }
       }
 

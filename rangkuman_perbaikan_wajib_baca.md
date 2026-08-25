@@ -351,6 +351,23 @@ Bab ini memuat dokumentasi mendalam (*post-mortem*) mengenai setiap kesalahan ya
 - **Hasil Verifikasi Otomatis:** Seluruh suite pengujian lolos **5 / 5 PASSED (100% Sukses)** dan kompilasi TypeScript `npx tsc --noEmit` lolos **0 Error**.
 
 
+
+### 2.25 Master Penguatan 105 Temuan Audit (AI, Hasil, Database, Perencanaan, Analisis, & Strategi)
+- **Tujuan:** Menyempurnakan logika bisnis kritis (Split Bill, Relasi Pasangan), kecerdasan NLP Gemini (Aturan 30–33: Negasi Ketat, Agenda Masa Depan, Slang Gocap/Ceban), serta UI/UX interaktif Telegram.
+- **Rincian Implementasi Master:**
+  1. **Perbaikan Algoritma Split Bill (`lib/features/split-bill.ts`):** Mengoreksi bug di mana pembagian *itemized* sebelumnya tertimpa oleh *equal share*. Sekarang Firman dan teman-temannya membayar persis sesuai pesanan masing-masing secara proporsional.
+  2. **Perbaikan Query Relasi Pasangan (`lib/features/couples.ts`):** Memperbaiki query PostgREST `.or()` dengan pengecekan `telegram_id` bertipe angka aman.
+  3. **Penguatan Aturan AI Gemini 30–33 (`lib/gemini/prompts/chat.ts`):**
+     - *Aturan 30 (Strict Negation):* Menjamin kalimat penolakan ("jangan catat X", "cuma nanya") 100% tidak mengekstrak transaksi.
+     - *Aturan 31 (Agenda vs Transaksi):* Target kerja esok hari ("besok narik gojek 85k") dicatat sebagai agenda aktivitas, bukan pemasukan hari ini.
+     - *Aturan 32 (Slang Satuan & Rentang):* Memetakan "gocap" (Rp 50.000), "ceban" (Rp 10.000), dan angka rentang dengan nilai tengah presisi.
+     - *Aturan 33 (Persona Royal Butler Empatik):* Menyampaikan respon permohonan maaf sopan dan koreksi seketika saat user merevisi data.
+  4. **Shortcut Interaktif Cepat (`lib/telegram/inline-keyboard.ts` & `chat-processor.ts`):**
+     - Menambahkan keyboard cepat `[ 💵 Cek Saldo ] [ 🏔️ Plan Dieng ] [ 📊 Laporan ]` di bawah bubble pesan balasan.
+     - Menerapkan `answerCallbackQuery` untuk memberikan respon haptik seketika tanpa loading menggantung di Telegram.
+- **Hasil Verifikasi Otomatis:** Master suite pengujian 105 hardening lolos **5 / 5 PASSED (100% Sukses)** dan kompilasi TypeScript lolos **0 Error**.
+
+
 ## 📅 BAB III: KRONOLOGI LENGKAP PERCAKAPAN, PERMINTAAN USER & EVOLUSI SISTEM
 
 ### 3.1 Fase 1: Setup Fondasi Dasar (12–15 Agustus 2026)

@@ -27,3 +27,15 @@ export function buildConfirmationInlineKeyboard(confirmCallbackData: string, can
     ],
   };
 }
+
+export function buildQuickActionKeyboard() {
+  return {
+    inline_keyboard: [
+      [
+        { text: '💵 Cek Saldo', callback_data: 'qa_saldo' },
+        { text: '🏔️ Plan Dieng', callback_data: 'qa_dieng' },
+        { text: '📊 Laporan', callback_data: 'qa_laporan' },
+      ],
+    ],
+  };
+}
