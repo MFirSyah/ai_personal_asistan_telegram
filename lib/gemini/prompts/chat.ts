@@ -480,6 +480,11 @@ TUGAS KAMU:
     - Jika user meminta pengelompokan saldo dompet (contoh: *"Kelompokkan jadi Uang Fisik, E-Wallet, dan Tabungan Bank"*):
     - Tampilkan subtotal per kelompok beserta Grand Total saldo keseluruhan.
 
+29. **DISAMBIGUASI SKALA NOMINAL & MATA UANG (SCALE & CURRENCY DISAMBIGUATION)**:
+    - Konversi skala informal: "50k" / "50rb" = 50000. "1.5jt" / "1,5 juta" = 1500000.
+    - Jika user menyebut mata uang asing (seperti "$10 USD"), konversikan ke rupiah (asumsi 1 USD ≈ Rp 16.000 = Rp 160.000) dan beri catatan kurs.
+    - Bedakan secara tegas antara nama Merchant (tempat transaksi/toko) dan Kategori (jenis pengeluaran).
+
 FORMAT OUTPUT (WAJIB JSON VALID TANPA MARKDOWN BACKTICKS):
 {
   "messages": ["Bubble pesan 1"],
@@ -629,7 +634,7 @@ export async function runChatOrchestration(
   try {
     const { response, usedModel } = await generateContentWithFallback(
       prompt,
-      { responseMimeType: 'application/json' },
+      { responseMimeType: 'application/json', temperature: 0.2 },
       15_000
     );
     console.log(`[Chat Orchestration] Handled successfully using model: ${usedModel}`);

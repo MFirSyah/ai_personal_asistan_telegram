@@ -1,3 +1,14 @@
+
+export function sanitizeCsvCell(val: any): string {
+  if (val === null || val === undefined) return '""';
+  let str = String(val);
+  // Prevent CSV / Excel Formula Injection
+  if (/^[=+\-@\t\r]/.test(str)) {
+    str = "'" + str;
+  }
+  return `"${str.replace(/"/g, '""')}"`;
+}
+
 import { supabaseAdmin } from '../supabase/client';
 
 export interface ExportOptions {
@@ -202,13 +213,13 @@ export async function generateExportFile(userId: string, options: ExportOptions 
     const headers = ['ID', 'Judul Aktivitas', 'Kategori', 'Deskripsi', 'Status', 'Prioritas', 'Tag', 'Tanggal Execution'];
     const rows = activityList.map((a) => [
       a.id,
-      `"${(a.title || '').replace(/"/g, '""')}"`,
-      `"${(a.category_id || '-').replace(/"/g, '""')}"`,
-      `"${(a.description || '').replace(/"/g, '""')}"`,
+      sanitizeCsvCell(a.title || ''),
+      sanitizeCsvCell(a.category_id || '-'),
+      sanitizeCsvCell(a.description || ''),
       a.status || 'scheduled',
       a.priority || 'medium',
-      `"${(Array.isArray(a.tags) ? a.tags.join(', ') : '').replace(/"/g, '""')}"`,
-      `"${(a.occurred_at ? new Date(a.occurred_at).toLocaleString('id-ID') : '').replace(/"/g, '""')}"`,
+      sanitizeCsvCell(Array.isArray(a.tags) ? a.tags.join(', ') : ''),
+      sanitizeCsvCell(a.occurred_at ? new Date(a.occurred_at).toLocaleString('id-ID', { timeZone: 'Asia/Jakarta' }) : ''),
     ]);
 
     const csvContent = '\uFEFF' + [...csvWatermark, headers.join(','), ...rows.map((r) => r.join(','))].join('\n');
@@ -242,13 +253,13 @@ export async function generateExportFile(userId: string, options: ExportOptions 
     const headers = ['ID', 'Tanggal', 'Tipe', 'Nominal (Rp)', 'Merchant / Tempat', 'Metode Bayar', 'Deskripsi', 'Label / Tag', 'Sumber'];
     const rows = txList.map((t) => [
       t.id,
-      `"${(t.occurred_at ? new Date(t.occurred_at).toLocaleString('id-ID') : '').replace(/"/g, '""')}"`,
+      sanitizeCsvCell(t.occurred_at ? new Date(t.occurred_at).toLocaleString('id-ID', { timeZone: 'Asia/Jakarta' }) : ''),
       t.type === 'income' ? 'Pemasukan' : 'Pengeluaran',
-      t.amount || 0,
-      `"${(t.merchant || '').replace(/"/g, '""')}"`,
-      `"${(t.payment_method || '-').replace(/"/g, '""')}"`,
-      `"${(t.description || '').replace(/"/g, '""')}"`,
-      `"${(Array.isArray(t.tags) ? t.tags.join(', ') : '').replace(/"/g, '""')}"`,
+      Number(t.amount || 0),
+      sanitizeCsvCell(t.merchant || ''),
+      sanitizeCsvCell(t.payment_method || '-'),
+      sanitizeCsvCell(t.description || ''),
+      sanitizeCsvCell(Array.isArray(t.tags) ? t.tags.join(', ') : ''),
       t.source || 'chat_manual',
     ]);
 

@@ -1,3 +1,22 @@
+
+// Idempotency cache to prevent duplicate processing on Telegram webhook retries
+const processedUpdates = new Map<number, number>();
+
+function isDuplicateUpdate(updateId?: number): boolean {
+  if (!updateId) return false;
+  const now = Date.now();
+  for (const [id, time] of processedUpdates.entries()) {
+    if (now - time > 5 * 60 * 1000) {
+      processedUpdates.delete(id);
+    }
+  }
+  if (processedUpdates.has(updateId)) {
+    return true;
+  }
+  processedUpdates.set(updateId, now);
+  return false;
+}
+
 import { NextRequest, NextResponse, after } from 'next/server';
 import { verifyTelegramWebhook } from '@/lib/telegram/verify-webhook';
 import { getUserByTelegramId, touchOrStartSession } from '@/lib/supabase/queries/sessions';
@@ -22,6 +41,12 @@ export async function POST(req: NextRequest) {
     body = await req.json();
   } catch (err) {
     return NextResponse.json({ error: 'Invalid JSON payload' }, { status: 400 });
+  }
+
+  // Idempotency check: Ignore duplicate updates from Telegram retry
+  if (isDuplicateUpdate(body.update_id)) {
+    console.log(`[Telegram Webhook] Duplicate update ${body.update_id} ignored.`);
+    return NextResponse.json({ ok: true });
   }
 
   // Handle Callback Queries (e.g. inline confirmation buttons)

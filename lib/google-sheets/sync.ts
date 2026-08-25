@@ -64,6 +64,36 @@ export const SUB_HEADERS = [
   'created_time',
 ];
 
+export const PLAN_HEADERS = [
+  'id',
+  'user_id',
+  'title',
+  'description',
+  'target_date',
+  'budget_total',
+  'status',
+  'created_date',
+  'created_time',
+];
+
+// Helper fetch with exponential backoff retry for resilient webhook calls
+export async function fetchWithRetry(url: string, options: any, maxRetries = 3): Promise<Response> {
+  let lastError: any;
+  for (let attempt = 0; attempt < maxRetries; attempt++) {
+    try {
+      const res = await fetch(url, options);
+      if (res.ok || res.status < 500) {
+        return res;
+      }
+    } catch (err) {
+      lastError = err;
+    }
+    const delay = Math.pow(2, attempt) * 500;
+    await new Promise((r) => setTimeout(r, delay));
+  }
+  throw lastError || new Error(`Fetch failed after ${maxRetries} attempts`);
+}
+
 // Helper to cleanly split ISO timestamp into separated Date (DD/MM/YYYY) and Time (HH:mm) in WIB
 export function splitDateAndTime(input?: string | Date | null): { date: string; time: string } {
   const d = input ? new Date(input) : new Date();
@@ -398,7 +428,7 @@ export async function appendTransactionRealtime(userId: string, tx: any) {
     ];
 
     const appsScriptUrl = process.env.GOOGLE_APPS_SCRIPT_URL || DEFAULT_APPS_SCRIPT_URL;
-    const res = await fetch(appsScriptUrl, {
+    const res = await fetchWithRetry(appsScriptUrl, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({
@@ -457,7 +487,7 @@ export async function appendActivityRealtime(userId: string, act: any) {
     ];
 
     const appsScriptUrl = process.env.GOOGLE_APPS_SCRIPT_URL || DEFAULT_APPS_SCRIPT_URL;
-    const res = await fetch(appsScriptUrl, {
+    const res = await fetchWithRetry(appsScriptUrl, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({
@@ -471,5 +501,50 @@ export async function appendActivityRealtime(userId: string, act: any) {
     console.log('[Google Sheets Sync] Realtime append activity result:', resData);
   } catch (err) {
     console.error('[Google Sheets Sync] Realtime append activity failed:', err);
+  }
+}
+
+/**
+ * Appends or updates 1 plan row in real-time.
+ */
+export async function appendPlanRealtime(userId: string, plan: any) {
+  try {
+    let userName = 'User';
+    const { data: user } = await supabaseAdmin.from('users').select('id, name, email').eq('id', userId).maybeSingle();
+    if (user?.name) {
+      userName = user.name;
+    } else if (user?.email) {
+      userName = user.email.split('@')[0];
+    }
+
+    const spreadsheetId = await getOrCreateUserSpreadsheet(userId, userName);
+    if (!spreadsheetId) return;
+
+    const created = splitDateAndTime(new Date());
+    const row = [
+      plan.id || `PLAN-${Date.now().toString(36).toUpperCase()}`,
+      userId,
+      plan.title || '',
+      plan.description || '',
+      plan.target_date || '',
+      Number(plan.budget_total || 0),
+      plan.status || 'planned',
+      created.date,
+      created.time,
+    ];
+
+    const appsScriptUrl = process.env.GOOGLE_APPS_SCRIPT_URL || DEFAULT_APPS_SCRIPT_URL;
+    await fetchWithRetry(appsScriptUrl, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        action: 'append_row',
+        fileId: spreadsheetId,
+        sheetName: 'plans',
+        row,
+      }),
+    });
+  } catch (err) {
+    console.error('[Google Sheets Sync] Realtime append plan failed:', err);
   }
 }

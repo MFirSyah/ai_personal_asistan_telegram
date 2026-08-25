@@ -52,14 +52,69 @@ export interface ChatHistoryItem {
 }
 
 export async function insertTransaction(tx: Partial<Transaction>): Promise<Transaction> {
+  const sanitizedTx = {
+    ...tx,
+    amount: Math.abs(Number(tx.amount || 0)),
+  };
+
   const { data, error } = await supabaseAdmin
     .from('transactions')
-    .insert(tx)
+    .insert(sanitizedTx)
     .select()
     .single();
 
   if (error || !data) throw new Error(`Transaction insert failed: ${error?.message}`);
   return data as Transaction;
+}
+
+export async function insertTransactionsBatch(txs: Partial<Transaction>[]): Promise<Transaction[]> {
+  if (!txs || txs.length === 0) return [];
+  const sanitizedTxs = txs.map(t => ({
+    ...t,
+    amount: Math.abs(Number(t.amount || 0)),
+  }));
+
+  const { data, error } = await supabaseAdmin
+    .from('transactions')
+    .insert(sanitizedTxs)
+    .select();
+
+  if (error || !data) {
+    console.warn(`Batch insert warning (${error?.message}), falling back to sequential:`);
+    const results: Transaction[] = [];
+    for (const t of sanitizedTxs) {
+      try {
+        const single = await insertTransaction(t);
+        results.push(single);
+      } catch (err) {
+        console.error('Sequential fallback insert error:', err);
+      }
+    }
+    return results;
+  }
+  return data as Transaction[];
+}
+
+export async function insertActivitiesBatch(acts: Partial<Activity>[]): Promise<Activity[]> {
+  if (!acts || acts.length === 0) return [];
+  const { data, error } = await supabaseAdmin
+    .from('activities')
+    .insert(acts)
+    .select();
+
+  if (error || !data) {
+    const results: Activity[] = [];
+    for (const a of acts) {
+      try {
+        const single = await insertActivity(a);
+        results.push(single);
+      } catch (err) {
+        console.error('Sequential activity fallback insert error:', err);
+      }
+    }
+    return results;
+  }
+  return data as Activity[];
 }
 
 export async function softDeleteTransactionByCriteria(
@@ -115,13 +170,15 @@ export async function insertActivity(activity: Partial<Activity>): Promise<Activ
 
 export async function upsertPlan(userId: string, plan: Partial<Plan>): Promise<Plan> {
   const cleanTitle = (plan.title || '').trim();
-  const searchKeyword = cleanTitle.split(' ')[0] || cleanTitle;
+  const words = cleanTitle.split(/\s+/).filter(w => w.length > 2 && !['trip', 'ke', 'di', 'dan', 'yang', 'untuk'].includes(w.toLowerCase()));
+  const searchKeyword = words[0] || cleanTitle.split(' ')[0] || cleanTitle;
+  const safeKeyword = searchKeyword.replace(/[%_]/g, '');
 
   const { data: existing } = await supabaseAdmin
     .from('plans')
     .select('id')
     .eq('user_id', userId)
-    .ilike('title', `%${searchKeyword}%`)
+    .ilike('title', `%${safeKeyword}%`)
     .in('status', ['planned', 'in_progress'])
     .limit(1);
 
@@ -304,20 +361,28 @@ export async function findRecordIdByShortOrFull(
   const cleanStr = idOrShortId.trim();
 
   // If full UUID format (36 chars)
-  if (cleanStr.length === 36) {
+  const uuidRegex = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
+  if (uuidRegex.test(cleanStr)) {
     return cleanStr;
   }
 
-  const hexPart = cleanStr.replace(/^(TX|ACT)-?/i, '').toLowerCase();
+  const hexPart = cleanStr.replace(/^(TX|ACT)-?/i, '').replace(/[^0-9a-f]/gi, '').toLowerCase();
+  if (!hexPart || hexPart.length < 3) {
+    return null;
+  }
 
-  // Efficient server-side query using ILIKE
+  // Efficient server-side query using ILIKE with safe sanitized hex
   const { data: matches } = await supabaseAdmin
     .from(table)
     .select('id')
     .eq('user_id', userId)
     .is('deleted_at', null)
     .ilike('id', `${hexPart}%`)
-    .limit(1);
+    .limit(5);
+
+  if (matches && matches.length > 0) {
+    return matches[0].id;
+  }
 
   if (matches && matches.length > 0) {
     return matches[0].id;

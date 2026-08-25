@@ -1,3 +1,30 @@
+
+export function splitLongText(text: string, maxLen = 4000): string[] {
+  if (!text || text.length <= maxLen) return [text];
+  const chunks: string[] = [];
+  let remaining = text;
+
+  while (remaining.length > 0) {
+    if (remaining.length <= maxLen) {
+      chunks.push(remaining);
+      break;
+    }
+    let splitIdx = remaining.lastIndexOf('\n\n', maxLen);
+    if (splitIdx === -1 || splitIdx < maxLen * 0.4) {
+      splitIdx = remaining.lastIndexOf('\n', maxLen);
+    }
+    if (splitIdx === -1 || splitIdx < maxLen * 0.4) {
+      splitIdx = remaining.lastIndexOf(' ', maxLen);
+    }
+    if (splitIdx === -1) {
+      splitIdx = maxLen;
+    }
+    chunks.push(remaining.substring(0, splitIdx).trim());
+    remaining = remaining.substring(splitIdx).trim();
+  }
+  return chunks.filter(c => c.length > 0);
+}
+
 const TELEGRAM_BOT_TOKEN = process.env.TELEGRAM_BOT_TOKEN;
 const TELEGRAM_API_BASE = `https://api.telegram.org/bot${TELEGRAM_BOT_TOKEN}`;
 
@@ -118,6 +145,20 @@ export async function sendTelegramMessage(
   replyMarkup?: any,
   parseMode: 'Markdown' | 'HTML' | null = 'HTML'
 ): Promise<any> {
+  if (!text) return { ok: true };
+
+  // Auto-chunk messages longer than 4000 characters
+  if (text.length > 4000) {
+    const chunks = splitLongText(text, 3900);
+    let lastResult: any = { ok: true };
+    for (let i = 0; i < chunks.length; i++) {
+      const isLast = i === chunks.length - 1;
+      lastResult = await sendTelegramMessage(chatId, chunks[i], isLast ? replyMarkup : undefined, parseMode);
+      if (!isLast) await new Promise((r) => setTimeout(r, 150));
+    }
+    return lastResult;
+  }
+
   if (!TELEGRAM_BOT_TOKEN) {
     console.warn(`[TELEGRAM MOCK] sendTo ${chatId}: ${text}`);
     return { ok: true, mock: true };
