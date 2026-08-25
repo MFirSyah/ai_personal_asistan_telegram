@@ -459,6 +459,18 @@ Bab ini memuat dokumentasi mendalam (*post-mortem*) mengenai setiap kesalahan ya
 - **Hasil Verifikasi:** Uji pertanyaan *"pertamax hari ini berapa per liter nya"* lolos **100% Menjawab Pertamax Rp 15.950/L**, dilengkapi tabel resmi Pertamina Jawa Timur.
 
 
+
+### 2.31 Engine Generator Rute Navigasi Multi-Titik Google Maps Langsung (Two-Wheeler Mode)
+- **Tujuan:** Memungkinkan AI langsung membuatkan rute perjalanan touring atau wisata multi-titik (*multi-waypoints*) yang otomatis menghasilkan tombol interaktif `[ 🏍️ Buka Rute Navigasi di Google Maps ]` dan membuka aplikasi Google Maps dalam Mode Sepeda Motor (*Two-Wheeler Navigation*).
+- **Rincian Implementasi:**
+  1. **Aturan 49 (Generator Rute Google Maps - `lib/gemini/prompts/chat.ts`):**
+     - Menyusun URL Google Maps Universal: `https://www.google.com/maps/dir/?api=1&origin=[Origin]&destination=[Dest]&waypoints=[P1]|[P2]&travelmode=two_wheeler`.
+     - Menghitung estimasi jarak total KM, durasi jam, konsumsi bensin Honda Beat (~50 KM/L), dan biaya Pertalite.
+  2. **Seamless Telegram Route Dispatcher (`lib/telegram/chat-processor.ts`):**
+     - Secara otomatis mendeteksi URL rute Google Maps dan menyematkan tombol inline keyboard `[ 🏍️ Buka Rute Navigasi di Google Maps ]` di bawah gelembung pesan balasan.
+- **Hasil Verifikasi:** Uji pertanyaan *"buatkan rute motoran dari Malang ke Dieng Wonosobo lewat Kediri dan Nganjuk"* lolos **100% Menghasilkan Rute Navigasi Two-Wheeler Google Maps**.
+
+
 ## 📅 BAB III: KRONOLOGI LENGKAP PERCAKAPAN, PERMINTAAN USER & EVOLUSI SISTEM
 
 ### 3.1 Fase 1: Setup Fondasi Dasar (12–15 Agustus 2026)

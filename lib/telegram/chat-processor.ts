@@ -243,11 +243,31 @@ export async function processChatRespondDirect(
         effectiveLocations = bulletLocations;
       }
 
-      // 2. Send Clean Intro Message (Remove huge inline bullet lists so cards can be sent individually)
+      // 2. Send Clean Intro Message & Interactive Route Navigation Button
       if (result.messages && result.messages.length > 0) {
         let introMessages = result.messages;
+
+        // Check if message contains a Google Maps Directions URL
+        let extractedRouteUrl: string | null = null;
+        for (const msg of introMessages) {
+          const match = msg.match(/https?:\/\/(?:www\.)?google\.com\/maps\/dir\/[^\s\)\"\']+/i);
+          if (match) {
+            extractedRouteUrl = match[0];
+            break;
+          }
+        }
+
+        // Clean raw markdown link from message text if present so message is neat
+        if (extractedRouteUrl) {
+          introMessages = introMessages.map((m: string) => {
+            return m.replace(/\[🗺️\s*Buka Rute[^\(]*\]\([^\)]+\)/gi, '')
+                    .replace(/https?:\/\/(?:www\.)?google\.com\/maps\/dir\/[^\s\)\"\']+/gi, '')
+                    .trim();
+          }).filter((m: string) => m.length > 0);
+        }
+
         if (effectiveLocations.length > 0) {
-          introMessages = result.messages.map((m: string) => {
+          introMessages = introMessages.map((m: string) => {
             const bulletIdx = m.search(/\n\s*[•\-\*]\s*[\p{Emoji}\w]/u);
             if (bulletIdx !== -1) {
               return m.substring(0, bulletIdx).trim();
@@ -255,8 +275,13 @@ export async function processChatRespondDirect(
             return m.replace(/\[🗺️ Buka Google Maps\].*$/gi, '').replace(/🗺️ Buka Google Maps.*$/gi, '').trim();
           }).filter((m: string) => m.length > 0);
         }
+
         if (introMessages.length > 0) {
-          sendTelegramMessageBubbles(chatId, introMessages, 150, effectiveLocations.length === 0 ? buildQuickActionKeyboard() : undefined).catch(console.error);
+          const replyMarkup = extractedRouteUrl
+            ? { inline_keyboard: [[{ text: '🏍️ Buka Rute Navigasi di Google Maps', url: extractedRouteUrl }]] }
+            : (effectiveLocations.length === 0 ? buildQuickActionKeyboard() : undefined);
+
+          sendTelegramMessageBubbles(chatId, introMessages, 150, replyMarkup).catch(console.error);
         }
       }
 
@@ -299,6 +324,65 @@ export async function processChatRespondDirect(
           } catch (sendErr) {
             console.error('Failed to send location card:', sendErr);
           }
+        }
+      }
+
+      // 3.5. Dispatch Interactive Route Card with Google Maps Turn-by-Turn Navigation Button
+      const routeData = result.route || (result.extracted_data as any)?.route;
+      if (routeData && (routeData.origin || routeData.destination)) {
+        let routeCard = `🗺️ **RUTE NAVIGASI: ${(routeData.title || 'Panduan Perjalanan').toUpperCase()}**\n\n`;
+        routeCard += `🚩 **Titik Awal**: ${routeData.origin}\n`;
+        routeCard += `🏁 **Tujuan Akhir**: ${routeData.destination}\n`;
+        
+        if (routeData.estimated_distance_km) {
+          routeCard += `📏 **Total Jarak**: ~${routeData.estimated_distance_km} KM`;
+          if (routeData.estimated_time_hours) routeCard += ` (~${routeData.estimated_time_hours} Jam)`;
+          routeCard += `\n`;
+        }
+        
+        if (routeData.estimated_fuel_liters) {
+          routeCard += `⛽ **Estimasi Bensin (Beat)**: ~${routeData.estimated_fuel_liters} Liter`;
+          if (routeData.estimated_fuel_cost_rp) routeCard += ` (Rp ${routeData.estimated_fuel_cost_rp.toLocaleString('id-ID')})`;
+          routeCard += `\n`;
+        }
+
+        if (routeData.waypoints && Array.isArray(routeData.waypoints) && routeData.waypoints.length > 0) {
+          routeCard += `\n📍 **Titik Persinggahan (Waypoints)**:\n`;
+          routeData.waypoints.forEach((wp: string, i: number) => {
+            routeCard += `${i + 1}. ${wp}\n`;
+          });
+        }
+
+        if (routeData.stops && Array.isArray(routeData.stops) && routeData.stops.length > 0) {
+          routeCard += `\n📋 **Jadwal & Agenda Perjalanan**:\n`;
+          routeData.stops.forEach((s: any, idx: number) => {
+            const timePrefix = s.recommended_time ? `[${s.recommended_time}] ` : '';
+            routeCard += `• **${s.location_name || `Titik ${idx + 1}`}**: ${timePrefix}${s.activity_or_notes || ''}\n`;
+          });
+        }
+
+        // Construct Universal Google Maps Directions URL if not provided or to ensure two_wheeler mode
+        let mapsNavUrl = routeData.google_maps_directions_url;
+        if (!mapsNavUrl || !mapsNavUrl.includes('google.com/maps/dir')) {
+          const originEnc = encodeURIComponent(routeData.origin);
+          const destEnc = encodeURIComponent(routeData.destination);
+          const waypointsEnc = routeData.waypoints && routeData.waypoints.length > 0
+            ? `&waypoints=${routeData.waypoints.map((w: string) => encodeURIComponent(w)).join('%7C')}`
+            : '';
+          const mode = routeData.travel_mode || 'two_wheeler';
+          mapsNavUrl = `https://www.google.com/maps/dir/?api=1&origin=${originEnc}&destination=${destEnc}${waypointsEnc}&travelmode=${mode}`;
+        }
+
+        const routeMarkup = {
+          inline_keyboard: [
+            [{ text: '🏍️ Buka Rute Navigasi di Google Maps', url: mapsNavUrl }]
+          ]
+        };
+
+        try {
+          await sendTelegramMessage(chatId, routeCard.trim(), routeMarkup);
+        } catch (routeErr) {
+          console.error('Failed to send route card:', routeErr);
         }
       }
 

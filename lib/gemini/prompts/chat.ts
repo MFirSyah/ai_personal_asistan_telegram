@@ -149,6 +149,24 @@ export interface ChatOrchestrationResult {
     formatted_card?: string;
     custom_details?: Record<string, string>;
   }> | null;
+  route?: {
+    title: string;
+    origin: string;
+    destination: string;
+    waypoints?: string[];
+    travel_mode: 'two_wheeler' | 'driving' | 'transit' | 'walking';
+    google_maps_directions_url: string;
+    estimated_distance_km?: number;
+    estimated_time_hours?: number;
+    estimated_fuel_liters?: number;
+    estimated_fuel_cost_rp?: number;
+    stops?: Array<{
+      step_number: number;
+      location_name: string;
+      activity_or_notes: string;
+      recommended_time?: string;
+    }>;
+  } | null;
   sources?: { title: string; url: string }[];
 }
 
@@ -244,6 +262,7 @@ function cleanAndParseJSON(rawText: string): any {
       else if (lowerKey === 'reasoning') normalized.reasoning = parsedObj[key];
       else if (lowerKey === 'chart') normalized.chart = parsedObj[key];
       else if (lowerKey === 'location') normalized.location = parsedObj[key];
+      else if (lowerKey === 'route') normalized.route = parsedObj[key];
       else normalized[key] = parsedObj[key];
     }
 
@@ -573,6 +592,22 @@ TUGAS KAMU:
       * DILARANG KERAS MENGALIHKAN ATAU MENJAWAB DENGAN PERTALITE JIKA PENGGUNA JELAS-JELAS MENANYAKAN PERTAMAX ATAU JENIS LAINNYA!
       * Setelah menjawab jenis BBM yang diminta, kamu boleh menyertakan tabel komparasi lengkap BBM Pertamina Jawa Timur (Pertalite Rp 10.000, Solar Rp 6.800, Pertamax Rp 15.950, Pertamax Green Rp 16.600, Pertamax Turbo Rp 18.300, Dexlite Rp 19.700, Pertamina Dex Rp 21.150).
 
+49. **GENERATOR RUTE NAVIGASI MULTI-TITIK GOOGLE MAPS (\`route\`)**:
+    - Jika pengguna meminta rute perjalanan, rute wisata keliling, itinerary touring motor, atau rute antar-lokasi (contoh: *"buatkan rute ke Dieng"*, *"rute keliling wisata Dieng 1 hari"*, *"rute motoran Malang ke Bromo"*, *"rute narik Gojek dari Sawojajar ke Dinoyo"*):
+    - Kamu WAJIB menyusun objek \`"route"\` di dalam JSON balasan dengan format:
+      * \`title\`: Judul rute ringkas (contoh: "Rute Touring Motor Malang - Dieng")
+      * \`origin\`: Titik awal keberangkatan (contoh: "Malang Kota")
+      * \`destination\`: Titik tujuan akhir (contoh: "Dataran Tinggi Dieng, Wonosobo")
+      * \`waypoints\`: Array titik persinggahan/istirahat/spot wisata berurutan (contoh: ["SPBU Kediri", "Alun-Alun Nganjuk", "SPBU Wonosobo"])
+      * \`travel_mode\`: "two_wheeler" (Mode Sepeda Motor) secara default untuk motor/Gojek, atau "driving" jika mobil.
+      * \`google_maps_directions_url\`: URL Google Maps Directions Universal:
+        https://www.google.com/maps/dir/?api=1&origin=Malang+Kota&destination=Dataran+Tinggi+Dieng&waypoints=SPBU+Kediri%7CAlun-Alun+Nganjuk&travelmode=two_wheeler
+      * \`estimated_distance_km\`: Estimasi total jarak KM (contoh: 350)
+      * \`estimated_time_hours\`: Estimasi durasi jam (contoh: 8.5)
+      * \`estimated_fuel_liters\`: Estimasi konsumsi BBM liter (~50 KM/L untuk Beat) (contoh: 7)
+      * \`estimated_fuel_cost_rp\`: Estimasi biaya bensin (contoh: 70000)
+      * \`stops\`: Array urutan waktu & aktivitas per titik perjalanan.
+
 FORMAT OUTPUT (WAJIB JSON VALID TANPA MARKDOWN BACKTICKS):
 {
   "messages": ["Bubble pesan 1"],
@@ -631,6 +666,38 @@ FORMAT OUTPUT (WAJIB JSON VALID TANPA MARKDOWN BACKTICKS):
   "reasoning": "Alasan singkat",
   "chart": null,
   "location": null,
+  "route": {
+    "title": "Rute Touring Motor Malang - Dieng via Kediri",
+    "origin": "Malang Kota",
+    "destination": "Dataran Tinggi Dieng, Wonosobo",
+    "waypoints": ["SPBU Kediri", "Alun-Alun Nganjuk", "SPBU Wonosobo Kota"],
+    "travel_mode": "two_wheeler",
+    "google_maps_directions_url": "https://www.google.com/maps/dir/?api=1&origin=Malang+Kota&destination=Dataran+Tinggi+Dieng&waypoints=SPBU+Kediri%7CAlun-Alun+Nganjuk&travelmode=two_wheeler",
+    "estimated_distance_km": 350,
+    "estimated_time_hours": 8.5,
+    "estimated_fuel_liters": 7,
+    "estimated_fuel_cost_rp": 70000,
+    "stops": [
+      {
+        "step_number": 1,
+        "location_name": "Malang Kota",
+        "recommended_time": "04.30 WIB",
+        "activity_or_notes": "Berangkat subuh, bensin full tank"
+      },
+      {
+        "step_number": 2,
+        "location_name": "SPBU Kediri",
+        "recommended_time": "07.00 WIB",
+        "activity_or_notes": "Rest stop 1 & sarapan"
+      },
+      {
+        "step_number": 3,
+        "location_name": "Homestay Dieng",
+        "recommended_time": "14.00 WIB",
+        "activity_or_notes": "Tiba di Dieng, check-in & istirahat"
+      }
+    ]
+  },
   "locations": [
     {
       "name": "Alun-Alun Tugu Malang",
