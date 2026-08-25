@@ -33,7 +33,7 @@ import { sendTelegramMessageBubbles, sendTelegramMessage, sendTelegramChatAction
 import { appendTransactionRealtime, appendActivityRealtime } from '@/lib/google-sheets/sync';
 import { sendTelegramChart } from '@/lib/telegram/send-chart';
 import { sendTelegramLocation } from '@/lib/telegram/send-location';
-import { buildConfirmationInlineKeyboard, buildQuickActionKeyboard } from '@/lib/telegram/inline-keyboard';
+import { buildConfirmationInlineKeyboard, buildQuickActionKeyboard, buildWalletSelectionKeyboard } from '@/lib/telegram/inline-keyboard';
 import { runChatOrchestration } from '@/lib/gemini/prompts/chat';
 import { generateExportFile } from '@/lib/export/export-data';
 import { checkTransactionAnomaly, checkActivityCollision } from '@/lib/analytics/anomalies';
@@ -276,10 +276,19 @@ export async function processChatRespondDirect(
           }).filter((m: string) => m.length > 0);
         }
 
+        const needsWalletClarification = 
+          Boolean(result.extracted_data?.transactions && result.extracted_data.transactions.some((t: any) => t.needs_wallet_clarification || !t.payment_method || t.payment_method === 'Unspecified')) ||
+          introMessages.some(m => m.toLowerCase().includes('cash kertas atau non-tunai') || m.toLowerCase().includes('dibayarkan via') || m.toLowerCase().includes('mohon konfirmasi'));
+
         if (introMessages.length > 0) {
-          const replyMarkup = extractedRouteUrl
-            ? { inline_keyboard: [[{ text: '🏍️ Buka Rute Navigasi di Google Maps', url: extractedRouteUrl }]] }
-            : (effectiveLocations.length === 0 ? buildQuickActionKeyboard() : undefined);
+          let replyMarkup = undefined;
+          if (extractedRouteUrl) {
+            replyMarkup = { inline_keyboard: [[{ text: '🏍️ Buka Rute Navigasi di Google Maps', url: extractedRouteUrl }]] };
+          } else if (needsWalletClarification) {
+            replyMarkup = buildWalletSelectionKeyboard();
+          } else if (effectiveLocations.length === 0) {
+            replyMarkup = buildQuickActionKeyboard();
+          }
 
           sendTelegramMessageBubbles(chatId, introMessages, 150, replyMarkup).catch(console.error);
         }

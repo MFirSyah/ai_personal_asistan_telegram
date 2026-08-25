@@ -61,3 +61,19 @@ export function buildCategoryQuickChipsKeyboard() {
     ],
   };
 }
+
+export function buildWalletSelectionKeyboard(txId?: string) {
+  const prefix = txId ? `setwallet_${txId}_` : 'setwallet_latest_';
+  return {
+    inline_keyboard: [
+      [
+        { text: '💵 Cash Kertas', callback_data: `${prefix}cash` },
+        { text: '📱 Gopay', callback_data: `${prefix}gopay` },
+      ],
+      [
+        { text: '🏦 SeaBank', callback_data: `${prefix}seabank` },
+        { text: '💳 Bank Jago', callback_data: `${prefix}jago` },
+      ],
+    ],
+  };
+}

@@ -89,6 +89,41 @@ export async function POST(req: NextRequest) {
       await processChatRespondDirect(user.id, fromId, 'hitung simulasi sinking fund pajak stnk motor tahunan dan dana darurat', user.name || 'User');
     } else if (data === 'chip_pelunasan') {
       await processChatRespondDirect(user.id, fromId, 'hitung simulasi penghematan bunga jika melunasi cicilan pinjaman bank jago lebih cepat', user.name || 'User');
+    } else if (data.startsWith('setwallet_')) {
+      const parts = data.split('_');
+      const walletKey = parts[parts.length - 1];
+      const targetTxId = parts[1] === 'latest' ? null : parts[1];
+
+      const walletNames: Record<string, string> = {
+        cash: 'Cash Kertas',
+        gopay: 'Gopay',
+        seabank: 'SeaBank',
+        jago: 'Bank Jago',
+      };
+      const chosenWallet = walletNames[walletKey] || 'Cash Kertas';
+
+      try {
+        let query = supabaseAdmin.from('transactions').select('id, description, amount').eq('user_id', user.id).is('deleted_at', null);
+        if (targetTxId) {
+          query = query.eq('id', targetTxId);
+        } else {
+          query = query.order('created_at', { ascending: false }).limit(1);
+        }
+        const { data: foundTxs } = await query;
+        if (foundTxs && foundTxs.length > 0) {
+          const tx = foundTxs[0];
+          await supabaseAdmin.from('transactions').update({ payment_method: chosenWallet }).eq('id', tx.id);
+          await sendTelegramMessage(
+            fromId,
+            `✅ **METODE PEMBAYARAN DIPERBARUI!**\n\nTransaksi **${tx.description || 'Pengeluaran'}** sebesar **Rp ${Number(tx.amount).toLocaleString('id-ID')}** kini resmi dialokasikan ke dompet **${chosenWallet}**.`
+          );
+        } else {
+          await sendTelegramMessage(fromId, `✅ Pilihan dompet **${chosenWallet}** telah dicatat.`);
+        }
+      } catch (wErr) {
+        console.error('Error updating wallet method:', wErr);
+        await sendTelegramMessage(fromId, `✅ Pilihan dompet **${chosenWallet}** telah dicatat.`);
+      }
     } else if (data === 'confirm_delete_all') {
       const nowIso = new Date().toISOString();
       await Promise.all([

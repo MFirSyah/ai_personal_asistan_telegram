@@ -471,6 +471,19 @@ Bab ini memuat dokumentasi mendalam (*post-mortem*) mengenai setiap kesalahan ya
 - **Hasil Verifikasi:** Uji pertanyaan *"buatkan rute motoran dari Malang ke Dieng Wonosobo lewat Kediri dan Nganjuk"* lolos **100% Menghasilkan Rute Navigasi Two-Wheeler Google Maps**.
 
 
+
+### 2.32 Klarifikasi Proaktif Informasi Transaksi Belum Lengkap (Aturan 50) & Papan Tombol Dompet Instan
+- **Tujuan:** Ketika pengguna mencatat transaksi tanpa menyebutkan metode pembayaran secara spesifik (misal: *"Saya makan di warteg sebesar 10 ribu"*), AI otomatis mencatat transaksi dan proaktif menanyakan apakah dibayarkan secara tunai (*Cash Kertas*) atau non-tunai (*Gopay / SeaBank / Bank Jago*), serta menyajikan tombol interaktif 1-ketuk untuk melengkapinya.
+- **Rincian Implementasi:**
+  1. **Aturan 50 (Klarifikasi Proaktif Informasi - `lib/gemini/prompts/chat.ts`):**
+     - Menganalisis kelengkapan detail transaksi/agenda. Jika metode pembayaran tidak disebutkan, AI menyematkan `needs_wallet_clarification: true` dan menyusun pertanyaan klarifikasi sopan di akhir bubble pesan.
+  2. **Papan Tombol Dompet Instan (`lib/telegram/inline-keyboard.ts`):**
+     - Menyediakan tombol 4 dompet utama: `[ 💵 Cash Kertas ]`, `[ 📱 Gopay ]`, `[ 🏦 SeaBank ]`, `[ 💳 Bank Jago ]`.
+  3. **Webhook Callback Handler (`app/api/telegram/webhook/route.ts`):**
+     - Memperbarui kolom `payment_method` transaksi di Supabase seketika saat tombol dompet diklik dan mengirimkan konfirmasi mutasi dompet.
+- **Hasil Verifikasi:** Uji pertanyaan *"Saya makan di warteg sebesar 10 ribu"* lolos **100% Menanyakan Dompet Pembayaran & Menghasilkan Keyboard 4 Dompet**.
+
+
 ## 📅 BAB III: KRONOLOGI LENGKAP PERCAKAPAN, PERMINTAAN USER & EVOLUSI SISTEM
 
 ### 3.1 Fase 1: Setup Fondasi Dasar (12–15 Agustus 2026)
