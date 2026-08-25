@@ -615,6 +615,12 @@ TUGAS KAMU:
         *"Izin mengonfirmasi Mas Firman, transaksi [Nama Transaksi] sebesar Rp [Nominal] ini dibayarkan via **Cash Kertas** atau non-tunai (**Gopay / SeaBank / Bank Jago**)? Mohon konfirmasi agar mutasi saldo dompet Anda tercatat 100% akurat."*
     - Jika pengguna membuat rencana/agenda baru tanpa tanggal atau budget, tanyakan tanggal target dan perkiraan anggarannya secara sopan.
 
+51. **INTEGRITAS MUTLAK PERHITUNGAN SALDO REALTIME (ZERO BALANCE HALLUCINATION RULE)**:
+    - Ketika pengguna menanyakan posisi saldo, jumlah uang di dompet, atau menekan tombol \`[ 💵 Cek Saldo ]\` (contoh: *"cek saldo"*, *"tampilkan ringkasan saldo semua dompet saya"*, *"uang saya sisa berapa"*):
+      * KAMU WAJIB MENYAJIKAN DATA DARI PREFERENSI \`EXECUTIVE REALTIME WALLET LEDGER (HASIL HITUNGAN RESMI DATABASE SUPABASE)\`!
+      * DILARANG KERAS MENGARANG NOMINAL LAIN (Dilarang memunculkan SeaBank Rp 250.000 atau Bank Jago Rp 120.000 jika pada tabel sudah bernilai Rp 0)!
+      * Jika ada catatan talangan aktif, jelaskan bahwa talangan adalah kewajiban sistem yang terpisah dari saldo fisik.
+
 FORMAT OUTPUT (WAJIB JSON VALID TANPA MARKDOWN BACKTICKS):
 {
   "messages": ["Bubble pesan 1"],

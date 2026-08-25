@@ -484,6 +484,22 @@ Bab ini memuat dokumentasi mendalam (*post-mortem*) mengenai setiap kesalahan ya
 - **Hasil Verifikasi:** Uji pertanyaan *"Saya makan di warteg sebesar 10 ribu"* lolos **100% Menanyakan Dompet Pembayaran & Menghasilkan Keyboard 4 Dompet**.
 
 
+
+### 2.33 Engine Realtime Ledger Aggregator & Integritas Saldo Mutlak (Aturan 51 - Zero Balance Hallucination)
+- **Tujuan:** Mencegah AI berhalusinasi mengarang angka saldo lama (seperti SeaBank Rp 250.000 atau Bank Jago Rp 120.000) dan mencegah tercampuradukkannya status hutang talangan Gojek dengan saldo kas fisik.
+- **Rincian Implementasi:**
+  1. **Kalkulator Realtime Ledger (`lib/analytics/calculators.ts`):**
+     - Menghitung akumulasi seluruh mutasi transaksi database murni per dompet (`Cash Kertas`, `Cash Koin`, `Gopay`, `SeaBank`, `Bank Jago`) tanpa batas limit 10 item.
+     - Memisahkan status kewajiban talangan Gojek aktif dari saldo likuid.
+  2. **Query Lengkap Database (`lib/supabase/queries/transactions.ts`):**
+     - Menambahkan fungsi `getAllActiveTransactions(userId)` untuk menarik seluruh baris mutasi aktif secara menyeluruh saat evaluasi saldo.
+  3. **Backend Grounding Injection (`lib/telegram/chat-processor.ts`):**
+     - Otomatis menghitung ledger dan menginjeksi tabel `EXECUTIVE REALTIME WALLET LEDGER` setiap kali pengguna menanyakan saldo atau menekan tombol `[ 💵 Cek Saldo ]`.
+  4. **Aturan 51 (Zero Balance Hallucination - `lib/gemini/prompts/chat.ts`):**
+     - AI diwajibkan menyajikan angka resmi dari tabel `EXECUTIVE REALTIME WALLET LEDGER` dan dilarang keras menebak angka saldo lainnya.
+- **Hasil Verifikasi:** Uji query *"tampilkan ringkasan saldo semua dompet saya"* lolos **100% Presisi Matematis Tanpa Halusinasi SeaBank/Jago**.
+
+
 ## 📅 BAB III: KRONOLOGI LENGKAP PERCAKAPAN, PERMINTAAN USER & EVOLUSI SISTEM
 
 ### 3.1 Fase 1: Setup Fondasi Dasar (12–15 Agustus 2026)

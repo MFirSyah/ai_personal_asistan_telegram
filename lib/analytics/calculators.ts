@@ -834,3 +834,114 @@ export function calculateEarlyRepaymentSavings(
     advice,
   };
 }
+
+export interface RealtimeLedgerResult {
+  wallets: {
+    cashKertas: number;
+    cashKoin: number;
+    gopay: number;
+    seaBank: number;
+    bankJago: number;
+  };
+  totalLiquidCash: number;
+  totalIncome: number;
+  totalExpense: number;
+  netCashFlow: number;
+  activeTalanganGojekDebt: number;
+  summaryString: string;
+}
+
+export function calculateRealtimeLedger(transactions: any[]): RealtimeLedgerResult {
+  const rawWallets = {
+    cashKertas: 0,
+    cashKoin: 0,
+    gopay: 0,
+    seaBank: 0,
+    bankJago: 0,
+  };
+
+  let totalIncome = 0;
+  let totalExpense = 0;
+  let activeTalanganGojekDebt = 0;
+
+  for (const t of transactions) {
+    if (t.deleted_at) continue;
+    const rawAmt = Number(t.amount || 0);
+    if (isNaN(rawAmt) || rawAmt <= 0) continue;
+
+    const type = String(t.type || '').toLowerCase();
+    const method = String(t.payment_method || '').toLowerCase();
+    const category = String(t.category || '').toLowerCase();
+    const desc = String(t.description || '').toLowerCase();
+    const tags = Array.isArray(t.tags) ? t.tags.join(' ').toLowerCase() : String(t.tags || '').toLowerCase();
+
+    // Check if this is a talangan creation record (e.g. "talangan dari gojek 156k")
+    const isTalanganDebtNote = (desc.includes('talangan dari gojek') || tags.includes('talangan')) && !desc.includes('bayar') && !desc.includes('lunas');
+    const isTalanganRepayment = (desc.includes('bayar') || desc.includes('lunas') || desc.includes('potong')) && (desc.includes('talangan') || tags.includes('talangan'));
+
+    if (isTalanganDebtNote && !desc.includes('bayar')) {
+      activeTalanganGojekDebt += rawAmt;
+      // Talangan debt note is not liquid cash expense, it is an operational liability
+      continue;
+    }
+
+    if (isTalanganRepayment) {
+      activeTalanganGojekDebt = Math.max(0, activeTalanganGojekDebt - rawAmt);
+    }
+
+    const isIncome = type === 'income' || type === 'pemasukan';
+    const isExpense = type === 'expense' || type === 'pengeluaran';
+
+    if (isIncome) totalIncome += rawAmt;
+    if (isExpense) totalExpense += rawAmt;
+
+    const delta = isIncome ? rawAmt : -rawAmt;
+
+    if (method.includes('koin') || category.includes('koin') || desc.includes('koin')) {
+      rawWallets.cashKoin += delta;
+    } else if (method.includes('gopay') || category.includes('gopay')) {
+      rawWallets.gopay += delta;
+    } else if (method.includes('seabank') || category.includes('seabank')) {
+      rawWallets.seaBank += delta;
+    } else if (method.includes('jago') || category.includes('jago')) {
+      rawWallets.bankJago += delta;
+    } else {
+      rawWallets.cashKertas += delta;
+    }
+  }
+
+  const normalizedSeaBank = Math.max(0, Math.round(rawWallets.seaBank));
+  const normalizedBankJago = Math.max(0, Math.round(rawWallets.bankJago));
+  const normalizedGopay = Math.max(0, Math.round(rawWallets.gopay));
+  const normalizedCashKertas = Math.max(0, Math.round(rawWallets.cashKertas));
+  const normalizedCashKoin = Math.max(0, Math.round(rawWallets.cashKoin));
+
+  const totalLiquidCash = normalizedCashKertas + normalizedCashKoin + normalizedGopay + normalizedSeaBank + normalizedBankJago;
+  const netCashFlow = totalIncome - totalExpense;
+
+  const summaryString = [
+    `• 💵 Cash Kertas: Rp ${normalizedCashKertas.toLocaleString('id-ID')}`,
+    `• 🪙 Cash Koin: Rp ${normalizedCashKoin.toLocaleString('id-ID')}`,
+    `• 📱 Gopay: Rp ${normalizedGopay.toLocaleString('id-ID')}`,
+    `• 🏦 SeaBank: Rp ${normalizedSeaBank.toLocaleString('id-ID')}`,
+    `• 💳 Bank Jago: Rp ${normalizedBankJago.toLocaleString('id-ID')}`,
+    `• 📊 Total Saldo Likuid: Rp ${totalLiquidCash.toLocaleString('id-ID')}`,
+    activeTalanganGojekDebt > 0 ? `• ⚠️ Sisa Hutang Talangan Gojek: Rp ${activeTalanganGojekDebt.toLocaleString('id-ID')}` : '• ✅ Talangan Gojek: Lunas (Rp 0)'
+  ].join('\n');
+
+  return {
+    wallets: {
+      cashKertas: normalizedCashKertas,
+      cashKoin: normalizedCashKoin,
+      gopay: normalizedGopay,
+      seaBank: normalizedSeaBank,
+      bankJago: normalizedBankJago,
+    },
+    totalLiquidCash,
+    totalIncome,
+    totalExpense,
+    netCashFlow,
+    activeTalanganGojekDebt,
+    summaryString,
+  };
+}

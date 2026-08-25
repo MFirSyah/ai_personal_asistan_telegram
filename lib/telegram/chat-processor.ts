@@ -6,10 +6,12 @@ import {
   checkSmartScheduleConflict,
   optimizeTripBudget,
   calculateLoanRisk,
+  calculateRealtimeLedger,
 } from '@/lib/analytics/calculators';
 
 import {
   getRecentTransactions,
+  getAllActiveTransactions,
   getRecentActivities,
   getActivePlans,
   getRecentChatHistory,
@@ -176,6 +178,24 @@ export async function processChatRespondDirect(
         value: OFFICIAL_FACTS.fuelPricesEastJavaString,
         updated_at: new Date().toISOString(),
       });
+    }
+
+    // 3. Proactive Grounding: Realtime Ledger Aggregator for Balance & Financial Queries
+    const isBalanceOrFinancialQuery = /(saldo|uang|dompet|kas|cek saldo|posisi dana|duit|keuangan|rekap|tabungan|sisa dana|ringkasan saldo)/i.test(userMessage);
+    if (isBalanceOrFinancialQuery) {
+      try {
+        const allActiveTxs = await getAllActiveTransactions(userId);
+        const ledger = calculateRealtimeLedger(allActiveTxs);
+        runtimePrefs.push({
+          id: 'realtime-ledger-balances',
+          user_id: userId,
+          key: 'EXECUTIVE REALTIME WALLET LEDGER (HASIL HITUNGAN RESMI DATABASE SUPABASE)',
+          value: ledger.summaryString,
+          updated_at: new Date().toISOString(),
+        });
+      } catch (lErr) {
+        console.warn('Realtime ledger aggregation skipped:', lErr);
+      }
     }
 
     // Run Gemini AI Orchestration with existing category list and live grounding

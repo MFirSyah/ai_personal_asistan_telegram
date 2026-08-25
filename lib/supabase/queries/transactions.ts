@@ -211,6 +211,19 @@ export async function insertPlan(plan: Partial<Plan>): Promise<Plan> {
   return data as Plan;
 }
 
+
+export async function getAllActiveTransactions(userId: string): Promise<Transaction[]> {
+  const { data, error } = await supabaseAdmin
+    .from('transactions')
+    .select('*')
+    .eq('user_id', userId)
+    .is('deleted_at', null)
+    .order('occurred_at', { ascending: true });
+
+  if (error) return [];
+  return data as Transaction[];
+}
+
 export async function getRecentTransactions(userId: string, limit = 20): Promise<Transaction[]> {
   const { data, error } = await supabaseAdmin
     .from('transactions')
