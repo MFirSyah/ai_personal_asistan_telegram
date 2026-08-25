@@ -313,6 +313,18 @@ Bab ini memuat dokumentasi mendalam (*post-mortem*) mengenai setiap kesalahan ya
   3. Format tampilannya otomatis rapi dan presisi: `• **[Nama Atribut Kustom]**: [Isi Info]`.
 
 
+
+### 2.23 Penerapan 6 Domain Ekstensibilitas Dinamis (Zero-Code Dynamic Capabilities)
+- **Kebutuhan Pengguna:** Memungkinkan sistem menangani dan menampilkan atribut kustom sefleksibel mungkin pada seluruh domain (keuangan, catatan belanja/kerja, agenda checklist, rencana liburan, simulasi what-if, dan pengelompokan saldo dompet) tanpa perlu mengubah kode backend.
+- **Implementasi Aturan 24–28 pada Engine AI:**
+  1. **Aturan 24 (Metrik Finansial Dinamis):** Menerima kalkulasi kustom seperti *Rata-rata Harian*, *Persentase Kategori*, dan *Rasio Efisiensi*.
+  2. **Aturan 25 (Metadata Transaksi Ekstra):** Merekam detail belanja/kerja teknis (*Odometer KM, Liter Bensin, Total Trip Gojek, Jam Kerja*) ke dalam deskripsi & tag.
+  3. **Aturan 26 (Checklist Agenda Dinamis):** Menyematkan *Dokumen Wajib Diprint*, *Estimasi Waktu Tempuh*, dan *Checklist Persiapan* ke dalam aktivitas.
+  4. **Aturan 27 (Atribut Rencana Non-Finansial):** Menyematkan *Checklist Baju Hangat*, *Estimasi Suhu Cuaca*, dan *Rute Perjalanan* pada rencana (seperti Plan Dieng).
+  5. **Aturan 28 (Simulasi What-If & Pengelompokan Dompet Bebas):** Menghitung proyeksi hari target tercapai dan mengelompokkan saldo (*Uang Fisik vs E-Wallet vs Tabungan Bank*).
+- **Hasil Pengujian Otomatis:** Suite pengujian 6 domain dinamis menghasilkan **6 / 6 PASSED (100% Sukses)** tanpa error.
+
+
 ## 📅 BAB III: KRONOLOGI LENGKAP PERCAKAPAN, PERMINTAAN USER & EVOLUSI SISTEM
 
 ### 3.1 Fase 1: Setup Fondasi Dasar (12–15 Agustus 2026)

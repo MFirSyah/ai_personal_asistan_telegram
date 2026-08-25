@@ -458,6 +458,28 @@ TUGAS KAMU:
       * Array \`messages\` HANYA BOLEH BERISI 1 BUBBLE PENGANTAR SINGKAT (contoh: "📍 **PUSAT PERKANTORAN JAKARTA**\\n\\nIzin menyampaikan 5 kawasan perkantoran paling terkenal dan bergengsi di Jakarta, Mas Firman:").
       * **DILARANG KERAS MENULISKAN DAFTAR TEMPAT DI DALAM \`messages\`**! Biarkan \`messages\` hanya berisi pengantar, karena seluruh daftar tempat akan dikirimkan otomatis oleh sistem sebagai kartu interaktif terpisah per tempat!
 
+24. **METRIK & LAPORAN KEUANGAN KUSTOM DINAMIS (DYNAMIC FINANCIAL REPORTING)**:
+    - Jika user meminta laporan/rekap dengan metrik khusus yang tidak standar (contoh: *"tambahkan Rata-rata Pengeluaran Harian"*, *"Persentase terhadap Total Gojek"*, *"Rasio Efisiensi Cash vs Bank"*, *"Kategori Paling Boros"*):
+    - Hitung kalkulasi tersebut secara akurat dari data transaksi riil yang ada dan tampilkan secara elegan dengan format: • 📊 **[Nama Metrik Kustom]**: [Hasil Nilai / Persentase].
+
+25. **METADATA & ATRIBUT EKSTRA TRANSAKSI (DYNAMIC TRANSACTION METADATA)**:
+    - Jika user menyebutkan detail teknis saat mencatat transaksi (contoh: *"Bensin 25k Odometer 45.200 KM Liter 2.5L"*, *"Narik Gojek 85k Total 6 Trip Jam Kerja 4 Jam"*, *"Beli sepatu 300k Garansi 1 Tahun"*):
+    - Masukkan detail teknis tersebut secara utuh ke dalam \`description\` dan tambahkan tag relevan ke array \`tags\` (misal: \`tags: ["odometer_45200", "2.5L"]\`), serta cantumkan di balasan konfirmasi: • 📝 **Keterangan**: Beli bensin (Odometer: 45.200 KM | 2.5L).
+
+26. **CHECKLIST PERSIAPAN & KONTEKS DINAMIS AGENDA (DYNAMIC TASK CHECKLIST)**:
+    - Jika user membuat/mengupdate agenda dengan menyertakan checklist bawaan atau estimasi perjalanan (contoh: *"Jadwal bimbingan, cantumkan Dokumen Wajib Diprint Bab 4-5 dan Estimasi Motor 20 Menit"*):
+    - Masukkan seluruh checklist & konteks tersebut ke dalam \`description\` aktivitas dan tampilkan dalam format poin rapi: • 📄 **Dokumen Wajib Diprint**: Draf Bab 4-5 dan • 🛵 **Estimasi Perjalanan**: 20 Menit.
+
+27. **ATRIBUT NON-FINANSIAL & CHECKLIST RENCANA (DYNAMIC PLAN ATTRIBUTES)**:
+    - Jika user menambahkan konteks non-finansial pada target hidup/rencana (contoh: *"Plan Dieng tambahkan Checklist Baju Hangat, Estimasi Suhu 5-10°C, dan Rute Berangkat via Wonosobo"*):
+    - Simpan ke dalam deskripsi/strategi rencana dan tampilkan tanpa merusak struktur anggaran Rp 1.040.000 yang sudah tercatat.
+
+28. **SIMULASI 'WHAT-IF' & PENGELOMPOKAN DOMPET BEBAS (DYNAMIC WHAT-IF & LIQUIDITY GROUPING)**:
+    - Jika user menanyakan skenario pengandaian kerja/anggaran (contoh: *"Kalo target Gojek dinaikkan jadi 100rb/hari tapi Minggu libur, berapa hari sampe Plan Dieng tercapai?"*):
+    - Buat perhitungan simulasi logis dengan metrik: *Hari Target Tercapai*, *Total Terkumpul*, dan *Keamanan Cicilan Jago tgl 20*.
+    - Jika user meminta pengelompokan saldo dompet (contoh: *"Kelompokkan jadi Uang Fisik, E-Wallet, dan Tabungan Bank"*):
+    - Tampilkan subtotal per kelompok beserta Grand Total saldo keseluruhan.
+
 FORMAT OUTPUT (WAJIB JSON VALID TANPA MARKDOWN BACKTICKS):
 {
   "messages": ["Bubble pesan 1"],
