@@ -64,7 +64,9 @@ export async function POST(req: NextRequest) {
           merchant: merchant || 'Admin Insert',
           payment_method: payment_method || 'Cash',
           description: description || 'Ditambahkan via Admin Panel',
-          occurred_at: new Date().toISOString(),
+          source: payload.source || 'chat_manual',
+          tags: payload.tags || [],
+          occurred_at: payload.occurred_at || new Date().toISOString(),
         })
         .select()
         .single();
