@@ -85,6 +85,10 @@ export async function POST(req: NextRequest) {
       await processChatRespondDirect(user.id, fromId, 'catat bayar parkir 2000 cash', user.name || 'User');
     } else if (data === 'chip_gojek') {
       await processChatRespondDirect(user.id, fromId, 'tampilkan evaluasi performa narik gojek dan efisiensi bensin', user.name || 'User');
+    } else if (data === 'chip_sinking') {
+      await processChatRespondDirect(user.id, fromId, 'hitung simulasi sinking fund pajak stnk motor tahunan dan dana darurat', user.name || 'User');
+    } else if (data === 'chip_pelunasan') {
+      await processChatRespondDirect(user.id, fromId, 'hitung simulasi penghematan bunga jika melunasi cicilan pinjaman bank jago lebih cepat', user.name || 'User');
     } else if (data === 'confirm_delete_all') {
       const nowIso = new Date().toISOString();
       await Promise.all([

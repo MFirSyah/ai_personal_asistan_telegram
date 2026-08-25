@@ -69,3 +69,20 @@ export function calculateSplitBill(input: SplitBillInput): SplitBillResult {
     formattedSummary: summary,
   };
 }
+
+export function generateWhatsAppShareSummary(result: SplitBillResult, bankAccountInfo?: string): string {
+  let wa = `🧾 *RINCIAN PATUNGAN (SPLIT BILL)*\n`;
+  wa += `💰 Total Tagihan: Rp ${result.totalAmount.toLocaleString('id-ID')}\n\n`;
+  wa += `📋 *Rincian Transfer Masing-Masing:*\n`;
+
+  Object.entries(result.perPerson).forEach(([person, amount]) => {
+    wa += `• ${person}: *Rp ${amount.toLocaleString('id-ID')}*\n`;
+  });
+
+  if (bankAccountInfo) {
+    wa += `\n💳 *Transfer ke:*\n${bankAccountInfo}\n`;
+  }
+  wa += `\n_Mohon konfirmasi jika sudah transfer ya, terima kasih!_ 🙏✨`;
+
+  return wa;
+}

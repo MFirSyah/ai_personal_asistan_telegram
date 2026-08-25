@@ -54,6 +54,10 @@ export function buildCategoryQuickChipsKeyboard() {
         { text: '🅿️ Parkir', callback_data: 'chip_parkir' },
         { text: '🛵 Gojek', callback_data: 'chip_gojek' },
       ],
+      [
+        { text: '🛡️ Sinking Fund', callback_data: 'chip_sinking' },
+        { text: '⚡ Hemat Bunga Jago', callback_data: 'chip_pelunasan' },
+      ],
     ],
   };
 }

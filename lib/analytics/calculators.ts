@@ -770,3 +770,67 @@ export async function calculateNetWorth(userId: string): Promise<{ totalCashAsse
     netWorth: totalCashAssets - totalDebts,
   };
 }
+
+export interface SinkingFundResult {
+  purposeName: string;
+  targetAnnualAmount: number;
+  monthsRemaining: number;
+  monthlySavingsRequired: number;
+  dailySavingsRequired: number;
+  advice: string;
+}
+
+export function calculateSinkingFund(
+  targetAnnualAmount: number,
+  monthsRemaining: number = 12,
+  purposeName: string = 'Pajak STNK Tahunan'
+): SinkingFundResult {
+  const safeMonths = Math.max(1, monthsRemaining);
+  const monthlySavingsRequired = Math.round(targetAnnualAmount / safeMonths);
+  const dailySavingsRequired = Math.round(monthlySavingsRequired / 30);
+
+  const advice = `Untuk memenuhi dana ${purposeName} sebesar Rp ${targetAnnualAmount.toLocaleString('id-ID')} dalam ${safeMonths} bulan ke depan, disarankan menyisihkan Rp ${monthlySavingsRequired.toLocaleString('id-ID')}/bulan (atau cukup ~Rp ${dailySavingsRequired.toLocaleString('id-ID')}/hari).`;
+
+  return {
+    purposeName,
+    targetAnnualAmount,
+    monthsRemaining: safeMonths,
+    monthlySavingsRequired,
+    dailySavingsRequired,
+    advice,
+  };
+}
+
+export interface EarlyRepaymentResult {
+  remainingPrincipal: number;
+  remainingMonths: number;
+  monthlyInterestRatePct: number;
+  totalRemainingInterestNormal: number;
+  lumpSumPayoffAmount: number;
+  totalInterestSaved: number;
+  advice: string;
+}
+
+export function calculateEarlyRepaymentSavings(
+  remainingPrincipal: number,
+  monthlyInterestRatePct: number = 2.99,
+  remainingMonths: number = 12
+): EarlyRepaymentResult {
+  const safeMonths = Math.max(1, remainingMonths);
+  const monthlyInterestNominal = Math.round(remainingPrincipal * (monthlyInterestRatePct / 100));
+  const totalRemainingInterestNormal = monthlyInterestNominal * safeMonths;
+  const lumpSumPayoffAmount = remainingPrincipal; // Pokok murni jika melunasi sekarang
+  const totalInterestSaved = totalRemainingInterestNormal;
+
+  const advice = `Jika melunasi sisa pokok pinjaman Rp ${remainingPrincipal.toLocaleString('id-ID')} secara langsung hari ini, Anda berhasil menghemat total bunga sebesar Rp ${totalInterestSaved.toLocaleString('id-ID')} untuk ${safeMonths} bulan ke depan!`;
+
+  return {
+    remainingPrincipal,
+    remainingMonths: safeMonths,
+    monthlyInterestRatePct,
+    totalRemainingInterestNormal,
+    lumpSumPayoffAmount,
+    totalInterestSaved,
+    advice,
+  };
+}
