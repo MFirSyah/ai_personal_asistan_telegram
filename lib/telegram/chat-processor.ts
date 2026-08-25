@@ -146,7 +146,7 @@ export async function processChatRespondDirect(
     // Save user message to history asynchronously
     saveChatMessage(userId, 'user', userMessage).catch(console.error);
 
-    // 2. Proactive Grounding: Fetch Live Weather if relevant to outdoor/trips/gojek
+    // 2. Proactive Grounding: Fetch Live Weather & Official Fuel Prices
     let runtimePrefs = [...preferences];
     const isOutdoorOrTripQuery = /(cuaca|hujan|narik|gojek|dieng|bromo|trip|liburan|bensin|jalan|sore|pagi|malam|otw)/i.test(userMessage);
     if (isOutdoorOrTripQuery) {
@@ -165,6 +165,17 @@ export async function processChatRespondDirect(
       } catch (wErr) {
         console.warn('Live weather grounding fetch skipped:', wErr);
       }
+    }
+
+    const isFuelQuery = /(bbm|bensin|pertamax|pertalite|solar|dexlite|biosolar|turbo|liter|harga bensin)/i.test(userMessage);
+    if (isFuelQuery) {
+      runtimePrefs.push({
+        id: 'official-bbm-prices',
+        user_id: userId,
+        key: 'Daftar Resmi Harga BBM Pertamina Jawa Timur',
+        value: OFFICIAL_FACTS.fuelPricesEastJavaString,
+        updated_at: new Date().toISOString(),
+      });
     }
 
     // Run Gemini AI Orchestration with existing category list and live grounding

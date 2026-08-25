@@ -19,11 +19,23 @@ export const COORDINATES: Record<string, { lat: number; lng: number; name: strin
 
 export const OFFICIAL_FACTS = {
   fuelPrices: {
-    pertalite: 10000,
-    pertamax: 12950,
-    pertamaxTurbo: 14400,
-    dexlite: 14550,
+    pertalite: 10000, // Pertalite (RON 90) - Subsidi
+    biosolar: 6800,   // Biosolar / Solar (CN 48) - Subsidi
+    pertamax: 15950,  // Pertamax (RON 92)
+    pertamaxGreen: 16600, // Pertamax Green (RON 95)
+    pertamaxTurbo: 18300, // Pertamax Turbo (RON 98)
+    dexlite: 19700,   // Dexlite (CN 51)
+    pertaminaDex: 21150, // Pertamina Dex (CN 53)
   },
+  fuelPricesEastJavaString: `DAFTAR HARGA RESMI BBM PERTAMINA (JAWA TIMUR):
+• Pertalite (RON 90): Rp 10.000 / liter (Subsidi)
+• Biosolar / Solar (CN 48): Rp 6.800 / liter (Subsidi)
+• Pertamax (RON 92): Rp 15.950 / liter
+• Pertamax Green (RON 95): Rp 16.600 / liter
+• Pertamax Turbo (RON 98): Rp 18.300 / liter
+• Dexlite (CN 51): Rp 19.700 / liter
+• Pertamina Dex (CN 53): Rp 21.150 / liter`,
+
   tollRates: {
     malangSurabaya: 54500, // Pandaan-Malang
     soloMalang: 320000,

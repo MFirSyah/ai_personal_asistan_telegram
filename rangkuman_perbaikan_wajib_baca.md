@@ -440,6 +440,25 @@ Bab ini memuat dokumentasi mendalam (*post-mortem*) mengenai setiap kesalahan ya
 - **Hasil Verifikasi:** Uji otomatis 4 pilar lolos **3 / 3 PASSED (100% Sukses)** dan kompilasi TypeScript `npx tsc --noEmit` lolos **0 Error**.
 
 
+
+### 2.30 Penyesuaian Presisi Jenis BBM (Strict Fuel Type Matching) & Daftar Resmi BBM Pertamina Jawa Timur
+- **Masalah:** Ketika pengguna bertanya harga bahan bakar tertentu (*"pertamax hari ini berapa per liter nya"*), AI sebelumnya sempat overfit dan menjawab harga Pertalite karena mengaitkannya dengan jenis motor Beat pengguna, padahal pengguna jelas-jelas menanyakan harga Pertamax.
+- **Solusi & Penguatan:**
+  1. **Tabel Resmi BBM Pertamina Jawa Timur (`lib/services/live-grounding.ts`):**
+     - Pertalite (RON 90): Rp 10.000 / liter (Subsidi)
+     - Biosolar / Solar (CN 48): Rp 6.800 / liter (Subsidi)
+     - Pertamax (RON 92): Rp 15.950 / liter
+     - Pertamax Green (RON 95): Rp 16.600 / liter
+     - Pertamax Turbo (RON 98): Rp 18.300 / liter
+     - Dexlite (CN 51): Rp 19.700 / liter
+     - Pertamina Dex (CN 53): Rp 21.150 / liter
+  2. **Aturan 48 (Kesesuaian Presisi Jenis BBM - `lib/gemini/prompts/chat.ts`):**
+     - Mengharuskan AI menjawab spesifik dan presisi untuk jenis BBM yang ditanyakan (contoh: Pertamax dijawab Rp 15.950/L) dan melarang keras mengalihkan ke Pertalite jika pengguna menanyakan Pertamax/Solar/Dexlite.
+  3. **Auto-Grounding BBM (`lib/telegram/chat-processor.ts`):**
+     - Menyuntikkan tabel daftar harga BBM Jawa Timur otomatis saat pengguna bertanya seputar bensin atau bahan bakar.
+- **Hasil Verifikasi:** Uji pertanyaan *"pertamax hari ini berapa per liter nya"* lolos **100% Menjawab Pertamax Rp 15.950/L**, dilengkapi tabel resmi Pertamina Jawa Timur.
+
+
 ## 📅 BAB III: KRONOLOGI LENGKAP PERCAKAPAN, PERMINTAAN USER & EVOLUSI SISTEM
 
 ### 3.1 Fase 1: Setup Fondasi Dasar (12–15 Agustus 2026)

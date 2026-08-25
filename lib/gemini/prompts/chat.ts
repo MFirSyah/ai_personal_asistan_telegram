@@ -353,7 +353,15 @@ function buildFullPrompt(context: ChatOrchestrationContext): string {
   }
 
   parts.push(`EXECUTIVE FACT SHEET (DATA POKOK MAS FIRMAN):
-• Kendaraan Utama: Honda Beat FI (Kapasitas Tangki 4.2L, Konsumsi BBM ~48-52 KM/L, BBM Pertalite Rp 10.000/L).
+• Kendaraan Utama: Honda Beat FI (Kapasitas Tangki 4.2L, Konsumsi BBM ~48-52 KM/L).
+• DAFTAR HARGA RESMI BBM PERTAMINA (JAWA TIMUR):
+  - Pertalite (RON 90): Rp 10.000 / liter (Subsidi)
+  - Biosolar / Solar (CN 48): Rp 6.800 / liter (Subsidi)
+  - Pertamax (RON 92): Rp 15.950 / liter
+  - Pertamax Green (RON 95): Rp 16.600 / liter
+  - Pertamax Turbo (RON 98): Rp 18.300 / liter
+  - Dexlite (CN 51): Rp 19.700 / liter
+  - Pertamina Dex (CN 53): Rp 21.150 / liter
 • Cicilan Tetap Aktif: Pinjaman Bank Jago (Angsuran Rp 67.940/bulan ditarik autodebet setiap tanggal 20).
 • Dompet Keuangan Aktif: Cash Kertas, Gopay, SeaBank, Bank Jago.
 • Rencana Target Utama: Trip Ke Dieng (Pagu Anggaran Rp 1.040.000, Periode 29-30 Agustus 2026).
@@ -558,6 +566,12 @@ TUGAS KAMU:
 47. **INTEGRASI LOGISTIK LOKAL & REALITAS OPERASIONAL**:
     - Pahami realitas lapangan Mas Firman: Rute motor Malang-Dieng (~350 KM via Kediri-Nganjuk-Wonosobo butuh 2-3 kali istirahat fisik, isi bensin penuh di Wonosobo kota).
     - Suhu dingin ekstrem Dieng malam/subuh (3°C - 5°C embun upas) wajib didukung homestay dengan pemanas air (water heater) dan pakaian polar/windproof berlapis.
+
+48. **KESESUAIAN PRESISI JENIS BBM DENGAN PERTANYAAN PENGGUNA (STRICT FUEL TYPE MATCHING)**:
+    - Jika pengguna bertanya harga jenis BBM tertentu (contoh: *"Pertamax hari ini berapa per liternya?"*, *"Pertamax Turbo"*, *"Dexlite"*, *"Solar"*):
+      * JAWAB SECARA SPESIFIK & PRESISI UNTUK JENIS BBM YANG DITANYAKAN TERSEBUT (contoh: *Harga resmi Pertamax (RON 92) saat ini di Jawa Timur adalah **Rp 15.950 per liter**.*).
+      * DILARANG KERAS MENGALIHKAN ATAU MENJAWAB DENGAN PERTALITE JIKA PENGGUNA JELAS-JELAS MENANYAKAN PERTAMAX ATAU JENIS LAINNYA!
+      * Setelah menjawab jenis BBM yang diminta, kamu boleh menyertakan tabel komparasi lengkap BBM Pertamina Jawa Timur (Pertalite Rp 10.000, Solar Rp 6.800, Pertamax Rp 15.950, Pertamax Green Rp 16.600, Pertamax Turbo Rp 18.300, Dexlite Rp 19.700, Pertamina Dex Rp 21.150).
 
 FORMAT OUTPUT (WAJIB JSON VALID TANPA MARKDOWN BACKTICKS):
 {
