@@ -240,9 +240,9 @@ export async function POST(req: NextRequest) {
   // 5. Send typing indicator immediately (<30ms)
   sendTelegramChatAction(chatId, photo ? 'upload_photo' : 'typing').catch(console.error);
 
-  // 6. Use Next.js after() to execute background task in Vercel serverless without termination
-  after(async () => {
-    const voice = message.voice;
+  // 6. Direct Reliable Dispatch: Ensure message is delivered before Vercel serverless terminates
+  const voice = message.voice;
+  try {
     if (photo && photo.length > 0) {
       const largestPhoto = photo[photo.length - 1];
       await processReceiptDirect(user.id, chatId, largestPhoto.file_id);
@@ -257,8 +257,11 @@ export async function POST(req: NextRequest) {
         message.date ? message.date * 1000 : undefined
       );
     }
-  });
+  } catch (procErr) {
+    console.error('[Webhook Dispatch Error]', procErr);
+    await sendTelegramMessage(chatId, 'Maaf Mas Firman, server baru saja terbangun dari standby. Silakan kirim ulang pesan Anda ya!');
+  }
 
-  // Return HTTP 200 OK immediately to Telegram (<30ms)
+  // Return HTTP 200 OK to Telegram
   return NextResponse.json({ ok: true });
 }

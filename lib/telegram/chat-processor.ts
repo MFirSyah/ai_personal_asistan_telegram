@@ -310,7 +310,7 @@ export async function processChatRespondDirect(
             replyMarkup = buildQuickActionKeyboard();
           }
 
-          sendTelegramMessageBubbles(chatId, introMessages, 150, replyMarkup).catch(console.error);
+          await sendTelegramMessageBubbles(chatId, introMessages, 150, replyMarkup);
         }
       }
 

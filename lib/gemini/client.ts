@@ -23,7 +23,7 @@ export const EMBEDDING_MODEL = 'text-embedding-004';
 export async function generateContentWithFallback(
   contents: any,
   config?: any,
-  timeoutMs = 15_000
+  timeoutMs = 8_000
 ): Promise<{ response: any; usedModel: string }> {
   let lastError: any = null;
 
