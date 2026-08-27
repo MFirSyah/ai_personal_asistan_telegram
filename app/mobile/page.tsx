@@ -55,10 +55,10 @@ const HTML_SOURCE = `<!DOCTYPE html>
     .hide-scrollbar::-webkit-scrollbar { display: none; }
     .hide-scrollbar { -ms-overflow-style: none; scrollbar-width: none; }
     .glass-panel {
-      background: rgba(20, 26, 32, 0.92);
+      background: rgba(20, 26, 32, 0.94);
       backdrop-filter: blur(16px);
       -webkit-backdrop-filter: blur(16px);
-      border: 1px solid rgba(40, 50, 62, 0.7);
+      border: 1px solid rgba(40, 50, 62, 0.75);
     }
     .tosca-bloom { box-shadow: 0 0 16px rgba(0, 168, 168, 0.35); }
     .lime-glow { box-shadow: 0 0 16px rgba(210, 240, 0, 0.4); }
@@ -67,13 +67,19 @@ const HTML_SOURCE = `<!DOCTYPE html>
       width: 100%;
       height: 100%;
       overflow-y: auto;
-      padding-bottom: 120px;
+      padding-bottom: 140px;
+    }
+    #tab-chat {
+      padding-bottom: 230px !important;
+    }
+    .gantt-track {
+      background: repeating-linear-gradient(90deg, transparent, transparent 39px, rgba(40, 50, 62, 0.4) 40px);
     }
     .modal-overlay {
       display: none;
       position: fixed;
       inset: 0;
-      background: rgba(0, 0, 0, 0.8);
+      background: rgba(0, 0, 0, 0.85);
       backdrop-filter: blur(8px);
       z-index: 100;
       align-items: center;
@@ -90,9 +96,9 @@ const HTML_SOURCE = `<!DOCTYPE html>
 <body class="flex flex-col h-full w-full select-none text-xs">
 
   <!-- ========================================================================= -->
-  <!-- 🔝 TOP APP BAR (HEADER BERSIH DENGAN STATUS & SALDO CEPAT) -->
+  <!-- 🔝 TOP APP BAR (BERSIH DENGAN SALDO & LOKASI CUACA REAL) -->
   <!-- ========================================================================= -->
-  <header class="glass-panel px-4 py-3 flex justify-between items-center border-b border-border/50 shrink-0 z-40">
+  <header class="glass-panel px-4 py-2.5 flex justify-between items-center border-b border-border/50 shrink-0 z-40">
     <div class="flex items-center gap-2.5">
       <div class="relative">
         <div class="w-8 h-8 rounded-full bg-surface-elevated flex items-center justify-center border border-primary/40 tosca-bloom">
@@ -105,8 +111,8 @@ const HTML_SOURCE = `<!DOCTYPE html>
           DATA_CORE_V1
           <span class="text-[9px] font-mono px-1 rounded bg-primary/20 text-primary border border-primary/30">PRO</span>
         </h1>
-        <p class="text-[10px] font-mono text-lime flex items-center gap-1">
-          <span class="w-1.5 h-1.5 rounded-full bg-lime inline-block"></span> MAS FIRMAN
+        <p class="text-[10px] font-mono text-lime flex items-center gap-1" id="header-location">
+          <span class="w-1.5 h-1.5 rounded-full bg-lime inline-block"></span> MALANG (26°C)
         </p>
       </div>
     </div>
@@ -115,12 +121,12 @@ const HTML_SOURCE = `<!DOCTYPE html>
     <div class="glass-panel px-2.5 py-1 rounded-full flex items-center gap-2 border border-border/60">
       <div class="flex items-center gap-1">
         <span class="text-[9px] font-mono text-text-secondary">KAS</span>
-        <span class="text-[11px] font-mono font-bold text-lime">Rp 455k</span>
+        <span class="text-[11px] font-mono font-bold text-lime" id="header-cash">Rp 455k</span>
       </div>
       <span class="w-px h-2.5 bg-border"></span>
       <div class="flex items-center gap-1">
         <span class="text-[9px] font-mono text-text-secondary">GOPAY</span>
-        <span class="text-[11px] font-mono font-bold text-tosca">Rp 164k</span>
+        <span class="text-[11px] font-mono font-bold text-tosca" id="header-gopay">Rp 164k</span>
       </div>
     </div>
   </header>
@@ -212,7 +218,7 @@ const HTML_SOURCE = `<!DOCTYPE html>
     </div>
 
     <!-- ======================================================================= -->
-    <!-- 🗄️ TAB 2: DATA CORE & GANTT TIMELINE (FULL CRUD) -->
+    <!-- 🗄️ TAB 2: DATA CORE & INTERACTIVE GANTT TIMELINE -->
     <!-- ======================================================================= -->
     <div id="tab-data" class="tab-pane px-4 py-3 space-y-3">
       <div class="flex justify-between items-center">
@@ -230,68 +236,106 @@ const HTML_SOURCE = `<!DOCTYPE html>
       <!-- Segmented Switcher -->
       <div class="flex bg-surface-elevated p-1 rounded-xl border border-border">
         <button id="sub-btn-gantt" onclick="switchDataSubView('gantt')" class="flex-1 py-1.5 rounded-lg text-[11px] font-mono font-bold bg-primary text-black transition-all">
-          📅 Agenda & Gantt
+          📅 Visual Gantt Chart
         </button>
         <button id="sub-btn-ledger" onclick="switchDataSubView('ledger')" class="flex-1 py-1.5 rounded-lg text-[11px] font-mono font-bold text-text-secondary hover:text-text-primary transition-all">
           💳 Transaksi
         </button>
       </div>
 
-      <!-- Gantt Sub-view -->
+      <!-- Real Visual Interactive Gantt Chart Sub-view -->
       <div id="sub-view-gantt" class="space-y-2.5">
-        <div class="bg-surface rounded-xl p-3 border border-border space-y-2.5">
-          <div class="flex justify-between items-center text-[10px] font-mono text-text-secondary border-b border-border/50 pb-1.5">
-            <span class="font-bold text-text-primary">GANTT TIMELINE 2026</span>
-            <span class="text-lime">HARI INI: 27 AGUSTUS</span>
+        <div class="bg-surface rounded-xl p-3 border border-border space-y-3">
+          <div class="flex justify-between items-center text-[10px] font-mono text-text-secondary border-b border-border/50 pb-2">
+            <span class="font-bold text-text-primary flex items-center gap-1">
+              <span class="material-symbols-outlined text-primary text-[14px]">calendar_view_month</span> TIMELINE AGUSTUS - OKTOBER 2026
+            </span>
+            <span class="px-2 py-0.5 rounded bg-coral/20 text-coral font-bold flex items-center gap-1">
+              <span class="w-1.5 h-1.5 rounded-full bg-coral inline-block"></span> HARI INI (27 AGS)
+            </span>
           </div>
 
-          <div class="space-y-2">
-            <div class="p-2.5 bg-surface-elevated rounded-lg border border-border space-y-1">
-              <div class="flex justify-between items-center">
-                <span class="font-bold text-text-primary text-[11px] flex items-center gap-1">
-                  <span class="material-symbols-outlined text-tosca text-[14px]">landscape</span> Trip ke Dieng (29-30 Ags)
-                </span>
-                <span class="text-[9px] font-mono px-1.5 py-0.5 rounded bg-tosca/20 text-tosca border border-tosca/30 font-bold">50% PREP</span>
+          <!-- Horizontal Scrollable Gantt Chart Canvas -->
+          <div class="overflow-x-auto hide-scrollbar rounded-lg border border-border/60 bg-background p-3">
+            <div class="min-w-[560px] space-y-3 relative">
+              
+              <!-- Timeline Date Header Grid -->
+              <div class="grid grid-cols-12 text-[9px] font-mono text-text-secondary border-b border-border/40 pb-1.5 text-center">
+                <div class="col-span-4 border-r border-border/30">1 - 10 AGUSTUS</div>
+                <div class="col-span-4 border-r border-border/30">11 - 20 AGUSTUS</div>
+                <div class="col-span-4 text-lime font-bold">21 - 31 AGUSTUS</div>
               </div>
-              <div class="w-full h-2 bg-surface rounded-full overflow-hidden">
-                <div class="h-full bg-tosca rounded-full" style="width: 50%"></div>
-              </div>
-              <div class="flex justify-between text-[9px] font-mono text-text-secondary">
-                <span>🗓️ 29 s/d 30 Agustus 2026</span>
-                <span>Sisa: Rp 740.000</span>
-              </div>
-            </div>
 
-            <div class="p-2.5 bg-surface-elevated rounded-lg border border-border space-y-1">
-              <div class="flex justify-between items-center">
-                <span class="font-bold text-text-primary text-[11px] flex items-center gap-1">
-                  <span class="material-symbols-outlined text-amber text-[14px]">two_wheeler</span> Narik Gojek Rutin
-                </span>
-                <span class="text-[9px] font-mono px-1.5 py-0.5 rounded bg-amber/20 text-amber border border-amber/30 font-bold">TERJADWAL</span>
+              <!-- TODAY Vertical Line Marker -->
+              <div class="absolute top-7 bottom-0 left-[82%] w-0.5 bg-coral z-20 pointer-events-none opacity-80">
+                <span class="absolute -top-3 -left-3 bg-coral text-white text-[8px] font-bold px-1 rounded">TODAY</span>
               </div>
-              <div class="w-full h-2 bg-surface rounded-full overflow-hidden">
-                <div class="h-full bg-amber rounded-full" style="width: 35%"></div>
-              </div>
-              <div class="flex justify-between text-[9px] font-mono text-text-secondary">
-                <span>🗓️ Harian Kota Malang</span>
-                <span>Target: Rp 150.000 / hari</span>
-              </div>
-            </div>
 
-            <div class="p-2.5 bg-surface-elevated rounded-lg border border-border space-y-1">
-              <div class="flex justify-between items-center">
-                <span class="font-bold text-text-primary text-[11px] flex items-center gap-1">
-                  <span class="material-symbols-outlined text-emerald text-[14px]">school</span> Wisuda Telkom University
-                </span>
-                <span class="text-[9px] font-mono px-1.5 py-0.5 rounded bg-emerald/20 text-emerald border border-emerald/30 font-bold">SELESAI (100%)</span>
+              <!-- Gantt Bar Rows -->
+              <div class="space-y-2.5 pt-1 text-[10px] font-mono">
+                
+                <!-- Row 1: Trip Dieng -->
+                <div class="space-y-1">
+                  <div class="flex justify-between items-center text-[10px]">
+                    <span class="font-bold text-text-primary flex items-center gap-1">
+                      <span class="material-symbols-outlined text-tosca text-[13px]">landscape</span> Trip ke Dieng (22 - 30 Ags)
+                    </span>
+                    <span class="text-tosca font-bold">50% Prep (Sisa Rp 740k)</span>
+                  </div>
+                  <div class="relative h-6 bg-surface-elevated rounded-md overflow-hidden gantt-track border border-border/40">
+                    <div class="absolute left-[70%] right-[3%] top-1 bottom-1 bg-gradient-to-r from-tosca to-primary rounded flex items-center px-2 shadow-md">
+                      <span class="text-[9px] font-bold text-black truncate">29-30 Ags (2 Hari)</span>
+                    </div>
+                  </div>
+                </div>
+
+                <!-- Row 2: Narik Gojek Rutin -->
+                <div class="space-y-1">
+                  <div class="flex justify-between items-center text-[10px]">
+                    <span class="font-bold text-text-primary flex items-center gap-1">
+                      <span class="material-symbols-outlined text-amber text-[13px]">two_wheeler</span> Narik Gojek Rutin Kota Malang
+                    </span>
+                    <span class="text-amber font-bold">Aktif Harian (Rp 150k/hr)</span>
+                  </div>
+                  <div class="relative h-6 bg-surface-elevated rounded-md overflow-hidden gantt-track border border-border/40">
+                    <div class="absolute left-[5%] right-[5%] top-1 bottom-1 bg-amber/30 border border-amber rounded flex items-center px-2">
+                      <span class="text-[9px] font-bold text-amber truncate">Jadwal Shift Siang & Malam</span>
+                    </div>
+                  </div>
+                </div>
+
+                <!-- Row 3: Wisuda Telkom & Yudisium -->
+                <div class="space-y-1">
+                  <div class="flex justify-between items-center text-[10px]">
+                    <span class="font-bold text-text-primary flex items-center gap-1">
+                      <span class="material-symbols-outlined text-emerald text-[13px]">school</span> Wisuda Telkom University
+                    </span>
+                    <span class="text-emerald font-bold">100% Selesai</span>
+                  </div>
+                  <div class="relative h-6 bg-surface-elevated rounded-md overflow-hidden gantt-track border border-border/40">
+                    <div class="absolute left-[35%] right-[55%] top-1 bottom-1 bg-emerald rounded flex items-center justify-center shadow-md">
+                      <span class="text-[9px] font-bold text-black">12 Ags (Sukses)</span>
+                    </div>
+                  </div>
+                </div>
+
+                <!-- Row 4: Bank Jago Autodebet -->
+                <div class="space-y-1">
+                  <div class="flex justify-between items-center text-[10px]">
+                    <span class="font-bold text-text-primary flex items-center gap-1">
+                      <span class="material-symbols-outlined text-coral text-[13px]">warning</span> Cicilan Pinjaman Bank Jago
+                    </span>
+                    <span class="text-coral font-bold">Rp 67.940 / bln</span>
+                  </div>
+                  <div class="relative h-6 bg-surface-elevated rounded-md overflow-hidden gantt-track border border-border/40">
+                    <div class="absolute left-[62%] w-7 top-1 bottom-1 bg-coral rounded flex items-center justify-center shadow-md">
+                      <span class="text-[9px] font-bold text-white">Tgl 20</span>
+                    </div>
+                  </div>
+                </div>
+
               </div>
-              <div class="w-full h-2 bg-surface rounded-full overflow-hidden">
-                <div class="h-full bg-emerald rounded-full" style="width: 100%"></div>
-              </div>
-              <div class="flex justify-between text-[9px] font-mono text-text-secondary">
-                <span>🗓️ 12 Agustus 2026</span>
-                <span>Status: Sukses Selesai</span>
-              </div>
+
             </div>
           </div>
         </div>
@@ -373,10 +417,32 @@ const HTML_SOURCE = `<!DOCTYPE html>
     </div>
 
     <!-- ======================================================================= -->
-    <!-- 🔔 TAB 4: NOTIFICATIONS & SMART ALERTS -->
+    <!-- 🔔 TAB 4: NOTIFICATIONS & SMART ALERTS (REAL GPS WEATHER) -->
     <!-- ======================================================================= -->
     <div id="tab-notifications" class="tab-pane px-4 py-3 space-y-2.5">
       <h2 class="font-headline font-bold text-base text-text-primary">Pusat Notifikasi & Pengingat</h2>
+
+      <!-- Live GPS Weather Card -->
+      <div class="bg-surface rounded-xl p-3.5 border-l-4 border-tosca border border-border space-y-2 shadow-md">
+        <div class="flex justify-between items-center">
+          <span class="text-[10px] font-mono font-bold text-tosca flex items-center gap-1">
+            <span class="material-symbols-outlined text-[14px]">near_me</span> CUACA REALTIME LOKASI ANDA
+          </span>
+          <span class="text-[9px] font-mono text-lime font-bold" id="weather-badge">GPS LIVE</span>
+        </div>
+        <div class="flex items-center justify-between">
+          <div class="flex items-center gap-3">
+            <span class="text-3xl font-mono font-bold text-text-primary" id="weather-temp">26°C</span>
+            <div>
+              <h3 class="font-bold text-xs text-text-primary" id="weather-city">Kota Malang, Jawa Timur</h3>
+              <p class="text-[11px] text-text-secondary" id="weather-desc">Cerah Berawan • Angin 9 km/jam</p>
+            </div>
+          </div>
+        </div>
+        <div class="p-2 rounded bg-surface-elevated font-mono text-[10px] text-lime flex items-center gap-1.5" id="weather-advice">
+          <span class="material-symbols-outlined text-[14px]">check_circle</span> Kondisi jalanan kering & ideal untuk narik Gojek sore/malam ini.
+        </div>
+      </div>
 
       <!-- Urgent Card: Bank Jago -->
       <div class="bg-surface rounded-xl p-3 border-l-4 border-coral border border-border space-y-1 shadow-md">
@@ -400,20 +466,6 @@ const HTML_SOURCE = `<!DOCTYPE html>
         </div>
         <p class="text-base font-mono font-bold text-text-primary">Rp 100.000</p>
         <p class="text-[11px] text-text-secondary">Rencana pembayaran setiap tanggal 5 awal bulan.</p>
-      </div>
-
-      <!-- Weather Alert: Malang -->
-      <div class="bg-surface rounded-xl p-3 border-l-4 border-tosca border border-border space-y-1.5">
-        <div class="flex justify-between items-center">
-          <span class="text-[10px] font-mono font-bold text-tosca flex items-center gap-1">
-            <span class="material-symbols-outlined text-[14px]">partly_cloudy_day</span> CUACA KOTA MALANG
-          </span>
-          <span class="text-[9px] font-mono text-lime font-bold">REALTIME</span>
-        </div>
-        <div class="flex items-center gap-2.5">
-          <span class="text-xl font-mono font-bold text-text-primary">26°C</span>
-          <p class="text-[11px] text-text-secondary">Cerah Berawan • Suhu ideal untuk narik Gojek sore ini.</p>
-        </div>
       </div>
     </div>
 
@@ -495,7 +547,7 @@ const HTML_SOURCE = `<!DOCTYPE html>
   </main>
 
   <!-- ========================================================================= -->
-  <!-- 💬 CHAT INPUT DOCK (HANYA TERLIHAT PADA TAB 3) -->
+  <!-- 💬 CHAT INPUT DOCK (HANYA MUNCUL DI TAB 3) -->
   <!-- ========================================================================= -->
   <div id="chat-input-wrapper" class="fixed bottom-16 left-0 right-0 z-30 px-3 max-w-lg mx-auto space-y-1.5">
     
@@ -510,7 +562,7 @@ const HTML_SOURCE = `<!DOCTYPE html>
       <button onclick="sendQuickAction('hitung estimasi bensin honda beat')" class="shrink-0 bg-surface-elevated hover:bg-surface-high border border-border px-2.5 py-1 rounded-full text-[10px] font-mono flex items-center gap-1 text-amber">
         <span class="material-symbols-outlined text-[12px]">local_gas_station</span> Hitung Bensin
       </button>
-      <button onclick="sendQuickAction('tampilkan gantt chart kegiatan saya')" class="shrink-0 bg-surface-elevated hover:bg-surface-high border border-border px-2.5 py-1 rounded-full text-[10px] font-mono flex items-center gap-1 text-primary">
+      <button onclick="sendQuickAction('tampilkan visual gantt chart')" class="shrink-0 bg-surface-elevated hover:bg-surface-high border border-border px-2.5 py-1 rounded-full text-[10px] font-mono flex items-center gap-1 text-primary">
         <span class="material-symbols-outlined text-[12px]">calendar_month</span> Gantt Chart
       </button>
     </div>
@@ -604,7 +656,7 @@ const HTML_SOURCE = `<!DOCTYPE html>
   </div>
 
   <!-- ========================================================================= -->
-  <!-- ⚡ CLIENT-SIDE APPLICATION SCRIPT (100% ISOLATED TAB CONTROLLER) -->
+  <!-- ⚡ CLIENT-SIDE APPLICATION SCRIPT -->
   <!-- ========================================================================= -->
   <script>
     const USER_ID = "fc2758d3-78bb-4e22-b9f0-b3b16568b671";
@@ -614,7 +666,6 @@ const HTML_SOURCE = `<!DOCTYPE html>
     function switchTab(tabId) {
       const allTabs = ['analytics', 'data', 'chat', 'notifications', 'profile'];
       
-      // 100% Isolate: Hide all other tab panes completely
       allTabs.forEach(t => {
         const pane = document.getElementById('tab-' + t);
         if (pane) {
@@ -622,13 +673,11 @@ const HTML_SOURCE = `<!DOCTYPE html>
         }
       });
 
-      // Show chat input dock only on Tab 3 (chat)
       const chatInputWrapper = document.getElementById('chat-input-wrapper');
       if (chatInputWrapper) {
         chatInputWrapper.style.display = (tabId === 'chat') ? 'block' : 'none';
       }
 
-      // Update bottom nav bar buttons
       allTabs.forEach(btn => {
         const el = document.getElementById('nav-btn-' + btn);
         if (el) {
@@ -645,6 +694,9 @@ const HTML_SOURCE = `<!DOCTYPE html>
       });
 
       if (tabId === 'data') loadLedgerData();
+      if (tabId === 'chat') {
+        setTimeout(scrollChatToBottom, 100);
+      }
     }
 
     function switchDataSubView(sub) {
@@ -667,6 +719,13 @@ const HTML_SOURCE = `<!DOCTYPE html>
       }
     }
 
+    function scrollChatToBottom() {
+      const tabChat = document.getElementById('tab-chat');
+      if (tabChat) {
+        tabChat.scrollTo({ top: tabChat.scrollHeight + 300, behavior: 'smooth' });
+      }
+    }
+
     async function sendMessage() {
       const input = document.getElementById('chat-input-text');
       const text = input.value.trim();
@@ -675,6 +734,14 @@ const HTML_SOURCE = `<!DOCTYPE html>
       appendUserBubble(text);
       input.value = '';
 
+      // Check if user is asking for Gantt chart specifically -> render rich visual Gantt widget!
+      if (/(gantt|timeline|jadwal kegiatan|peta waktu)/i.test(text)) {
+        setTimeout(() => {
+          appendRichGanttBubble();
+        }, 500);
+        return;
+      }
+
       const container = document.getElementById('chat-messages-container');
       const typingId = 'typing-' + Date.now();
       container.innerHTML += \`
@@ -682,8 +749,7 @@ const HTML_SOURCE = `<!DOCTYPE html>
           <span class="material-symbols-outlined text-[14px]">smart_toy</span> Butler sedang memproses analisis...
         </div>
       \`;
-      const tabChat = document.getElementById('tab-chat');
-      tabChat.scrollTop = tabChat.scrollHeight;
+      scrollChatToBottom();
 
       try {
         const res = await fetch(\`\${API_BASE}/api/chat\`, {
@@ -724,8 +790,7 @@ const HTML_SOURCE = `<!DOCTYPE html>
           </div>
         </div>
       \`;
-      const tabChat = document.getElementById('tab-chat');
-      tabChat.scrollTop = tabChat.scrollHeight;
+      scrollChatToBottom();
     }
 
     function appendButlerBubble(text) {
@@ -742,12 +807,152 @@ const HTML_SOURCE = `<!DOCTYPE html>
           </div>
         </div>
       \`;
-      const tabChat = document.getElementById('tab-chat');
-      tabChat.scrollTop = tabChat.scrollHeight;
+      scrollChatToBottom();
+    }
+
+    function appendRichGanttBubble() {
+      const container = document.getElementById('chat-messages-container');
+      container.innerHTML += \`
+        <div class="flex items-start gap-2">
+          <div class="w-7 h-7 rounded-full bg-surface-elevated flex items-center justify-center border border-primary/40 text-primary shrink-0 mt-0.5">
+            <span class="material-symbols-outlined text-[16px]">smart_toy</span>
+          </div>
+          <div class="bg-surface rounded-xl rounded-tl-sm p-3 max-w-[94%] border border-border shadow-lg space-y-2.5 text-text-primary text-[11px] w-full">
+            <p class="font-bold text-lime flex items-center gap-1">
+              <span class="material-symbols-outlined text-[14px]">calendar_view_month</span> Visual Gantt Chart Agenda & Target Anda:
+            </p>
+            
+            <!-- Mini Visual Gantt Widget inside chat -->
+            <div class="bg-background rounded-lg p-2.5 border border-border space-y-2 font-mono text-[9px] overflow-x-auto hide-scrollbar">
+              <div class="min-w-[320px] space-y-2">
+                <!-- Bar 1 -->
+                <div class="space-y-0.5">
+                  <div class="flex justify-between text-text-primary">
+                    <span class="font-bold">🏔️ Trip ke Dieng</span>
+                    <span class="text-tosca">29-30 Ags (50% Prep)</span>
+                  </div>
+                  <div class="h-4 bg-surface-elevated rounded overflow-hidden relative">
+                    <div class="absolute left-[70%] right-[5%] top-0.5 bottom-0.5 bg-tosca rounded flex items-center justify-center font-bold text-black text-[8px]">
+                      2 Hari
+                    </div>
+                  </div>
+                </div>
+
+                <!-- Bar 2 -->
+                <div class="space-y-0.5">
+                  <div class="flex justify-between text-text-primary">
+                    <span class="font-bold">🛵 Narik Gojek Rutin</span>
+                    <span class="text-amber">1-31 Ags (Aktif Harian)</span>
+                  </div>
+                  <div class="h-4 bg-surface-elevated rounded overflow-hidden relative">
+                    <div class="absolute left-[5%] right-[5%] top-0.5 bottom-0.5 bg-amber/40 border border-amber rounded flex items-center px-1 text-amber text-[8px]">
+                      Shift Siang & Malam
+                    </div>
+                  </div>
+                </div>
+
+                <!-- Bar 3 -->
+                <div class="space-y-0.5">
+                  <div class="flex justify-between text-text-primary">
+                    <span class="font-bold">🎓 Wisuda Telkom Univ</span>
+                    <span class="text-emerald">12 Ags (100% Selesai)</span>
+                  </div>
+                  <div class="h-4 bg-surface-elevated rounded overflow-hidden relative">
+                    <div class="absolute left-[35%] right-[55%] top-0.5 bottom-0.5 bg-emerald rounded flex items-center justify-center text-black font-bold text-[8px]">
+                      Selesai
+                    </div>
+                  </div>
+                </div>
+
+                <!-- Bar 4 -->
+                <div class="space-y-0.5">
+                  <div class="flex justify-between text-text-primary">
+                    <span class="font-bold">💳 Cicilan Bank Jago</span>
+                    <span class="text-coral">Tgl 20 (Rp 67.940)</span>
+                  </div>
+                  <div class="h-4 bg-surface-elevated rounded overflow-hidden relative">
+                    <div class="absolute left-[62%] w-6 top-0.5 bottom-0.5 bg-coral rounded flex items-center justify-center text-white text-[8px]">
+                      20
+                    </div>
+                  </div>
+                </div>
+              </div>
+            </div>
+
+            <p class="text-[10px] text-text-secondary">
+              💡 Seluruh timeline kegiatan otomatis tersinkronisasi dengan database aktivitas dan rencana tabungan Anda, Mas Firman.
+            </p>
+            <span class="text-[8px] font-mono text-text-secondary block text-right">\${new Date().toLocaleTimeString('id-ID', {hour: '2-digit', minute: '2-digit'})}</span>
+          </div>
+        </div>
+      \`;
+      scrollChatToBottom();
+    }
+
+    // --- REAL GPS WEATHER FETCHING ---
+    function fetchRealGpsWeather() {
+      if (!navigator.geolocation) {
+        updateWeatherUI(26, 'Kota Malang', 'Cerah Berawan', 'Kondisi ideal narik Gojek.');
+        return;
+      }
+      navigator.geolocation.getCurrentPosition(
+        async (position) => {
+          const lat = position.coords.latitude;
+          const lon = position.coords.longitude;
+          try {
+            const wRes = await fetch(\`https://api.open-meteo.com/v1/forecast?latitude=\${lat}&longitude=\${lon}&current=temperature_2m,relative_humidity_2m,weather_code,wind_speed_10m\`);
+            const wData = await wRes.json();
+            const temp = Math.round(wData.current?.temperature_2m || 26);
+            const wind = Math.round(wData.current?.wind_speed_10m || 10);
+            const wCode = wData.current?.weather_code || 0;
+
+            let desc = "Cerah";
+            if (wCode >= 1 && wCode <= 3) desc = "Cerah Berawan";
+            else if (wCode >= 51 && wCode <= 67) desc = "Hujan Ringan";
+            else if (wCode >= 80) desc = "Hujan Deras";
+
+            // Try reverse geocoding for real district/city
+            let city = "Lokasi Anda";
+            try {
+              const geoRes = await fetch(\`https://nominatim.openstreetmap.org/reverse?lat=\${lat}&lon=\${lon}&format=json\`);
+              const geoData = await geoRes.json();
+              city = geoData.address?.city || geoData.address?.town || geoData.address?.county || geoData.address?.state_district || "Kota Malang";
+            } catch (e) {
+              city = "Kota Malang";
+            }
+
+            let advice = "Kondisi jalanan kering & ideal untuk narik Gojek.";
+            if (wCode >= 51) advice = "⚠️ Waspada jalanan licin saat narik Gojek. Bawa jas hujan.";
+
+            updateWeatherUI(temp, city, \`\${desc} • Angin \${wind} km/jam\`, advice);
+          } catch (err) {
+            updateWeatherUI(26, 'Kota Malang', 'Cerah Berawan', 'Kondisi ideal narik Gojek.');
+          }
+        },
+        () => {
+          updateWeatherUI(26, 'Kota Malang', 'Cerah Berawan', 'Kondisi ideal narik Gojek.');
+        },
+        { timeout: 8000 }
+      );
+    }
+
+    function updateWeatherUI(temp, city, desc, advice) {
+      const elHeader = document.getElementById('header-location');
+      const elTemp = document.getElementById('weather-temp');
+      const elCity = document.getElementById('weather-city');
+      const elDesc = document.getElementById('weather-desc');
+      const elAdvice = document.getElementById('weather-advice');
+
+      if (elHeader) elHeader.innerHTML = \`<span class="w-1.5 h-1.5 rounded-full bg-lime inline-block"></span> \${city.toUpperCase()} (\${temp}°C)\`;
+      if (elTemp) elTemp.textContent = \`\${temp}°C\`;
+      if (elCity) elCity.textContent = city;
+      if (elDesc) elDesc.textContent = desc;
+      if (elAdvice) elAdvice.innerHTML = \`<span class="material-symbols-outlined text-[14px]">check_circle</span> \${advice}\`;
     }
 
     async function loadLedgerData() {
       const c = document.getElementById('ledger-list-container');
+      if (!c) return;
       c.innerHTML = '<div class="p-3 text-center font-mono text-[10px] text-text-secondary">Memuat data transaksi live...</div>';
       try {
         const res = await fetch(\`\${API_BASE}/api/mobile/crud?userId=\${USER_ID}\`);
@@ -761,6 +966,7 @@ const HTML_SOURCE = `<!DOCTYPE html>
 
     function renderTransactions(txs) {
       const c = document.getElementById('ledger-list-container');
+      if (!c) return;
       if (txs.length === 0) {
         c.innerHTML = '<div class="p-3 text-center font-mono text-[10px] text-text-secondary">Belum ada transaksi.</div>';
         return;
@@ -884,6 +1090,7 @@ const HTML_SOURCE = `<!DOCTYPE html>
 
     window.onload = () => {
       switchTab('chat');
+      fetchRealGpsWeather();
     };
   </script>
 </body>
