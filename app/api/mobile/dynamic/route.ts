@@ -56,7 +56,7 @@ export async function GET(req: NextRequest) {
 
     let bills = [
       { id: 'bill-jago', name: 'Cicilan Bank Jago', amount: 67940, due_day: 20, remaining_tenor: 11, total_tenor: 12, type: 'installment', icon: 'credit_card' },
-      { id: 'bill-rifky', name: 'Hutang ke Rifky', amount: 100000, due_day: 5, remaining_tenor: 1, total_tenor: 1, type: 'debt', icon: 'handshake' },
+      { id: 'bill-rifky', name: 'Hutang ke Rifky', amount: 150000, due_day: 5, remaining_tenor: 1, total_tenor: 1, type: 'debt', icon: 'handshake' },
       { id: 'bill-kos', name: 'Sewa Kos Bulanan Malang', amount: 500000, due_day: 1, remaining_tenor: 12, total_tenor: 12, type: 'recurring', icon: 'home' }
     ];
 
