@@ -535,30 +535,141 @@ const HTML_SOURCE = `<!DOCTYPE html>
     </div>
 
     <!-- ======================================================================= -->
-    <!-- ⚙️ TAB 5: PROFILE, DYNAMIC HUB, RINGKASAN SOS & SETTINGS -->
-    <!-- ======================================================================= -->
-    <div id="tab-profile" class="tab-pane px-3.5 py-2.5 space-y-2.5">
-      <h2 class="font-headline font-bold text-sm text-text-primary">Profil & Pengaturan Sistem</h2>
-
-      <!-- User Badge -->
-      <div class="bg-surface rounded-xl p-3 border border-border flex items-center justify-between">
-        <div class="flex items-center gap-2.5">
-          <div class="w-9 h-9 rounded-full bg-primary/20 border-2 border-primary flex items-center justify-center text-primary font-bold text-sm shrink-0">
-            MF
-          </div>
-          <div>
-            <h3 class="font-headline font-bold text-xs text-text-primary">Mas Firman</h3>
-            <p class="text-[9px] font-mono text-primary flex items-center gap-1">
-              <span class="material-symbols-outlined text-[11px]">verified</span> Verified User (ID: 1084842050)
-            </p>
-          </div>
+    <!-- ⚙️ TAB 5: PROFILE, DYNAMIC HUB, MORNING BRIEFING & INTEGRATION SETTINGS (100% COMPLETE) -->
+    <div id="tab-profile" class="tab-pane px-3.5 py-2.5 space-y-3">
+      
+      <div class="flex justify-between items-center">
+        <div>
+          <h2 class="font-headline font-bold text-sm text-text-primary flex items-center gap-1.5">
+            <span class="material-symbols-outlined text-primary text-[18px]">manage_accounts</span> Profil & Pengaturan Sistem
+          </h2>
+          <p class="text-[9px] font-mono text-text-secondary">Identitas, Jadwal Briefing, ICE & Integrasi Sesi</p>
         </div>
-        <button onclick="openAiSettingsModal()" class="px-2.5 py-1 bg-primary/20 border border-primary rounded-lg text-primary text-[10px] font-mono font-bold flex items-center gap-1 active:scale-95">
-          <span class="material-symbols-outlined text-[13px]">tune</span> Setting AI
-        </button>
+        <span class="text-[9px] font-mono px-2 py-0.5 rounded-full bg-primary/20 text-primary font-bold border border-primary/30">Master Config</span>
       </div>
 
-      <!-- MASTER DYNAMIC HUB CARD -->
+      <!-- 1. USER IDENTITY & AI PREFERENCES CARD -->
+      <div class="bg-surface rounded-xl p-3 border border-border space-y-2.5 tosca-bloom">
+        <div class="flex items-center justify-between border-b border-border/50 pb-2">
+          <div class="flex items-center gap-2.5">
+            <div class="w-10 h-10 rounded-full bg-primary/20 border-2 border-primary flex items-center justify-center text-primary font-bold text-base shrink-0 font-headline">
+              MF
+            </div>
+            <div>
+              <h3 class="font-headline font-bold text-xs text-text-primary" id="profile-display-name">Mas Firman</h3>
+              <p class="text-[9px] font-mono text-lime flex items-center gap-1">
+                <span class="material-symbols-outlined text-[11px]">verified</span> Terverifikasi (ID: 1084842050)
+              </p>
+            </div>
+          </div>
+          <button onclick="openAiSettingsModal()" class="px-2.5 py-1 bg-primary/20 border border-primary rounded-lg text-primary text-[10px] font-mono font-bold flex items-center gap-1 active:scale-95">
+            <span class="material-symbols-outlined text-[13px]">tune</span> Setting AI
+          </button>
+        </div>
+
+        <!-- Identity Form Inputs -->
+        <div class="space-y-2 font-mono text-[10px]">
+          <div>
+            <label class="text-[8px] text-text-secondary uppercase">Nama Panggilan Pengguna (AI Greeting)</label>
+            <input id="profile-input-name" type="text" value="Mas Firman" placeholder="Nama panggilan Anda..." class="w-full bg-surface-elevated border border-border rounded-lg p-2 text-text-primary text-xs outline-none mt-0.5"/>
+          </div>
+          <div>
+            <label class="text-[8px] text-text-secondary uppercase">Alamat Email Terdaftar (Laporan & Briefing)</label>
+            <input id="profile-input-email" type="email" value="mfirmansyah@gmail.com" placeholder="nama@email.com" class="w-full bg-surface-elevated border border-border rounded-lg p-2 text-text-primary text-xs outline-none mt-0.5"/>
+          </div>
+          <button onclick="saveUserProfileIdentity()" class="w-full py-2 bg-primary text-black font-bold rounded-lg text-xs font-mono shadow active:scale-95 flex items-center justify-center gap-1">
+            <span class="material-symbols-outlined text-[14px]">save</span> Simpan Identitas Profil
+          </button>
+        </div>
+      </div>
+
+      <!-- 2. JADWAL MORNING BRIEFING HARIAN (DARI WEB APP) -->
+      <div class="bg-surface rounded-xl p-3 border-l-4 border-lime border border-border space-y-2.5 shadow-md">
+        <div class="flex justify-between items-center border-b border-border/50 pb-1.5">
+          <span class="text-xs font-headline font-bold text-lime flex items-center gap-1">
+            <span class="material-symbols-outlined text-[16px]">wb_sunny</span> JADWAL MORNING BRIEFING HARIAN
+          </span>
+          <span class="text-[8px] font-mono px-1.5 py-0.5 rounded bg-lime/20 text-lime font-bold">OTOMATIS</span>
+        </div>
+
+        <div class="space-y-2 font-mono text-[10px]">
+          <label class="flex items-center justify-between p-2 rounded-lg bg-surface-elevated border border-border cursor-pointer">
+            <div class="flex items-center gap-2">
+              <input type="checkbox" id="profile-briefing-toggle" checked class="w-4 h-4 rounded text-lime focus:ring-0"/>
+              <div>
+                <p class="font-bold text-text-primary text-xs">Aktifkan Briefing Pagi</p>
+                <p class="text-[8px] text-text-secondary">Kirim ringkasan agenda & kondisi keuangan harian</p>
+              </div>
+            </div>
+            <span class="text-[9px] text-lime font-bold">AKTIF</span>
+          </label>
+
+          <div class="grid grid-cols-2 gap-2">
+            <div>
+              <label class="text-[8px] text-text-secondary uppercase">Waktu Briefing (WIB)</label>
+              <input id="profile-briefing-time" type="time" value="07:00" class="w-full bg-surface-elevated border border-border rounded-lg p-2 text-text-primary text-xs outline-none mt-0.5"/>
+            </div>
+            <div>
+              <label class="text-[8px] text-text-secondary uppercase">Kirim Salinan Email</label>
+              <select id="profile-email-briefing-toggle" class="w-full bg-surface-elevated border border-border rounded-lg p-2 text-text-primary text-xs outline-none mt-0.5">
+                <option value="true">Ya, Kirim Email</option>
+                <option value="false">Tidak (Hanya Notif)</option>
+              </select>
+            </div>
+          </div>
+
+          <div class="flex gap-2 pt-0.5">
+            <button onclick="testBriefingNotification()" class="flex-1 py-1.5 bg-surface-elevated border border-lime/50 text-lime font-bold rounded-lg text-[10px] active:scale-95 flex items-center justify-center gap-1">
+              <span class="material-symbols-outlined text-[12px]">send</span> Tes Kirim Briefing
+            </button>
+            <button onclick="saveBriefingSchedule()" class="flex-1 py-1.5 bg-lime text-black font-bold rounded-lg text-[10px] shadow active:scale-95 flex items-center justify-center gap-1">
+              <span class="material-symbols-outlined text-[12px]">check</span> Simpan Jadwal
+            </button>
+          </div>
+        </div>
+      </div>
+
+      <!-- 3. STATUS SESI & INTEGRASI CLOUD DATABASE (DARI WEB APP) -->
+      <div class="bg-surface rounded-xl p-3 border-l-4 border-tosca border border-border space-y-2.5 shadow-md">
+        <div class="flex justify-between items-center border-b border-border/50 pb-1.5">
+          <span class="text-xs font-headline font-bold text-tosca flex items-center gap-1">
+            <span class="material-symbols-outlined text-[16px]">cloud_sync</span> STATUS SESI & INTEGRASI DATABASE
+          </span>
+          <span class="text-[8px] font-mono px-1.5 py-0.5 rounded bg-emerald/20 text-emerald font-bold flex items-center gap-0.5">
+            <span class="w-1.5 h-1.5 rounded-full bg-emerald inline-block"></span> CONNECTED
+          </span>
+        </div>
+
+        <div class="p-2.5 rounded-lg bg-surface-elevated border border-border space-y-1.5 font-mono text-[9px]">
+          <div class="flex justify-between">
+            <span class="text-text-secondary">Database Backend:</span>
+            <span class="font-bold text-text-primary">Supabase PostgreSQL (Live)</span>
+          </div>
+          <div class="flex justify-between">
+            <span class="text-text-secondary">User ID (UUID):</span>
+            <span class="font-bold text-tosca font-mono text-[8px]" id="session-user-id">fc2758d3-78bb-4e22-b9f0-b3b16568b671</span>
+          </div>
+          <div class="flex justify-between">
+            <span class="text-text-secondary">Telegram User ID:</span>
+            <span class="font-bold text-lime">1084842050 (@mfir_syah)</span>
+          </div>
+          <div class="flex justify-between">
+            <span class="text-text-secondary">Sinkronisasi Terakhir:</span>
+            <span class="text-text-primary" id="session-last-sync">Baru saja (Realtime WebSocket)</span>
+          </div>
+        </div>
+
+        <div class="grid grid-cols-2 gap-2">
+          <button onclick="forceRefreshAnalyticsCache()" class="py-2 bg-surface-elevated border border-tosca text-tosca font-bold rounded-lg text-[9px] font-mono active:scale-95 flex items-center justify-center gap-1">
+            <span class="material-symbols-outlined text-[13px]">sync</span> Force Refresh Cache
+          </button>
+          <button onclick="exportToExcel()" class="py-2 bg-tosca text-black font-bold rounded-lg text-[9px] font-mono shadow active:scale-95 flex items-center justify-center gap-1">
+            <span class="material-symbols-outlined text-[13px]">file_download</span> Backup Excel/CSV
+          </button>
+        </div>
+      </div>
+
+      <!-- 4. MASTER DYNAMIC HUB CARD -->
       <div class="bg-surface rounded-xl p-3 border-2 border-primary/40 tosca-bloom space-y-2">
         <div class="flex justify-between items-center">
           <span class="font-headline font-bold text-xs text-text-primary flex items-center gap-1.5">
@@ -574,7 +685,7 @@ const HTML_SOURCE = `<!DOCTYPE html>
         </button>
       </div>
 
-      <!-- RINGKASAN EMERGENCY ICE PROFILE CARD (SUPER RAPI & RINGKAS) -->
+      <!-- 5. RINGKASAN EMERGENCY ICE PROFILE CARD (SUPER RAPI & RINGKAS) -->
       <div class="bg-surface rounded-xl p-3 border-l-4 border-coral border border-border space-y-2 font-mono text-xs">
         <div class="flex justify-between items-center">
           <span class="font-bold text-coral flex items-center gap-1.5">
@@ -602,7 +713,7 @@ const HTML_SOURCE = `<!DOCTYPE html>
         </p>
       </div>
 
-      <!-- Dynamic Wallet Balances Overview -->
+      <!-- 6. Dynamic Wallet Balances Overview -->
       <div class="bg-surface rounded-xl p-3 border border-border space-y-1.5 font-mono text-[10px]">
         <div class="flex justify-between items-center border-b border-border/50 pb-1">
           <span class="font-bold text-text-secondary uppercase text-[9px] tracking-wider">Status Dompet Terhubung</span>
@@ -612,8 +723,7 @@ const HTML_SOURCE = `<!DOCTYPE html>
       </div>
 
     </div>
-
-  </main>
+    </main>
 
   <!-- ========================================================================= -->
   <!-- 💬 CHAT INPUT DOCK (NO TTS / STT) -->
