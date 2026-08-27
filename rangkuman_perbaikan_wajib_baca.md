@@ -389,6 +389,28 @@ Katalog **300 Poin Master Audit** ini menjadi dokumen panduan mutlak (*Ultimate 
 
 
 
+
+
+### 2.24 Integrasi Modul Pengaturan Identitas, Jadwal Morning Briefing, & Status Sesi ke Tab Profil Mobile
+- **Pertanyaan Pengguna:**
+  - *"Pada profil juga, di web app ada setting nama saya, jadwal morning briefing, Status Sesi & Integrasi, tapi di mobile app tidak ada"*
+- **Solusi Rekayasa:**
+  - Menghadirkan seluruh modul konfigurasi Web App ke **Tab 5 (Profil)** aplikasi mobile native secara lengkap dan elegan:
+    1. **Kartu Identitas Pengguna & Panggilan AI (`user_profile`):**
+       - Input Nama Panggilan Pengguna (AI Greeting) yang tersinkronisasi ke database Supabase dan localStorage.
+       - Input Alamat Email Terdaftar untuk rekap dan pengiriman ringkasan.
+    2. **Kartu Jadwal Morning Briefing Harian:**
+       - Toggle On/Off aktivasi briefing otomatis pagi hari.
+       - Input waktu briefing (default: 07:00 WIB).
+       - Opsi pengiriman salinan ke email terdaftar.
+       - Tombol **`[Tes Kirim Briefing]`** untuk preview notifikasi langsung di ponsel.
+    3. **Kartu Status Sesi & Integrasi Database Cloud:**
+       - Menampilkan status realtime koneksi WebSocket ke Supabase PostgreSQL (Connected).
+       - Informasi User UUID (`fc2758d3-78bb-4e22-b9f0-b3b16568b671`) dan Telegram ID (`1084842050`).
+       - Tombol **`[⚡ Force Refresh Cache]`** untuk merefresh cache agregasi data harian seketika.
+       - Tombol **`[📥 Backup Excel/CSV]`** untuk mengekspor seluruh transaksi kas dan aktivitas.
+
+
 ### 2.23 Evolusi Tab Analisis Mobile Menjadi Cockpit Eksekutif 100% Super Lengkap
 - **Pertanyaan Pengguna:**
   - *"pada bagian bottom tab analisis, dia tidak selengkap yang ada di web app yah? kenapa?"*
