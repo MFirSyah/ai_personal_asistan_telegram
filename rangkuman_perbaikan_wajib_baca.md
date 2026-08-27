@@ -199,6 +199,18 @@ Berikut adalah rekaman lengkap kegagalan teknis yang pernah terjadi beserta perb
      - Rangkuman naratif yang adaptif sesuai preferensi pengguna (*Deskripsi Bebas vs Bullet Points*).
   4. View otomatis dialihkan ke Tab Chat Hub sehingga pengguna langsung melihat layar bersih dengan rangkuman eksekutif terpadu.
 
+
+
+### 2.11 Spasi Bawah Presisi Konsisten 12px di Atas Bottom Navbar
+- **Gejala:** Terdapat ruang kosong (*blank space*) yang terlalu lebar di bagian bawah kartu saat pengguna melakukan scroll maksimal, sehingga batas konten terasa terlalu jauh dari bottom navbar.
+- **Akar Masalah:** Kombinasi `padding-bottom: 110px` dan tag spacer ekstra `<div class="h-8"></div>` menghasilkan total jarak kosong 86px di atas navbar 56px.
+- **Solusi Definitif:**
+  1. Menghapus seluruh elemen spacer manual `<div class="h-8"></div>` dan `<div class="h-10"></div>`.
+  2. Menerapkan perhitungan matematis presisi agar jarak kartu terakhir ke navbar sama persis dengan jarak antar kartu (`gap-2.5` / ~12px):
+     - **Tab Konten (1, 2, 4, 5):** `padding-bottom: 68px !important;` (Tinggi Navbar 56px + Spasi 12px = 68px).
+     - **Tab Chat (Tab 3):** `padding-bottom: 152px !important;` (Tinggi Navbar 56px + Input Dock 84px + Spasi 12px = 152px).
+  3. **Hasil:** Konten berhenti dengan rapi dan dekat di atas navbar dengan jarak harmonis 12px, tanpa tertimpa dan tanpa ruang kosong berlebih.
+
 ## 🛠️ BAB III: PANDUAN TEKNIS FITUR UTAMA & ENGINE GRAFIK
 
 ### 3.1 Ringkasan 5 Tab Aplikasi Raphael
