@@ -165,9 +165,15 @@ export async function POST(req: NextRequest) {
   const user = await getUserByTelegramId(telegramId);
   const isMasFirman = telegramId === 1084842050 || (user && String(user.id) === 'fc2758d3-78bb-4e22-b9f0-b3b16568b671');
   if (!user || !isMasFirman) {
+    const appBaseUrl = process.env.NEXT_PUBLIC_APP_URL || 'https://ai-personal-asistan-telegram.vercel.app';
+    const loginUrl = `${appBaseUrl}/dashboard/login?telegram_id=${telegramId}`;
+
     await sendTelegramMessage(
       chatId,
-      `🔒 **AKSES DITOLAK (BOT PRIVAT MAS FIRMAN)**\n\nHalo ${message.from.first_name || 'Teman'}!\nMohon maaf, Bot Asisten Keuangan & Aktivitas ini bersifat **100% Privat dan Eksklusif untuk Mas Firman**.\n\nAkses bagi pengguna lain telah dinonaktifkan secara permanen.`
+      `🔒 **BOT ASISTEN PRIBADI MAS FIRMAN**\n\nHalo ${message.from.first_name || 'Mas Firman'}!\nAkun Telegram ini (${telegramId}) belum terhubung dengan akun utama Supabase Anda.\n\nJika Anda adalah **Mas Firman yang baru saja berganti nomor/akun**, silakan verifikasi kepemilikan dengan login menggunakan Email & Password resmi Anda melalui tombol di bawah:`,
+      {
+        inline_keyboard: [[{ text: '🔑 Verifikasi & Hubungkan Akun Baru', url: loginUrl }]],
+      }
     );
     return NextResponse.json({ ok: true });
   }
