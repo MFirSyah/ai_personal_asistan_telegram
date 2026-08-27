@@ -379,6 +379,31 @@ Katalog **300 Poin Master Audit** ini menjadi dokumen panduan mutlak (*Ultimate 
 
 
 
+
+
+### 2.19 Penggantian Total Browser Prompt Android Menjadi Form Dialog Modal In-App Presisi (Armada Motor & Dynamic Hub)
+- **Masalah Pengguna:**
+  - Saat menekan tombol `+ Tambah Motor` pada Dynamic Hub, muncul popup dialog teks putih bawaan sistem Android (*window.prompt browser*), yang merusak estetika desain aplikasi Raphael dan tidak menyediakan form lengkap untuk parameter kendaraan (nama, plat, efisiensi BBM KM/L, kapasitas tangki, odometer saat ini, dan interval servis).
+- **Solusi Rekayasa:**
+  1. **Modal Form In-App Dedicated (`#modal-vehicle`):**
+     - Membangun form modal bertema gelap (*dark-mode*) lengkap dengan validasi visual untuk seluruh parameter motor:
+       * **Nama / Merk Motor**: (e.g. *Honda Beat FI, Vario 125, NMAX*)
+       * **Nomor Plat Kendaraan**: (e.g. *N 4567 XX*)
+       * **Jenis Bahan Bakar**: Dropdown pilihan (*Pertalite RON 90, Pertamax RON 92, Shell*)
+       * **Efisiensi Konsumsi BBM (KM/L)**: Digunakan untuk estimasi pengeluaran bensin dan rute Dieng
+       * **Kapasitas Tangki (Liter)**: Parameter akurasi konsumsi bensin
+       * **Odometer Saat Ini (KM)**: Menentukan countdown servis berkala & ganti oli
+       * **Interval Servis (KM)**: Jarak km antar servis (default 2.500 KM)
+       * **Checkbox Motor Utama**: Opsi langsung menjadikan motor ini sebagai motor aktif utama
+  2. **Eradikasi Total `window.prompt()` di Seluruh Aplikasi:**
+     - Mengganti seluruh aksi input di Dynamic Hub (Tambah Dompet, Tambah Target/Sinking Fund, Tambah Tagihan/Cicilan, Tambah Tombol Pintasan) menjadi modal in-app tersendiri:
+       * `#modal-wallet` untuk Tambah Dompet Baru
+       * `#modal-goal` untuk Tambah Target Menabung & Sinking Fund
+       * `#modal-bill` untuk Tambah Tagihan & Cicilan
+       * `#modal-pill` untuk Tambah Tombol Pintasan Cepat
+     - Aplikasi Raphael kini **100% bebas dari dialog alert/prompt browser** dan seluruh interaksi menggunakan form in-app yang elegan, modern, dan presisi.
+
+
 ### 2.18 Eliminasi Seleksi Teks Android pada Long-Press Navbar & Redesain Ringkas Profil SOS
 - **Masalah Pengguna:**
   1. Ketika tombol robot di navbar tengah diklik tahan, muncul popup/tooltip bawaan sistem Android (Salin / Tempel / Magnifier), yang memblokir fungsi tahan 3 detik untuk mengaktifkan SOS.
