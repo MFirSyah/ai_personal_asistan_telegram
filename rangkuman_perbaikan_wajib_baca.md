@@ -1,8 +1,3 @@
-
-
----
-
-## 📱 BAB VII: AUDIT DAN EVOLUSI APLIKASI MOBILE RAPHAEL (27 AGUSTUS 2026)
 # 📱 RANGKUMAN AUDIT KESALAHAN, KOREKSI, DAN ARSITEKTUR APLIKASI RAPHAEL MOBILE
 **Aplikasi:** Raphael Mobile (`com.datacore.app`)  
 **Basis Kode:** Android Native WebView Architecture (HTML5, TailwindCSS, Pure JavaScript, Chart.js Offline Bundled, Kotlin `MainActivity.kt`, Supabase PostgreSQL, Next.js Serverless API)  
@@ -168,6 +163,41 @@ Berikut adalah rekaman lengkap kegagalan teknis yang pernah terjadi beserta perb
   3. Setiap grafik WAJIB menyertakan **Rincian Analisis Eksekutif & Rekomendasi Raphael** yang kuantitatif dan mendalam.
 
 ---
+
+
+
+### 2.8 Konten Masih Terpotong / Tertutup Bottom Navbar
+- **Gejala:** Pada Tab Analisis (kartu Sinking Fund & Cicilan Bank Jago) dan Tab Database (baris transaksi/aktivitas paling bawah), konten tidak bisa di-scroll ke atas secara penuh dan terpotong oleh navbar bawah.
+- **Akar Masalah:** Nilai `padding-bottom: 70px;` terlalu mepet dengan tinggi navigasi (56px) ditambah insets layar sentuh Android.
+- **Solusi Definitif:**
+  1. Meningkatkan clearance scroll bawah pada seluruh tab:
+     - Tab Konten (1, 2, 4, 5): `padding-bottom: 110px !important;`
+     - Tab Chat (Tab 3): `padding-bottom: 175px !important;`
+  2. Menyematkan elemen spacer ekstra (`<div class="h-8"></div>` / `<div class="h-10"></div>`) di akhir setiap tab pane. Hal ini menjamin pengguna dapat menggeser seluruh konten ke atas dengan sangat leluasa tanpa ada 1 pixel pun yang tertutup navbar!
+
+---
+
+### 2.9 Fitur Edit Pesan Terakhir ala Google Gemini Web (Edit & Reprocess)
+- **Kebutuhan Pengguna:** Memungkinkan pengguna mengedit teks pertanyaan pada bubble pesan pengguna paling baru (*most recent user message*), lalu saat disimpan, AI otomatis memproses ulang (*reprocess*) dan memperbarui responsnya persis seperti mekanisme Google Gemini Web.
+- **Arsitektur Solusi:**
+  1. **Dynamic Edit Trigger:** Tombol `[✏️ Edit]` hanya disematkan pada pesan pengguna yang paling baru (`latestUserMessageId`).
+  2. **Inline Edit Form:** Saat diklik, bubble teks pengguna berubah menjadi `<textarea>` interaktif dengan tombol `[Batal]` dan `[Simpan & Proses Ulang]`.
+  3. **Turn Invalidation & AI Reprocessing:**
+     - Saat disimpan, respons AI lama yang terikat pada giliran percakapan tersebut langsung dihapus dari DOM (`parent.responseElementIds.forEach(id => remove())`).
+     - Teks baru dikirimkan kembali ke engine pemroses (`sendMessage(newText)`), dan AI menghasilkan respons baru yang terbarukan.
+
+---
+
+### 2.10 Rangkuman Otomatis Purge & Konsolidasi Eksekutif Tunggal
+- **Kebutuhan Pengguna:** Ketika menekan tombol *"Generate Rangkuman Sekarang"* pada modal Setting AI, seluruh riwayat chat lama dibersihkan (*purged*), dikompilasi menjadi satu kesatuan, dan disajikan sebagai bubble **Rangkuman Konsolidasi Eksekutif Tunggal** di Tab Chat Hub.
+- **Arsitektur Solusi:**
+  1. Fungsi `executeGenerateAndPurgeSummary()` memanggil endpoint backend `generate_auto_summary` dengan rentang hari pilihan pengguna (3, 7, 14, 30 hari).
+  2. Riwayat chat lama di DOM dan array memori dibersihkan total (`chat-messages-container.innerHTML = ''`).
+  3. Menginjeksikan bubble **RANGKUMAN KONSOLIDASI X HARI** yang memuat:
+     - Grid metrik 2x2 (*Total Pemasukan, Total Pengeluaran, Net Surplus, Burn Rate*).
+     - Poin-poin intisari finansial (Status Dieng, Operasional Gojek & Beat, Cicilan Jago).
+     - Rangkuman naratif yang adaptif sesuai preferensi pengguna (*Deskripsi Bebas vs Bullet Points*).
+  4. View otomatis dialihkan ke Tab Chat Hub sehingga pengguna langsung melihat layar bersih dengan rangkuman eksekutif terpadu.
 
 ## 🛠️ BAB III: PANDUAN TEKNIS FITUR UTAMA & ENGINE GRAFIK
 
