@@ -1,19 +1,5 @@
 {
   "framework": "nextjs",
-  "functions": {
-    "app/api/telegram/webhook/route.ts": {
-      "maxDuration": 60
-    },
-    "app/api/chat/respond/route.ts": {
-      "maxDuration": 60
-    },
-    "app/api/receipts/process/route.ts": {
-      "maxDuration": 60
-    },
-    "app/api/cron/**": {
-      "maxDuration": 60
-    }
-  },
   "crons": [
     {
       "path": "/api/cron/daily-insight",

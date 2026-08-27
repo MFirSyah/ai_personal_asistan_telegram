@@ -18,6 +18,7 @@ import {
 import { generateTelegramGanttChart } from '@/lib/analytics/gantt';
 
 export const dynamic = 'force-dynamic';
+export const maxDuration = 60;
 
 export async function POST(req: NextRequest) {
   try {
