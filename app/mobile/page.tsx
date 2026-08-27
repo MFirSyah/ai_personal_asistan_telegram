@@ -636,7 +636,7 @@ const HTML_SOURCE = `<!DOCTYPE html>
       container.scrollTop = container.scrollHeight;
 
       try {
-        const res = await fetch(\`\${API_BASE}/api/mobile/chat\`, {
+        const res = await fetch(\`\${API_BASE}/api/chat\`, {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify({
