@@ -656,6 +656,25 @@ TUGAS KAMU:
       * Contoh Kasus: Jika pesan asisten sebelumnya adalah *"Apakah Mas Firman ingin saya buatkan simulasi tabungan harian untuk Trip Dieng?"* dan user menjawab *"Ya"*, KAMU WAJIB LANGSUNG MENYAJIKAN SIMULASI TABUNGAN HARIAN TERSEBUT!
       * DILARANG KERAS menjawab dengan sapaan kaku seperti *"Halo Mas Firman, ada yang bisa saya bantu?"* saat user membalas *"ya"*!
 
+
+0. **ATURAN MUTLAK LOGIKA BENTROK JADWAL & KEBERADAAN FISIK DI LUAR KOTA (CONTINUOUS PRESENCE COLLISION ENGINE)**:
+   - **KASUS PERJALANAN / TRIP MULTI-HARI (CONTOH: TRIP KE DIENG)**:
+     * Mas Firman memiliki jadwal **Trip ke Dieng: Berangkat 29 Agustus 2026 jam 17.00 WIB, Pulang dari Dieng 30 Agustus 2026 jam 23.00 WIB malam. Lokasi: Dataran Tinggi Dieng, Wonosobo, Jawa Tengah**.
+     * Ini adalah **PERIODE BERADA DI LOKASI SECARA TERUS MENERUS (CONTINUOUS PHYSICAL PRESENCE)**:
+       - 29 Agustus (17.00 - 24.00): Perjalanan ke Dieng & berada di Dieng.
+       - 30 Agustus (00.00 - 23.00): Sepanjang hari Mas Firman **SEDANG BERADA DI DIENG, JAWA TENGAH**.
+     * **PANTANGAN LOGIKA PALING FATAL (STRICT FORBIDDEN REASONING)**:
+       - DILARANG KERAS mengatakan "Aman / Tidak bentrok karena jalan sehat jam 06.00 pagi sedangkan kepulangan Dieng jam 23.00 malam"!
+       - Logika itu 100% SALAH BESAR, karena pada jam 06.00 pagi tanggal 30 Agustus Mas Firman masih berada di Dieng Jawa Tengah (~380 KM / 8-9 jam motor dari Sidoarjo), sehingga **SECARA FISIK MUSTAHIL HADIR DI SIDOARJO**!
+     * **JIKA USER MENANYAKAN APAKAH BISA IKUT JALAN SEHAT DI SIDOARJO PADA 30 AGUSTUS (ATAU ACARA LAIN DI JATIM PADA TGL 30 AGS)**:
+       -> **STATUS WAJIB**: ⚠️ **PERINGATAN JADWAL BENTROK 100% / TIDAK BISA IKUT!**
+       -> **POIN EVALUASI WAJIB**:
+          1. 🏔️ **Trip ke Dieng**: Mas Firman berada di Dieng Plateau sejak 29 Agustus pukul 17.00 WIB hingga kepulangan pada 30 Agustus pukul 23.00 WIB malam.
+          2. 📍 **Lokasi Tanggal 30 Agustus**: Sepanjang hari 30 Agustus (pagi, siang, sore), Mas Firman aktif berada di Dieng, Jawa Tengah.
+          3. 🚗 **Jarak Geografis Mustahil**: Jarak Dieng (Jateng) ke Sidoarjo (Jatim) adalah ~380 KM (8-9 jam perjalanan motor), mustahil menghadiri jalan sehat pagi di Sidoarjo.
+          4. 💡 **Saran Butler**: Sarankan Mas Firman fokus menikmati liburan dan refreshing di Dieng Plateau bersama rekan-rekan dan beristirahat sebelum perjalanan pulang malam hari.
+
+
 FORMAT OUTPUT (WAJIB JSON VALID TANPA MARKDOWN BACKTICKS):
 {
   "messages": ["Bubble pesan 1"],
@@ -911,14 +930,3 @@ export async function runChatOrchestration(
     };
   }
 }
-
-
-16. **ANALISIS BENTROK JADWAL MULTI-HARI & LOKASI GEOGRAFIS (SMART COLLISION DETECTION)**:
-    - Jika user menanyakan apakah suatu acara/kegiatan baru bisa diikuti atau bentrok dengan jadwal yang sudah ada (misal: *"Saya ada acara jalan sehat di desa karang puri sidoarjo tanggal 30 agustus, apakah bisa ikut atau bentrok?"*):
-      * **Analisis Rentang Waktu (Time-Window)**: Periksa seluruh agenda dan rencana aktif user. Jika user sudah memiliki agenda multi-hari (misal: **Trip Dieng dari 29 Agustus jam 17.00 WIB hingga 30 Agustus jam 23.00 WIB**), maka pada tanggal 30 Agustus user **SECARA AKTIF SEDANG BERADA DI DIENG**.
-      * **Analisis Jarak & Lokasi Geografis**: Bandingkan lokasi agenda baru dengan lokasi user saat itu. (Contoh: Dieng Plateau, Wonosobo Jawa Tengah vs Desa Karang Puri, Sidoarjo Jawa Timur berjarak ~380 KM / 8-9 jam perjalanan motor).
-      * **Pemberian Jawaban Tegas, Taktis, & Informatif**:
-        1. Nyatakan dengan jelas bahwa jadwal tersebut **100% BENTROK** dan user **TIDAK BISA** mengikutinya.
-        2. Jelaskan alasannya: Pada tanggal 30 Agustus user masih berada di Dieng hingga kepulangan jam 23.00 WIB malam.
-        3. Sebutkan faktor jarak fisik yang mustahil (Jawa Tengah vs Sidoarjo).
-        4. Berikan saran Butler yang suportif agar Mas Firman tetap fokus menikmati liburan Dieng tanpa terbebani.
