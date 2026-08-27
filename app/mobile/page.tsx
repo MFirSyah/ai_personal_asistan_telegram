@@ -43,7 +43,19 @@ const HTML_SOURCE = `<!DOCTYPE html>
     };
   </script>
   <style>
-    * { box-sizing: border-box; margin: 0; padding: 0; touch-action: manipulation; }
+    * {
+      box-sizing: border-box;
+      margin: 0;
+      padding: 0;
+      touch-action: manipulation;
+      -webkit-touch-callout: none !important;
+      -webkit-user-select: none !important;
+      user-select: none !important;
+    }
+    input, textarea {
+      -webkit-user-select: text !important;
+      user-select: text !important;
+    }
     html, body {
       background-color: #0B0F12;
       color: #F8FAFC;
@@ -62,6 +74,13 @@ const HTML_SOURCE = `<!DOCTYPE html>
     }
     .tosca-bloom { box-shadow: 0 0 12px rgba(0, 168, 168, 0.3); }
     .lime-glow { box-shadow: 0 0 14px rgba(210, 240, 0, 0.4); }
+    .coral-pulse {
+      animation: pulseCoral 1s infinite alternate;
+    }
+    @keyframes pulseCoral {
+      from { box-shadow: 0 0 8px rgba(239, 68, 68, 0.4); transform: scale(1); }
+      to { box-shadow: 0 0 20px rgba(239, 68, 68, 0.9); transform: scale(1.08); }
+    }
     
     .tab-pane {
       display: none;
@@ -106,7 +125,7 @@ const HTML_SOURCE = `<!DOCTYPE html>
     }
   </style>
 </head>
-<body class="flex flex-col h-full w-full text-xs">
+<body class="flex flex-col h-full w-full text-xs" oncontextmenu="return false;">
 
   <!-- Floating Toast Notification -->
   <div id="toast-notification" class="bg-surface-elevated border border-lime text-lime px-3.5 py-1.5 rounded-full font-mono text-[10px] font-bold shadow-2xl flex items-center gap-1.5">
@@ -115,12 +134,12 @@ const HTML_SOURCE = `<!DOCTYPE html>
   </div>
 
   <!-- ========================================================================= -->
-  <!-- 🔝 TOP APP BAR (HEADER RAPHAEL DENGAN STATUS SALDO DINAMIS & MOTOR AKTIF) -->
+  <!-- 🔝 TOP APP BAR (HEADER RAPHAEL) -->
   <!-- ========================================================================= -->
   <header class="glass-panel px-3.5 py-2.5 flex justify-between items-center border-b border-border/50 shrink-0 z-40">
     <div class="flex items-center gap-2">
       <!-- Interactive Robot Icon -> Opens AI Settings Modal -->
-      <button onclick="openAiSettingsModal()" class="relative active:scale-95 transition-transform" title="Pengaturan Preferensi AI">
+      <button onclick="openAiSettingsModal()" class="relative active:scale-95 transition-transform">
         <div class="w-8 h-8 rounded-full bg-surface-elevated flex items-center justify-center border border-primary/40 tosca-bloom">
           <span class="material-symbols-outlined text-primary text-[18px]">smart_toy</span>
         </div>
@@ -158,7 +177,7 @@ const HTML_SOURCE = `<!DOCTYPE html>
   <main class="flex-1 overflow-hidden relative w-full">
 
     <!-- ======================================================================= -->
-    <!-- 📊 TAB 1: ANALYTICS & TIMELINE GANTT CHART (DYNAMIC GOALS & NET WORTH) -->
+    <!-- 📊 TAB 1: ANALYTICS & TIMELINE GANTT CHART -->
     <!-- ======================================================================= -->
     <div id="tab-analytics" class="tab-pane px-3.5 py-2.5 space-y-2.5">
       <div class="flex justify-between items-center">
@@ -266,7 +285,7 @@ const HTML_SOURCE = `<!DOCTYPE html>
         </div>
       </div>
 
-      <!-- DYNAMIC GOALS & SINKING FUNDS CARD -->
+      <!-- DYNAMIC GOALS CARD -->
       <div class="bg-surface rounded-xl p-3 border border-border space-y-2">
         <div class="flex justify-between items-center">
           <h4 class="font-headline font-bold text-[9px] uppercase text-text-secondary tracking-wider">Target & Sinking Funds</h4>
@@ -278,7 +297,7 @@ const HTML_SOURCE = `<!DOCTYPE html>
     </div>
 
     <!-- ======================================================================= -->
-    <!-- 🗄️ TAB 2: DATABASE DATA CORE (DUAL VIEW: TRANSAKSI & AKTIVITAS WITH FULL CRUD) -->
+    <!-- 🗄️ TAB 2: DATABASE DATA CORE -->
     <!-- ======================================================================= -->
     <div id="tab-data" class="tab-pane px-3.5 py-2.5 space-y-2.5">
       
@@ -325,7 +344,7 @@ const HTML_SOURCE = `<!DOCTYPE html>
     </div>
 
     <!-- ======================================================================= -->
-    <!-- 💬 TAB 3: RAPHAEL AI CHAT HUB (CENTER HERO DEFAULT SCREEN) -->
+    <!-- 💬 TAB 3: RAPHAEL AI CHAT HUB (HERO DEFAULT SCREEN) -->
     <!-- ======================================================================= -->
     <div id="tab-chat" class="tab-pane px-3.5 py-2.5 space-y-2.5" style="display: block;">
       
@@ -387,7 +406,7 @@ const HTML_SOURCE = `<!DOCTYPE html>
     </div>
 
     <!-- ======================================================================= -->
-    <!-- 🔔 TAB 4: NOTIFICATIONS & SMART ALERTS (DYNAMIC BILLS & REAL WEATHER) -->
+    <!-- 🔔 TAB 4: NOTIFICATIONS & SMART ALERTS -->
     <!-- ======================================================================= -->
     <div id="tab-notifications" class="tab-pane px-3.5 py-2.5 space-y-2.5">
       <div class="flex justify-between items-center">
@@ -420,7 +439,7 @@ const HTML_SOURCE = `<!DOCTYPE html>
     </div>
 
     <!-- ======================================================================= -->
-    <!-- ⚙️ TAB 5: PROFILE, DYNAMIC HUB, MOTOR & EMERGENCY ICE SETTINGS -->
+    <!-- ⚙️ TAB 5: PROFILE, DYNAMIC HUB, RINGKASAN SOS & SETTINGS -->
     <!-- ======================================================================= -->
     <div id="tab-profile" class="tab-pane px-3.5 py-2.5 space-y-2.5">
       <h2 class="font-headline font-bold text-sm text-text-primary">Profil & Pengaturan Sistem</h2>
@@ -459,46 +478,32 @@ const HTML_SOURCE = `<!DOCTYPE html>
         </button>
       </div>
 
-      <!-- EMERGENCY ICE PROFILE SETTING CARD -->
-      <div class="bg-surface rounded-xl p-3 border-2 border-coral/50 space-y-2.5 font-mono text-xs">
-        <div class="flex justify-between items-center border-b border-border/50 pb-1.5">
+      <!-- RINGKASAN EMERGENCY ICE PROFILE CARD (SUPER RAPI & RINGKAS) -->
+      <div class="bg-surface rounded-xl p-3 border-l-4 border-coral border border-border space-y-2 font-mono text-xs">
+        <div class="flex justify-between items-center">
           <span class="font-bold text-coral flex items-center gap-1.5">
-            <span class="material-symbols-outlined text-[16px]">medical_services</span> PENGATURAN DARURAT (SOS / ICE)
+            <span class="material-symbols-outlined text-[16px]">medical_services</span> PROFIL DARURAT (SOS / ICE)
           </span>
-          <button onclick="openEmergencyModal()" class="px-2 py-0.5 bg-coral/20 text-coral rounded text-[9px] font-bold">Tes Modal SOS</button>
+          <button onclick="openEditIceModal()" class="px-2 py-1 bg-coral/20 border border-coral text-coral rounded text-[9px] font-bold flex items-center gap-1 active:scale-95">
+            <span class="material-symbols-outlined text-[12px]">edit</span> Atur Data
+          </button>
         </div>
-        <p class="text-[9px] text-text-secondary">
-          Data ini ditampilkan saat terjadi darurat (ketik "sos" di chat atau tahan tombol robot 3 detik):
-        </p>
         
-        <div class="space-y-1.5 text-[10px]">
-          <div>
-            <label class="text-[8px] text-text-secondary uppercase">Nama Lengkap & Domisili</label>
-            <input id="ice-name-input" type="text" value="Mas Firman (M. Firman Syah)" class="w-full bg-surface-elevated border border-border rounded p-1.5 text-text-primary text-xs outline-none mt-0.5"/>
+        <!-- Compact Summary Row -->
+        <div class="p-2 rounded-lg bg-surface-elevated border border-border space-y-1 text-[10px]">
+          <div class="flex justify-between">
+            <span class="text-text-secondary">Gol. Darah: <b class="text-coral" id="ice-summary-blood">O (Positif)</b></span>
+            <span class="text-text-secondary">BPJS: <b class="text-text-primary" id="ice-summary-bpjs">0001234567890</b></span>
           </div>
-          <div class="grid grid-cols-2 gap-2">
-            <div>
-              <label class="text-[8px] text-text-secondary uppercase">Golongan Darah</label>
-              <input id="ice-blood-input" type="text" value="O (Positif)" class="w-full bg-surface-elevated border border-border rounded p-1.5 text-text-primary text-xs outline-none mt-0.5"/>
-            </div>
-            <div>
-              <label class="text-[8px] text-text-secondary uppercase">Nomor BPJS</label>
-              <input id="ice-bpjs-input" type="text" value="0001234567890" class="w-full bg-surface-elevated border border-border rounded p-1.5 text-text-primary text-xs outline-none mt-0.5"/>
-            </div>
-          </div>
-          <div>
-            <label class="text-[8px] text-text-secondary uppercase">Kontak Darurat Keluarga (Nama & No HP)</label>
-            <input id="ice-contact-input" type="text" value="Ibu / Keluarga: 0812-3456-7890" class="w-full bg-surface-elevated border border-border rounded p-1.5 text-text-primary text-xs outline-none mt-0.5"/>
-          </div>
-          <div>
-            <label class="text-[8px] text-text-secondary uppercase">Catatan Medis Khusus</label>
-            <input id="ice-notes-input" type="text" value="Tidak ada riwayat alergi obat berat." class="w-full bg-surface-elevated border border-border rounded p-1.5 text-text-primary text-xs outline-none mt-0.5"/>
+          <div class="flex justify-between text-[9px]">
+            <span class="text-text-secondary truncate max-w-[180px]">Kontak: <b class="text-lime" id="ice-summary-contact">Ibu (0812-3456-7890)</b></span>
+            <span class="text-text-secondary">Status: <b class="text-emerald">Lengkap</b></span>
           </div>
         </div>
 
-        <button onclick="saveEmergencyProfile()" class="w-full py-2 bg-coral text-white font-bold rounded-lg text-xs font-mono shadow active:scale-95 flex items-center justify-center gap-1">
-          <span class="material-symbols-outlined text-[14px]">save</span> Simpan Profil Darurat SOS
-        </button>
+        <p class="text-[8px] text-text-secondary flex items-center gap-1">
+          <span class="material-symbols-outlined text-[12px] text-coral">info</span> Tahan ikon robot di navbar 3 detik atau ketik "sos" di chat untuk memunculkan modal darurat.
+        </p>
       </div>
 
       <!-- Dynamic Wallet Balances Overview -->
@@ -515,24 +520,24 @@ const HTML_SOURCE = `<!DOCTYPE html>
   </main>
 
   <!-- ========================================================================= -->
-  <!-- 💬 CHAT INPUT DOCK (PHOTO RECEIPT ONLY - TTS/STT REMOVED) -->
+  <!-- 💬 CHAT INPUT DOCK (NO TTS / STT) -->
   <!-- ========================================================================= -->
   <div id="chat-input-wrapper" class="fixed bottom-[68px] left-0 right-0 z-30 px-3 max-w-lg mx-auto space-y-1.5">
     
     <!-- Dynamic Quick Action Pills -->
     <div id="dynamic-pills-container" class="flex gap-1.5 overflow-x-auto hide-scrollbar py-0.5"></div>
 
-    <!-- Floating Input Bar with Photo Receipt Attachment -->
+    <!-- Floating Input Bar -->
     <div class="glass-panel rounded-full p-1 pl-2.5 pr-1 flex items-center gap-1 border border-border focus-within:border-primary tosca-bloom">
       <input id="receipt-file-input" type="file" accept="image/*" class="hidden" onchange="handleReceiptSelected(event)"/>
       
-      <button onclick="triggerReceiptUpload()" class="text-text-secondary hover:text-tosca p-1 active:scale-95 transition-colors" title="Foto / Lampirkan Struk Belanja">
+      <button onclick="triggerReceiptUpload()" class="text-text-secondary hover:text-tosca p-1 active:scale-95 transition-colors" title="Foto Struk Belanja">
         <span class="material-symbols-outlined text-[18px]">add_a_photo</span>
       </button>
 
       <input id="chat-input-text" type="text" placeholder="Tanya Raphael, split bill, cek checklist, atau ketik 'sos'..." class="flex-1 bg-transparent border-none focus:ring-0 text-[11px] font-body text-text-primary placeholder:text-text-secondary/50 h-8 outline-none px-1" onkeydown="if(event.key==='Enter') sendMessage()"/>
       
-      <button onclick="sendMessage()" class="w-8 h-8 rounded-full bg-lime text-black flex items-center justify-center font-bold active:scale-95 transition-transform lime-glow shrink-0" title="Kirim">
+      <button onclick="sendMessage()" class="w-8 h-8 rounded-full bg-lime text-black flex items-center justify-center font-bold active:scale-95 transition-transform lime-glow shrink-0">
         <span class="material-symbols-outlined text-[16px]">send</span>
       </button>
     </div>
@@ -541,26 +546,28 @@ const HTML_SOURCE = `<!DOCTYPE html>
   <!-- ========================================================================= -->
   <!-- 🧭 SOLID DOCKED BOTTOM NAVIGATION BAR (ROBOT ICON LONG-PRESS 3S SOS) -->
   <!-- ========================================================================= -->
-  <nav class="fixed bottom-0 left-0 right-0 w-full h-14 bg-surface border-t border-border/80 shadow-2xl z-50 flex justify-around items-center px-2">
+  <nav class="fixed bottom-0 left-0 right-0 w-full h-14 bg-surface border-t border-border/80 shadow-2xl z-50 flex justify-around items-center px-2" oncontextmenu="return false;">
     
-    <button onclick="switchTab('analytics')" id="nav-btn-analytics" class="p-2 text-text-secondary hover:text-primary transition-colors flex flex-col items-center active:scale-90">
+    <button onclick="switchTab('analytics')" id="nav-btn-analytics" class="p-2 text-text-secondary hover:text-primary transition-colors flex flex-col items-center active:scale-90 select-none">
       <span class="material-symbols-outlined text-[20px]">analytics</span>
     </button>
 
-    <button onclick="switchTab('data')" id="nav-btn-data" class="p-2 text-text-secondary hover:text-primary transition-colors flex flex-col items-center active:scale-90">
+    <button onclick="switchTab('data')" id="nav-btn-data" class="p-2 text-text-secondary hover:text-primary transition-colors flex flex-col items-center active:scale-90 select-none">
       <span class="material-symbols-outlined text-[20px]">storage</span>
     </button>
 
     <!-- Center Robot Button: Tap to Switch Chat, Hold 3 Seconds to Trigger SOS -->
-    <button id="nav-btn-chat" class="w-10 h-10 rounded-full bg-lime text-black flex items-center justify-center lime-glow border-2 border-background shadow-lg transition-transform active:scale-95 relative" title="Ketuk: Chat • Tahan 3 Detik: SOS Darurat">
-      <span class="material-symbols-outlined text-[20px]" style="font-variation-settings: 'FILL' 1;">smart_toy</span>
-    </button>
+    <div class="relative flex items-center justify-center select-none" oncontextmenu="return false;">
+      <button id="nav-btn-chat" class="w-10 h-10 rounded-full bg-lime text-black flex items-center justify-center lime-glow border-2 border-background shadow-lg transition-transform active:scale-95 select-none" oncontextmenu="return false;">
+        <span class="material-symbols-outlined text-[20px]" style="font-variation-settings: 'FILL' 1;">smart_toy</span>
+      </button>
+    </div>
 
-    <button onclick="switchTab('notifications')" id="nav-btn-notifications" class="p-2 text-text-secondary hover:text-primary transition-colors flex flex-col items-center active:scale-90">
+    <button onclick="switchTab('notifications')" id="nav-btn-notifications" class="p-2 text-text-secondary hover:text-primary transition-colors flex flex-col items-center active:scale-90 select-none">
       <span class="material-symbols-outlined text-[20px]">notifications</span>
     </button>
 
-    <button onclick="switchTab('profile')" id="nav-btn-profile" class="p-2 text-text-secondary hover:text-primary transition-colors flex flex-col items-center active:scale-90">
+    <button onclick="switchTab('profile')" id="nav-btn-profile" class="p-2 text-text-secondary hover:text-primary transition-colors flex flex-col items-center active:scale-90 select-none">
       <span class="material-symbols-outlined text-[20px]">settings</span>
     </button>
 
@@ -609,12 +616,60 @@ const HTML_SOURCE = `<!DOCTYPE html>
         </div>
       </div>
 
-      <button onclick="closeEmergencyModal()" class="w-full py-2 bg-coral text-white font-bold rounded-lg text-xs shadow-md active:scale-95">Tutup Informasi Darurat</button>
+      <div class="flex gap-2">
+        <button onclick="openEditIceModal(); closeEmergencyModal();" class="flex-1 py-2 bg-surface-elevated border border-coral text-coral font-bold rounded-lg text-xs active:scale-95">Edit Profil ICE</button>
+        <button onclick="closeEmergencyModal()" class="flex-1 py-2 bg-coral text-white font-bold rounded-lg text-xs shadow-md active:scale-95">Tutup</button>
+      </div>
     </div>
   </div>
 
   <!-- ========================================================================= -->
-  <!-- 🎛️ MASTER MODAL: KELOLA ENTITAS DINAMIS (5 SUB-TABS DENGAN MOTOR) -->
+  <!-- ✏️ MODAL EDIT PENGATURAN DARURAT (DIBUKA SAAT DIKETUK DARI PROFIL) -->
+  <!-- ========================================================================= -->
+  <div id="modal-edit-ice" class="modal-overlay">
+    <div class="bg-surface border-2 border-coral rounded-2xl p-4 w-full max-w-sm space-y-3 font-mono max-h-[90vh] overflow-y-auto hide-scrollbar">
+      <div class="flex justify-between items-center border-b border-border/50 pb-2">
+        <div class="flex items-center gap-1.5">
+          <span class="material-symbols-outlined text-coral text-[18px]">medical_services</span>
+          <h3 class="font-headline font-bold text-sm text-coral">Atur Profil Darurat (ICE)</h3>
+        </div>
+        <button onclick="closeEditIceModal()" class="text-text-secondary hover:text-text-primary text-sm font-bold active:scale-90">✕</button>
+      </div>
+
+      <div class="space-y-2 text-[10px]">
+        <div>
+          <label class="text-[8px] text-text-secondary uppercase">Nama Lengkap & Domisili</label>
+          <input id="ice-name-input" type="text" value="Mas Firman (M. Firman Syah)" class="w-full bg-surface-elevated border border-border rounded p-1.5 text-text-primary text-xs outline-none mt-0.5"/>
+        </div>
+        <div class="grid grid-cols-2 gap-2">
+          <div>
+            <label class="text-[8px] text-text-secondary uppercase">Golongan Darah</label>
+            <input id="ice-blood-input" type="text" value="O (Positif)" class="w-full bg-surface-elevated border border-border rounded p-1.5 text-text-primary text-xs outline-none mt-0.5"/>
+          </div>
+          <div>
+            <label class="text-[8px] text-text-secondary uppercase">Nomor BPJS / Asuransi</label>
+            <input id="ice-bpjs-input" type="text" value="0001234567890" class="w-full bg-surface-elevated border border-border rounded p-1.5 text-text-primary text-xs outline-none mt-0.5"/>
+          </div>
+        </div>
+        <div>
+          <label class="text-[8px] text-text-secondary uppercase">Kontak Darurat Keluarga (Nama & No HP)</label>
+          <input id="ice-contact-input" type="text" value="Ibu / Keluarga: 0812-3456-7890" class="w-full bg-surface-elevated border border-border rounded p-1.5 text-text-primary text-xs outline-none mt-0.5"/>
+        </div>
+        <div>
+          <label class="text-[8px] text-text-secondary uppercase">Catatan Medis Khusus / Alergi</label>
+          <input id="ice-notes-input" type="text" value="Tidak ada riwayat alergi obat berat." class="w-full bg-surface-elevated border border-border rounded p-1.5 text-text-primary text-xs outline-none mt-0.5"/>
+        </div>
+      </div>
+
+      <div class="flex gap-2 pt-1">
+        <button onclick="closeEditIceModal()" class="flex-1 py-2 bg-surface-elevated text-text-secondary font-bold rounded-lg border border-border text-xs active:scale-95">Batal</button>
+        <button onclick="saveEmergencyProfileFromModal()" class="flex-1 py-2 bg-coral text-white font-bold rounded-lg text-xs shadow-md active:scale-95">Simpan Data</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- ========================================================================= -->
+  <!-- 🎛️ MASTER MODAL: KELOLA ENTITAS DINAMIS -->
   <!-- ========================================================================= -->
   <div id="modal-dynamic-hub" class="modal-overlay">
     <div class="bg-surface border border-border rounded-2xl p-4 w-full max-w-sm space-y-3 font-mono max-h-[90vh] overflow-y-auto hide-scrollbar">
@@ -685,7 +740,7 @@ const HTML_SOURCE = `<!DOCTYPE html>
   </div>
 
   <!-- ========================================================================= -->
-  <!-- 🤖 MODAL DIALOG: PENGATURAN PREFERENSI AI & AUTO-SUMMARIZER -->
+  <!-- 🤖 MODAL DIALOG: PENGATURAN PREFERENSI AI -->
   <!-- ========================================================================= -->
   <div id="modal-ai-settings" class="modal-overlay">
     <div class="bg-surface border border-border rounded-2xl p-4 w-full max-w-sm space-y-3 font-mono max-h-[90vh] overflow-y-auto hide-scrollbar">
@@ -768,7 +823,7 @@ const HTML_SOURCE = `<!DOCTYPE html>
         </div>
         <div>
           <label class="text-[10px] text-text-secondary uppercase">Keterangan / Merchant</label>
-          <input id="modal-tx-desc" type="text" placeholder="Contoh: Bensin Honda Beat" class="w-full bg-surface-elevated border border-border rounded-lg p-2 text-text-primary outline-none mt-0.5"/>
+          <input id="modal-tx-desc" type="text" placeholder="Contoh: Bensin Motor" class="w-full bg-surface-elevated border border-border rounded-lg p-2 text-text-primary outline-none mt-0.5"/>
         </div>
       </div>
 
