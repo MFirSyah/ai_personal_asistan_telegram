@@ -138,6 +138,161 @@ const HTML_SOURCE = `<!DOCTYPE html>
 </head>
 <body class="flex flex-col h-full w-full text-xs" oncontextmenu="return false;">
 
+  <!-- 🌟 SCREEN 1: ONBOARDING CAROUSEL SCREEN -->
+  <div id="onboarding-screen" class="fixed inset-0 z-[300] bg-background flex flex-col justify-between p-6 select-none transition-opacity duration-300">
+    <!-- Top Skip Button -->
+    <div class="flex justify-between items-center pt-2">
+      <div class="flex items-center gap-2">
+        <div class="w-7 h-7 rounded-lg bg-primary/20 border border-primary flex items-center justify-center text-primary font-bold font-headline text-xs">
+          R
+        </div>
+        <span class="font-headline font-bold text-sm text-text-primary tracking-wider">RAPHAEL AI</span>
+      </div>
+      <button onclick="skipOnboarding()" class="text-[11px] font-mono font-bold text-text-secondary hover:text-lime px-3 py-1 rounded-full bg-surface-elevated border border-border/60">
+        Lewati
+      </button>
+    </div>
+
+    <!-- Carousel Container -->
+    <div class="flex-1 flex flex-col justify-center items-center my-auto relative overflow-hidden py-4">
+      
+      <!-- Slide 1 -->
+      <div id="onboard-slide-1" class="onboard-slide w-full flex flex-col items-center text-center space-y-4 animate-fade">
+        <div class="w-24 h-24 rounded-3xl bg-gradient-to-tr from-primary/30 to-tosca/20 border-2 border-primary/50 flex items-center justify-center shadow-2xl tosca-bloom">
+          <span class="material-symbols-outlined text-[48px] text-primary">smart_toy</span>
+        </div>
+        <div class="space-y-1.5 max-w-xs">
+          <span class="text-[10px] font-mono px-2.5 py-0.5 rounded-full bg-primary/20 text-primary font-bold border border-primary/30">Personal Butler</span>
+          <h2 class="font-headline font-black text-xl text-text-primary">Asisten Finansial & Waktu</h2>
+          <p class="text-xs text-text-secondary font-body leading-relaxed">
+            Dampingi pencatatan keuangan, pelunasan pinjaman Bank Jago, cek transaksi via kamera, dan analisis cerdas harian Anda.
+          </p>
+        </div>
+      </div>
+
+      <!-- Slide 2 -->
+      <div id="onboard-slide-2" class="onboard-slide w-full flex-col items-center text-center space-y-4 hidden animate-fade">
+        <div class="w-24 h-24 rounded-3xl bg-gradient-to-tr from-lime/30 to-emerald/20 border-2 border-lime/50 flex items-center justify-center shadow-2xl">
+          <span class="material-symbols-outlined text-[48px] text-lime">sync_alt</span>
+        </div>
+        <div class="space-y-1.5 max-w-xs">
+          <span class="text-[10px] font-mono px-2.5 py-0.5 rounded-full bg-lime/20 text-lime font-bold border border-lime/30">Dual-Engine Sync</span>
+          <h2 class="font-headline font-black text-xl text-text-primary">Keuangan & Agenda Terpadu</h2>
+          <p class="text-xs text-text-secondary font-body leading-relaxed">
+            Korelasikan rencana Trip Dieng, akumulasi narik Gojek, logbook motor Beat, dan estimasi BBM secara otomatis dalam satu wadah.
+          </p>
+        </div>
+      </div>
+
+      <!-- Slide 3 -->
+      <div id="onboard-slide-3" class="onboard-slide w-full flex-col items-center text-center space-y-4 hidden animate-fade">
+        <div class="w-24 h-24 rounded-3xl bg-gradient-to-tr from-coral/30 to-amber/20 border-2 border-coral/50 flex items-center justify-center shadow-2xl">
+          <span class="material-symbols-outlined text-[48px] text-coral">security</span>
+        </div>
+        <div class="space-y-1.5 max-w-xs">
+          <span class="text-[10px] font-mono px-2.5 py-0.5 rounded-full bg-coral/20 text-coral font-bold border border-coral/30">Proteksi Pintar</span>
+          <h2 class="font-headline font-black text-xl text-text-primary">Deteksi Bentrok & SOS ICE</h2>
+          <p class="text-xs text-text-secondary font-body leading-relaxed">
+            Peringatan cerdas jadwal bentrok multi-hari, batas belanja harian aman, dan pusat tombol darurat medis cepat (SOS).
+          </p>
+        </div>
+      </div>
+
+    </div>
+
+    <!-- Bottom Controls & Dots -->
+    <div class="space-y-5 pb-4">
+      <!-- Dots Indicator -->
+      <div class="flex justify-center items-center gap-2">
+        <span id="dot-1" class="w-6 h-2 rounded-full bg-primary transition-all duration-300"></span>
+        <span id="dot-2" class="w-2 h-2 rounded-full bg-border transition-all duration-300"></span>
+        <span id="dot-3" class="w-2 h-2 rounded-full bg-border transition-all duration-300"></span>
+      </div>
+
+      <!-- Action Button -->
+      <button id="btn-onboard-next" onclick="nextOnboardSlide()" class="w-full py-3.5 bg-gradient-to-r from-primary to-tosca text-black font-headline font-bold text-sm rounded-xl shadow-lg active:scale-95 transition-all flex items-center justify-center gap-2">
+        <span>Lanjutkan</span>
+        <span class="material-symbols-outlined text-[18px]">arrow_forward</span>
+      </button>
+    </div>
+  </div>
+
+
+  <!-- 🔐 SCREEN 2: MODERN LOGIN & AUTHENTICATION SCREEN -->
+  <div id="login-screen" class="fixed inset-0 z-[290] bg-background flex flex-col justify-between p-6 select-none overflow-y-auto hidden">
+    <!-- Header Brand -->
+    <div class="text-center pt-4 space-y-2">
+      <div class="w-16 h-16 rounded-2xl bg-gradient-to-tr from-primary/30 to-tosca/20 border-2 border-primary mx-auto flex items-center justify-center shadow-xl tosca-bloom">
+        <span class="material-symbols-outlined text-[36px] text-primary">robot_2</span>
+      </div>
+      <div>
+        <h1 class="font-headline font-black text-xl text-text-primary tracking-tight">RAPHAEL COCKPIT</h1>
+        <p class="text-[10px] font-mono text-text-secondary">Autentikasi & Masuk Akun Eksekutif</p>
+      </div>
+    </div>
+
+    <!-- Login Box -->
+    <div class="bg-surface rounded-2xl p-4 border border-border space-y-3.5 my-auto shadow-2xl">
+      
+      <!-- 1-Tap Quick Login Button -->
+      <div class="space-y-1.5">
+        <span class="text-[9px] font-mono text-text-secondary uppercase">Akses Cepat Pengguna Terverifikasi</span>
+        <button onclick="loginQuickMasFirman()" class="w-full py-3 bg-gradient-to-r from-lime/20 to-primary/20 border-2 border-lime/60 hover:border-lime rounded-xl text-text-primary font-headline font-bold text-xs flex items-center justify-between px-3 active:scale-95 transition-all shadow">
+          <div class="flex items-center gap-2.5 text-left">
+            <div class="w-8 h-8 rounded-full bg-lime text-black flex items-center justify-center font-bold text-xs font-headline">
+              MF
+            </div>
+            <div>
+              <p class="font-bold text-text-primary text-xs flex items-center gap-1">
+                Mas Firman <span class="material-symbols-outlined text-lime text-[14px]">verified</span>
+              </p>
+              <p class="text-[9px] font-mono text-lime">ID: 1084842050 (Aktif)</p>
+            </div>
+          </div>
+          <span class="material-symbols-outlined text-lime text-[20px]">login</span>
+        </button>
+      </div>
+
+      <div class="flex items-center gap-2 my-1">
+        <div class="h-px bg-border flex-1"></div>
+        <span class="text-[9px] font-mono text-text-secondary uppercase">atau masuk mandiri</span>
+        <div class="h-px bg-border flex-1"></div>
+      </div>
+
+      <!-- Manual Input Form -->
+      <form onsubmit="handleManualLogin(event)" class="space-y-2.5 font-mono text-xs">
+        <div>
+          <label class="text-[9px] text-text-secondary uppercase">Nama Panggilan Pengguna</label>
+          <input id="login-input-name" type="text" value="Mas Firman" placeholder="Nama Anda..." class="w-full bg-surface-elevated border border-border rounded-lg p-2.5 text-text-primary text-xs outline-none mt-1 focus:border-primary"/>
+        </div>
+
+        <div>
+          <label class="text-[9px] text-text-secondary uppercase">Telegram User ID / User ID</label>
+          <input id="login-input-id" type="text" value="1084842050" placeholder="Contoh: 1084842050" class="w-full bg-surface-elevated border border-border rounded-lg p-2.5 text-text-primary text-xs outline-none mt-1 focus:border-primary"/>
+        </div>
+
+        <div>
+          <label class="text-[9px] text-text-secondary uppercase">PIN / Kode Akses Keamanan</label>
+          <input id="login-input-pin" type="password" value="2026" placeholder="Masukkan 4-digit PIN..." class="w-full bg-surface-elevated border border-border rounded-lg p-2.5 text-text-primary text-xs outline-none mt-1 focus:border-primary"/>
+        </div>
+
+        <button type="submit" class="w-full py-3 bg-primary text-black font-headline font-bold text-xs rounded-xl shadow active:scale-95 transition-all flex items-center justify-center gap-1.5 mt-2">
+          <span class="material-symbols-outlined text-[16px]">lock_open</span>
+          <span>Masuk ke Dashboard</span>
+        </button>
+      </form>
+    </div>
+
+    <!-- Footer Privacy -->
+    <div class="text-center space-y-1 pb-2">
+      <p class="text-[9px] font-mono text-text-secondary flex items-center justify-center gap-1">
+        <span class="material-symbols-outlined text-[12px] text-emerald">lock</span> Terenkripsi & Terhubung Langsung ke Supabase
+      </p>
+      <p class="text-[8px] font-mono text-text-secondary/60">Raphael AI System v2.26 • Executive Edition</p>
+    </div>
+  </div>
+
+
   <!-- Floating Toast Notification -->
   <div id="toast-notification" class="bg-surface-elevated border border-lime text-lime px-3.5 py-1.5 rounded-full font-mono text-[10px] font-bold shadow-2xl flex items-center gap-1.5">
     <span class="material-symbols-outlined text-[14px]">check_circle</span>
@@ -711,6 +866,14 @@ const HTML_SOURCE = `<!DOCTYPE html>
         <p class="text-[8px] text-text-secondary flex items-center gap-1">
           <span class="material-symbols-outlined text-[12px] text-coral">info</span> Tahan ikon robot di navbar 3 detik atau ketik "sos" di chat untuk memunculkan modal darurat.
         </p>
+      </div>
+
+      
+      <!-- 7. TOMBOL KELUAR / GANTI AKUN (LOGOUT) -->
+      <div class="pt-2 pb-6">
+        <button onclick="logoutUserSession()" class="w-full py-2.5 bg-coral/15 border-2 border-coral/40 text-coral font-bold rounded-xl text-xs font-mono shadow active:scale-95 flex items-center justify-center gap-2 hover:bg-coral/25 transition-all">
+          <span class="material-symbols-outlined text-[16px]">logout</span> Keluar / Ganti Akun Pengguna
+        </button>
       </div>
 
       <!-- 6. Dynamic Wallet Balances Overview -->
