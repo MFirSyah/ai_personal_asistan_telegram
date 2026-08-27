@@ -99,89 +99,95 @@ export async function POST(req: NextRequest) {
       return NextResponse.json({ ok: true }, { headers: corsHeaders });
     }
 
-    // --- ACTIVITIES CRUD ---
-    if (action === 'create_activity') {
-      const { title, description, status, priority, start_time, end_time } = payload;
-      const { data, error } = await supabaseAdmin
-        .from('activities')
-        .insert({
-          user_id: safeUserId,
-          title,
-          description: description || '',
-          status: status || 'pending',
-          priority: priority || 'medium',
-          start_time: start_time || new Date().toISOString(),
-          end_time: end_time || null,
-        })
-        .select()
-        .single();
+    // --- PREFERENCES & AI SETTINGS CRUD ---
+    if (action === 'save_preference' || action === 'update_preference') {
+      const { key, value } = payload;
+      if (!key || value === undefined) {
+        return NextResponse.json({ error: 'key and value are required' }, { status: 400, headers: corsHeaders });
+      }
 
-      if (error) return NextResponse.json({ error: error.message }, { status: 500, headers: corsHeaders });
-      return NextResponse.json({ ok: true, data }, { headers: corsHeaders });
+      // Check if exists
+      const { data: existing } = await supabaseAdmin
+        .from('user_preferences')
+        .select('id')
+        .eq('user_id', safeUserId)
+        .eq('key', key)
+        .maybeSingle();
+
+      let result;
+      if (existing) {
+        result = await supabaseAdmin
+          .from('user_preferences')
+          .update({ value, updated_at: new Date().toISOString() })
+          .eq('id', existing.id)
+          .select()
+          .single();
+      } else {
+        result = await supabaseAdmin
+          .from('user_preferences')
+          .insert({ user_id: safeUserId, key, value })
+          .select()
+          .single();
+      }
+
+      if (result.error) return NextResponse.json({ error: result.error.message }, { status: 500, headers: corsHeaders });
+      return NextResponse.json({ ok: true, data: result.data }, { headers: corsHeaders });
     }
 
-    if (action === 'update_activity') {
-      const { id, title, description, status, priority, start_time, end_time } = payload;
-      const { data, error } = await supabaseAdmin
-        .from('activities')
-        .update({
-          title,
-          description,
-          status,
-          priority,
-          start_time,
-          end_time,
-          updated_at: new Date().toISOString(),
-        })
-        .eq('id', id)
-        .select()
-        .single();
+    // --- AUTO-SUMMARIZER GENERATOR (DYNAMIC DAYS) ---
+    if (action === 'generate_auto_summary') {
+      const days = Number(payload.days) || 7;
+      const cutoffDate = new Date();
+      cutoffDate.setDate(cutoffDate.getDate() - days);
 
-      if (error) return NextResponse.json({ error: error.message }, { status: 500, headers: corsHeaders });
-      return NextResponse.json({ ok: true, data }, { headers: corsHeaders });
-    }
+      const [txRes, actRes] = await Promise.all([
+        supabaseAdmin
+          .from('transactions')
+          .select('*')
+          .eq('user_id', safeUserId)
+          .is('deleted_at', null)
+          .gte('occurred_at', cutoffDate.toISOString()),
+        supabaseAdmin
+          .from('activities')
+          .select('*')
+          .eq('user_id', safeUserId)
+          .is('deleted_at', null),
+      ]);
 
-    if (action === 'delete_activity') {
-      const { id } = payload;
-      const { error } = await supabaseAdmin
-        .from('activities')
-        .update({ deleted_at: new Date().toISOString() })
-        .eq('id', id);
+      const txs = txRes.data || [];
+      const acts = actRes.data || [];
 
-      if (error) return NextResponse.json({ error: error.message }, { status: 500, headers: corsHeaders });
-      return NextResponse.json({ ok: true }, { headers: corsHeaders });
-    }
+      let income = 0;
+      let expense = 0;
+      txs.forEach((t: any) => {
+        if (t.type === 'income') income += Number(t.amount || 0);
+        else expense += Number(t.amount || 0);
+      });
 
-    // --- PLANS CRUD ---
-    if (action === 'create_plan') {
-      const { title, target_amount, current_amount, deadline, category } = payload;
-      const { data, error } = await supabaseAdmin
-        .from('plans')
-        .insert({
-          user_id: safeUserId,
-          title,
-          target_amount: Number(target_amount) || 0,
-          current_amount: Number(current_amount) || 0,
-          deadline: deadline || null,
-          category: category || 'Saving',
-          status: 'active',
-        })
-        .select()
-        .single();
+      const netCashflow = income - expense;
+      const avgExpense = Math.round(expense / (days || 1));
 
-      if (error) return NextResponse.json({ error: error.message }, { status: 500, headers: corsHeaders });
-      return NextResponse.json({ ok: true, data }, { headers: corsHeaders });
-    }
+      const summaryText = `[Rangkuman Otomatis ${days} Hari Terakhir]\n` +
+        `• Periode Analisis: ${days} Hari Terakhir\n` +
+        `• Total Pemasukan: Rp ${income.toLocaleString('id-ID')}\n` +
+        `• Total Pengeluaran: Rp ${expense.toLocaleString('id-ID')}\n` +
+        `• Net Cashflow: Rp ${netCashflow.toLocaleString('id-ID')}\n` +
+        `• Rata-rata Burn Rate Harian: Rp ${avgExpense.toLocaleString('id-ID')}/hari\n` +
+        `• Status Agenda Aktif: ${acts.length} agenda terdaftar.`;
 
-    if (action === 'delete_plan') {
-      const { id } = payload;
-      const { error } = await supabaseAdmin
-        .from('plans')
-        .update({ deleted_at: new Date().toISOString() })
-        .eq('id', id);
+      // Save as active preference
+      await supabaseAdmin.from('user_preferences').upsert({
+        user_id: safeUserId,
+        key: `RANGKUMAN_OTOMATIS_${days}_HARI`,
+        value: summaryText,
+        updated_at: new Date().toISOString(),
+      }, { onConflict: 'user_id,key' });
 
-      if (error) return NextResponse.json({ error: error.message }, { status: 500, headers: corsHeaders });
-      return NextResponse.json({ ok: true }, { headers: corsHeaders });
+      return NextResponse.json({
+        ok: true,
+        summary: summaryText,
+        stats: { income, expense, netCashflow, avgExpense, days }
+      }, { headers: corsHeaders });
     }
 
     return NextResponse.json({ error: 'Unknown action' }, { status: 400, headers: corsHeaders });

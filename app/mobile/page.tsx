@@ -96,16 +96,19 @@ const HTML_SOURCE = `<!DOCTYPE html>
 <body class="flex flex-col h-full w-full select-none text-xs">
 
   <!-- ========================================================================= -->
-  <!-- 🔝 TOP APP BAR (BERSIH DENGAN SALDO & LOKASI CUACA REAL) -->
+  <!-- 🔝 TOP APP BAR (KLIK IKON ROBOT UNTUK SETTING PREFERENSI AI) -->
   <!-- ========================================================================= -->
   <header class="glass-panel px-4 py-2.5 flex justify-between items-center border-b border-border/50 shrink-0 z-40">
     <div class="flex items-center gap-2.5">
-      <div class="relative">
+      
+      <!-- Interactive Robot Icon -> Opens AI Settings Modal -->
+      <button onclick="openAiSettingsModal()" class="relative hover:scale-105 transition-transform focus:outline-none" title="Klik untuk Pengaturan Preferensi AI">
         <div class="w-8 h-8 rounded-full bg-surface-elevated flex items-center justify-center border border-primary/40 tosca-bloom">
           <span class="material-symbols-outlined text-primary text-[18px]">smart_toy</span>
         </div>
         <div class="absolute bottom-0 right-0 w-2.5 h-2.5 bg-lime rounded-full border-2 border-background animate-pulse"></div>
-      </div>
+      </button>
+
       <div>
         <h1 class="font-headline font-bold text-sm leading-tight flex items-center gap-1.5 text-text-primary">
           DATA_CORE_V1
@@ -137,11 +140,11 @@ const HTML_SOURCE = `<!DOCTYPE html>
   <main class="flex-1 overflow-hidden relative w-full">
 
     <!-- ======================================================================= -->
-    <!-- 📊 TAB 1: ANALYTICS & SMART INSIGHTS -->
+    <!-- 📊 TAB 1: ANALYTICS, SMART INSIGHTS & GANTT CHART -->
     <!-- ======================================================================= -->
     <div id="tab-analytics" class="tab-pane px-4 py-3 space-y-3">
       <div class="flex justify-between items-center">
-        <h2 class="font-headline font-bold text-base text-text-primary">Analisis Keuangan & Aktivitas</h2>
+        <h2 class="font-headline font-bold text-base text-text-primary">Analisis Keuangan & Timeline</h2>
         <span class="text-[10px] font-mono px-2 py-0.5 rounded-full bg-primary/10 text-primary border border-primary/20">Realtime</span>
       </div>
 
@@ -183,6 +186,76 @@ const HTML_SOURCE = `<!DOCTYPE html>
         </div>
       </div>
 
+      <!-- REAL VISUAL GANTT CHART IN TAB 1 -->
+      <div class="bg-surface rounded-xl p-3.5 border border-border space-y-2.5 shadow-md">
+        <div class="flex justify-between items-center text-[10px] font-mono text-text-secondary border-b border-border/50 pb-2">
+          <span class="font-bold text-text-primary flex items-center gap-1">
+            <span class="material-symbols-outlined text-primary text-[14px]">calendar_view_month</span> TIMELINE GANTT CHART 2026
+          </span>
+          <span class="px-2 py-0.5 rounded bg-coral/20 text-coral font-bold flex items-center gap-1">
+            <span class="w-1.5 h-1.5 rounded-full bg-coral inline-block"></span> HARI INI (27 AGS)
+          </span>
+        </div>
+
+        <div class="overflow-x-auto hide-scrollbar rounded-lg border border-border/60 bg-background p-3">
+          <div class="min-w-[560px] space-y-3 relative">
+            <div class="grid grid-cols-12 text-[9px] font-mono text-text-secondary border-b border-border/40 pb-1.5 text-center">
+              <div class="col-span-4 border-r border-border/30">1 - 10 AGUSTUS</div>
+              <div class="col-span-4 border-r border-border/30">11 - 20 AGUSTUS</div>
+              <div class="col-span-4 text-lime font-bold">21 - 31 AGUSTUS</div>
+            </div>
+
+            <div class="absolute top-7 bottom-0 left-[82%] w-0.5 bg-coral z-20 pointer-events-none opacity-80">
+              <span class="absolute -top-3 -left-3 bg-coral text-white text-[8px] font-bold px-1 rounded">TODAY</span>
+            </div>
+
+            <div class="space-y-2.5 pt-1 text-[10px] font-mono">
+              <div class="space-y-1">
+                <div class="flex justify-between items-center text-[10px]">
+                  <span class="font-bold text-text-primary flex items-center gap-1">
+                    <span class="material-symbols-outlined text-tosca text-[13px]">landscape</span> Trip ke Dieng (22 - 30 Ags)
+                  </span>
+                  <span class="text-tosca font-bold">50% Prep (Sisa Rp 740k)</span>
+                </div>
+                <div class="relative h-6 bg-surface-elevated rounded-md overflow-hidden gantt-track border border-border/40">
+                  <div class="absolute left-[70%] right-[3%] top-1 bottom-1 bg-gradient-to-r from-tosca to-primary rounded flex items-center px-2 shadow-md">
+                    <span class="text-[9px] font-bold text-black truncate">29-30 Ags (2 Hari)</span>
+                  </div>
+                </div>
+              </div>
+
+              <div class="space-y-1">
+                <div class="flex justify-between items-center text-[10px]">
+                  <span class="font-bold text-text-primary flex items-center gap-1">
+                    <span class="material-symbols-outlined text-amber text-[13px]">two_wheeler</span> Narik Gojek Rutin Malang
+                  </span>
+                  <span class="text-amber font-bold">Aktif Harian (Rp 150k/hr)</span>
+                </div>
+                <div class="relative h-6 bg-surface-elevated rounded-md overflow-hidden gantt-track border border-border/40">
+                  <div class="absolute left-[5%] right-[5%] top-1 bottom-1 bg-amber/30 border border-amber rounded flex items-center px-2">
+                    <span class="text-[9px] font-bold text-amber truncate">Shift Siang & Malam</span>
+                  </div>
+                </div>
+              </div>
+
+              <div class="space-y-1">
+                <div class="flex justify-between items-center text-[10px]">
+                  <span class="font-bold text-text-primary flex items-center gap-1">
+                    <span class="material-symbols-outlined text-emerald text-[13px]">school</span> Wisuda Telkom University
+                  </span>
+                  <span class="text-emerald font-bold">100% Selesai</span>
+                </div>
+                <div class="relative h-6 bg-surface-elevated rounded-md overflow-hidden gantt-track border border-border/40">
+                  <div class="absolute left-[35%] right-[55%] top-1 bottom-1 bg-emerald rounded flex items-center justify-center shadow-md">
+                    <span class="text-[9px] font-bold text-black">12 Ags (Sukses)</span>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+
       <!-- Sinking Fund & Loan Overview -->
       <div class="bg-surface rounded-xl p-3.5 border border-border space-y-2.5">
         <h4 class="font-headline font-bold text-[10px] uppercase text-text-secondary tracking-wider">Target & Beban Cicilan</h4>
@@ -208,21 +281,17 @@ const HTML_SOURCE = `<!DOCTYPE html>
             <div class="w-full h-2 bg-surface rounded-full overflow-hidden">
               <div class="h-full bg-amber rounded-full" style="width: 8%"></div>
             </div>
-            <div class="flex justify-between text-[9px] text-text-secondary">
-              <span>Tenor: Sisa 11 Bulan</span>
-              <span>Autodebet Bank Jago</span>
-            </div>
           </div>
         </div>
       </div>
     </div>
 
     <!-- ======================================================================= -->
-    <!-- 🗄️ TAB 2: DATA CORE & INTERACTIVE GANTT TIMELINE -->
+    <!-- 🗄️ TAB 2: DATA CORE & TRANSACTIONS DATABASE (LEDGER MURNI) -->
     <!-- ======================================================================= -->
     <div id="tab-data" class="tab-pane px-4 py-3 space-y-3">
       <div class="flex justify-between items-center">
-        <h2 class="font-headline font-bold text-base text-text-primary">Data Core & Timeline</h2>
+        <h2 class="font-headline font-bold text-base text-text-primary">Database Transaksi Keuangan</h2>
         <div class="flex gap-1.5">
           <button onclick="openAddModal()" class="px-2.5 py-1 bg-lime text-black font-mono font-bold text-[10px] rounded-lg flex items-center gap-1 shadow-md">
             <span class="material-symbols-outlined text-[14px]">add</span> Tambah
@@ -233,116 +302,8 @@ const HTML_SOURCE = `<!DOCTYPE html>
         </div>
       </div>
 
-      <!-- Segmented Switcher -->
-      <div class="flex bg-surface-elevated p-1 rounded-xl border border-border">
-        <button id="sub-btn-gantt" onclick="switchDataSubView('gantt')" class="flex-1 py-1.5 rounded-lg text-[11px] font-mono font-bold bg-primary text-black transition-all">
-          📅 Visual Gantt Chart
-        </button>
-        <button id="sub-btn-ledger" onclick="switchDataSubView('ledger')" class="flex-1 py-1.5 rounded-lg text-[11px] font-mono font-bold text-text-secondary hover:text-text-primary transition-all">
-          💳 Transaksi
-        </button>
-      </div>
-
-      <!-- Real Visual Interactive Gantt Chart Sub-view -->
-      <div id="sub-view-gantt" class="space-y-2.5">
-        <div class="bg-surface rounded-xl p-3 border border-border space-y-3">
-          <div class="flex justify-between items-center text-[10px] font-mono text-text-secondary border-b border-border/50 pb-2">
-            <span class="font-bold text-text-primary flex items-center gap-1">
-              <span class="material-symbols-outlined text-primary text-[14px]">calendar_view_month</span> TIMELINE AGUSTUS - OKTOBER 2026
-            </span>
-            <span class="px-2 py-0.5 rounded bg-coral/20 text-coral font-bold flex items-center gap-1">
-              <span class="w-1.5 h-1.5 rounded-full bg-coral inline-block"></span> HARI INI (27 AGS)
-            </span>
-          </div>
-
-          <!-- Horizontal Scrollable Gantt Chart Canvas -->
-          <div class="overflow-x-auto hide-scrollbar rounded-lg border border-border/60 bg-background p-3">
-            <div class="min-w-[560px] space-y-3 relative">
-              
-              <!-- Timeline Date Header Grid -->
-              <div class="grid grid-cols-12 text-[9px] font-mono text-text-secondary border-b border-border/40 pb-1.5 text-center">
-                <div class="col-span-4 border-r border-border/30">1 - 10 AGUSTUS</div>
-                <div class="col-span-4 border-r border-border/30">11 - 20 AGUSTUS</div>
-                <div class="col-span-4 text-lime font-bold">21 - 31 AGUSTUS</div>
-              </div>
-
-              <!-- TODAY Vertical Line Marker -->
-              <div class="absolute top-7 bottom-0 left-[82%] w-0.5 bg-coral z-20 pointer-events-none opacity-80">
-                <span class="absolute -top-3 -left-3 bg-coral text-white text-[8px] font-bold px-1 rounded">TODAY</span>
-              </div>
-
-              <!-- Gantt Bar Rows -->
-              <div class="space-y-2.5 pt-1 text-[10px] font-mono">
-                
-                <!-- Row 1: Trip Dieng -->
-                <div class="space-y-1">
-                  <div class="flex justify-between items-center text-[10px]">
-                    <span class="font-bold text-text-primary flex items-center gap-1">
-                      <span class="material-symbols-outlined text-tosca text-[13px]">landscape</span> Trip ke Dieng (22 - 30 Ags)
-                    </span>
-                    <span class="text-tosca font-bold">50% Prep (Sisa Rp 740k)</span>
-                  </div>
-                  <div class="relative h-6 bg-surface-elevated rounded-md overflow-hidden gantt-track border border-border/40">
-                    <div class="absolute left-[70%] right-[3%] top-1 bottom-1 bg-gradient-to-r from-tosca to-primary rounded flex items-center px-2 shadow-md">
-                      <span class="text-[9px] font-bold text-black truncate">29-30 Ags (2 Hari)</span>
-                    </div>
-                  </div>
-                </div>
-
-                <!-- Row 2: Narik Gojek Rutin -->
-                <div class="space-y-1">
-                  <div class="flex justify-between items-center text-[10px]">
-                    <span class="font-bold text-text-primary flex items-center gap-1">
-                      <span class="material-symbols-outlined text-amber text-[13px]">two_wheeler</span> Narik Gojek Rutin Kota Malang
-                    </span>
-                    <span class="text-amber font-bold">Aktif Harian (Rp 150k/hr)</span>
-                  </div>
-                  <div class="relative h-6 bg-surface-elevated rounded-md overflow-hidden gantt-track border border-border/40">
-                    <div class="absolute left-[5%] right-[5%] top-1 bottom-1 bg-amber/30 border border-amber rounded flex items-center px-2">
-                      <span class="text-[9px] font-bold text-amber truncate">Jadwal Shift Siang & Malam</span>
-                    </div>
-                  </div>
-                </div>
-
-                <!-- Row 3: Wisuda Telkom & Yudisium -->
-                <div class="space-y-1">
-                  <div class="flex justify-between items-center text-[10px]">
-                    <span class="font-bold text-text-primary flex items-center gap-1">
-                      <span class="material-symbols-outlined text-emerald text-[13px]">school</span> Wisuda Telkom University
-                    </span>
-                    <span class="text-emerald font-bold">100% Selesai</span>
-                  </div>
-                  <div class="relative h-6 bg-surface-elevated rounded-md overflow-hidden gantt-track border border-border/40">
-                    <div class="absolute left-[35%] right-[55%] top-1 bottom-1 bg-emerald rounded flex items-center justify-center shadow-md">
-                      <span class="text-[9px] font-bold text-black">12 Ags (Sukses)</span>
-                    </div>
-                  </div>
-                </div>
-
-                <!-- Row 4: Bank Jago Autodebet -->
-                <div class="space-y-1">
-                  <div class="flex justify-between items-center text-[10px]">
-                    <span class="font-bold text-text-primary flex items-center gap-1">
-                      <span class="material-symbols-outlined text-coral text-[13px]">warning</span> Cicilan Pinjaman Bank Jago
-                    </span>
-                    <span class="text-coral font-bold">Rp 67.940 / bln</span>
-                  </div>
-                  <div class="relative h-6 bg-surface-elevated rounded-md overflow-hidden gantt-track border border-border/40">
-                    <div class="absolute left-[62%] w-7 top-1 bottom-1 bg-coral rounded flex items-center justify-center shadow-md">
-                      <span class="text-[9px] font-bold text-white">Tgl 20</span>
-                    </div>
-                  </div>
-                </div>
-
-              </div>
-
-            </div>
-          </div>
-        </div>
-      </div>
-
-      <!-- Ledger Sub-view -->
-      <div id="sub-view-ledger" class="space-y-2" style="display: none;">
+      <!-- Search & Filters -->
+      <div class="space-y-2">
         <div class="flex gap-1.5 overflow-x-auto hide-scrollbar text-[10px] font-mono py-0.5">
           <button onclick="filterWallet('all')" class="px-2.5 py-1 bg-primary text-black font-bold rounded-full shrink-0">Semua</button>
           <button onclick="filterWallet('Cash')" class="px-2.5 py-1 bg-surface-elevated text-text-secondary rounded-full border border-border shrink-0">Cash</button>
@@ -470,22 +431,40 @@ const HTML_SOURCE = `<!DOCTYPE html>
     </div>
 
     <!-- ======================================================================= -->
-    <!-- ⚙️ TAB 5: PROFILE & SETTINGS (LENGKAP) -->
+    <!-- ⚙️ TAB 5: PROFILE & SYSTEM SETTINGS -->
     <!-- ======================================================================= -->
     <div id="tab-profile" class="tab-pane px-4 py-3 space-y-3">
       <h2 class="font-headline font-bold text-base text-text-primary">Profil & Pengaturan Sistem</h2>
 
       <!-- User Badge -->
-      <div class="bg-surface rounded-xl p-3.5 border border-border flex items-center gap-3">
-        <div class="w-10 h-10 rounded-full bg-primary/20 border-2 border-primary flex items-center justify-center text-primary font-bold text-base shrink-0">
-          MF
+      <div class="bg-surface rounded-xl p-3.5 border border-border flex items-center justify-between">
+        <div class="flex items-center gap-3">
+          <div class="w-10 h-10 rounded-full bg-primary/20 border-2 border-primary flex items-center justify-center text-primary font-bold text-base shrink-0">
+            MF
+          </div>
+          <div>
+            <h3 class="font-headline font-bold text-sm text-text-primary">Mas Firman</h3>
+            <p class="text-[10px] font-mono text-primary flex items-center gap-1">
+              <span class="material-symbols-outlined text-[12px]">verified</span> Verified Single-User (ID: 1084842050)
+            </p>
+          </div>
         </div>
-        <div>
-          <h3 class="font-headline font-bold text-sm text-text-primary">Mas Firman</h3>
-          <p class="text-[10px] font-mono text-primary flex items-center gap-1">
-            <span class="material-symbols-outlined text-[12px]">verified</span> Verified Single-User (ID: 1084842050)
-          </p>
+        <button onclick="openAiSettingsModal()" class="px-2.5 py-1.5 bg-primary/20 border border-primary rounded-lg text-primary text-[10px] font-mono font-bold flex items-center gap-1">
+          <span class="material-symbols-outlined text-[14px]">tune</span> Setting AI
+        </button>
+      </div>
+
+      <!-- Quick AI Summarizer Action Card in Profile -->
+      <div class="bg-surface rounded-xl p-3.5 border border-border space-y-2">
+        <div class="flex justify-between items-center">
+          <span class="font-headline font-bold text-xs text-text-primary flex items-center gap-1">
+            <span class="material-symbols-outlined text-lime text-[14px]">auto_awesome</span> Rangkuman Otomatis AI
+          </span>
+          <button onclick="openAiSettingsModal()" class="text-lime text-[10px] font-mono font-bold hover:underline">Kelola & Konfigurasi</button>
         </div>
+        <p class="text-[11px] text-text-secondary leading-relaxed">
+          Sistem secara cerdas merangkum arus kas, burn rate, dan agenda Anda berdasarkan preferensi rentang hari yang Anda tentukan.
+        </p>
       </div>
 
       <!-- Wallet Balances Overview -->
@@ -531,16 +510,6 @@ const HTML_SOURCE = `<!DOCTYPE html>
             <span class="text-emerald font-bold">🟢 Active</span>
           </div>
         </div>
-      </div>
-
-      <!-- Security Protocol -->
-      <div class="bg-surface rounded-xl p-3 border border-border border-l-4 border-l-primary space-y-0.5 text-[10px]">
-        <span class="font-mono text-primary font-bold flex items-center gap-1">
-          <span class="material-symbols-outlined text-[12px]">lock</span> PRIVASI 100% TERKUNCI
-        </span>
-        <p class="text-text-secondary leading-relaxed">
-          Mode Privat Mas Firman aktif. Akses pengguna lain telah diblokir secara permanen dari server dan database.
-        </p>
       </div>
     </div>
 
@@ -612,7 +581,78 @@ const HTML_SOURCE = `<!DOCTYPE html>
   </nav>
 
   <!-- ========================================================================= -->
-  <!-- 📝 MODAL DIALOG: TAMBAH DATA (TRANSAKSI / AGENDA) -->
+  <!-- 🤖 MODAL DIALOG: PENGATURAN PREFERENSI AI & AUTO-SUMMARIZER ENGINE -->
+  <!-- ========================================================================= -->
+  <div id="modal-ai-settings" class="modal-overlay">
+    <div class="bg-surface border border-border rounded-2xl p-4 w-full max-w-sm space-y-3 font-mono max-h-[90vh] overflow-y-auto hide-scrollbar">
+      <div class="flex justify-between items-center border-b border-border/50 pb-2">
+        <div class="flex items-center gap-1.5">
+          <span class="material-symbols-outlined text-primary text-[18px]">tune</span>
+          <h3 class="font-headline font-bold text-sm text-text-primary">Pengaturan Preferensi AI</h3>
+        </div>
+        <button onclick="closeAiSettingsModal()" class="text-text-secondary hover:text-text-primary text-sm font-bold">✕</button>
+      </div>
+
+      <!-- Segmented Mode Switcher for AI Preferences -->
+      <div class="flex bg-surface-elevated p-1 rounded-xl border border-border">
+        <button id="ai-mode-desc-btn" onclick="switchAiMode('desc')" class="flex-1 py-1.5 rounded-lg text-[10px] font-bold bg-primary text-black transition-all">
+          📝 Deskripsi Bebas
+        </button>
+        <button id="ai-mode-bullet-btn" onclick="switchAiMode('bullet')" class="flex-1 py-1.5 rounded-lg text-[10px] font-bold text-text-secondary transition-all">
+          • Bullet Points
+        </button>
+      </div>
+
+      <!-- Mode 1: Deskripsi Bebas -->
+      <div id="ai-mode-desc-view" class="space-y-1.5">
+        <label class="text-[10px] text-text-secondary uppercase">Instruksi Deskripsi Personal</label>
+        <textarea id="ai-pref-desc-input" rows="4" placeholder="Contoh: Saya sedang menabung untuk trip Dieng dan bayar cicilan Bank Jago. Jika saya tanya pengeluaran, selalu ingatkan sisa kas likuid dan hitung efisiensi bensin Honda Beat." class="w-full bg-surface-elevated border border-border rounded-lg p-2 text-text-primary text-xs outline-none resize-none font-body leading-relaxed"></textarea>
+      </div>
+
+      <!-- Mode 2: Bullet Points -->
+      <div id="ai-mode-bullet-view" class="space-y-1.5" style="display: none;">
+        <label class="text-[10px] text-text-secondary uppercase">Instruksi Poin-Poin (Per Baris)</label>
+        <textarea id="ai-pref-bullet-input" rows="4" placeholder="- Prioritaskan sinking fund Trip Dieng (Rp 1.040.000)
+- Selalu hitung konsumsi bensin Beat 50km/liter
+- Ingatkan jatuh tempo Bank Jago tgl 20
+- Bersikap sopan dan panggil Mas Firman" class="w-full bg-surface-elevated border border-border rounded-lg p-2 text-text-primary text-xs outline-none resize-none font-body leading-relaxed"></textarea>
+      </div>
+
+      <button onclick="saveManualAiPreference()" class="w-full py-2 bg-primary text-black font-bold rounded-lg text-xs shadow-md flex items-center justify-center gap-1">
+        <span class="material-symbols-outlined text-[14px]">save</span> Simpan Preferensi AI
+      </button>
+
+      <!-- Auto-Summarizer Section -->
+      <div class="border-t border-border/50 pt-2.5 space-y-2">
+        <div class="flex justify-between items-center">
+          <span class="font-headline font-bold text-xs text-text-primary flex items-center gap-1">
+            <span class="material-symbols-outlined text-lime text-[14px]">auto_awesome</span> Rangkuman Otomatis
+          </span>
+          <span class="text-[9px] text-lime font-bold">Auto-Engine</span>
+        </div>
+        
+        <div class="flex items-center gap-2 text-xs">
+          <span class="text-[10px] text-text-secondary">Rentang Hari:</span>
+          <select id="auto-summary-days" class="flex-1 bg-surface-elevated border border-border rounded-lg p-1.5 text-text-primary outline-none text-xs">
+            <option value="3">3 Hari Terakhir</option>
+            <option value="7" selected>7 Hari Terakhir (Mingguan)</option>
+            <option value="14">14 Hari Terakhir</option>
+            <option value="30">30 Hari Terakhir (Bulanan)</option>
+          </select>
+        </div>
+
+        <button onclick="generateAutoSummary()" class="w-full py-2 bg-lime text-black font-bold rounded-lg text-xs shadow-md flex items-center justify-center gap-1">
+          <span class="material-symbols-outlined text-[14px]">bolt</span> Generate Rangkuman Sekarang
+        </button>
+
+        <div id="summary-result-container" class="hidden p-2 rounded-lg bg-surface-elevated border border-border text-[10px] text-text-primary font-mono whitespace-pre-wrap leading-relaxed">
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ========================================================================= -->
+  <!-- 📝 MODAL DIALOG: TAMBAH DATA (TRANSAKSI) -->
   <!-- ========================================================================= -->
   <div id="modal-add" class="modal-overlay">
     <div class="bg-surface border border-border rounded-2xl p-4 w-full max-w-sm space-y-3 font-mono">
@@ -662,6 +702,7 @@ const HTML_SOURCE = `<!DOCTYPE html>
     const USER_ID = "fc2758d3-78bb-4e22-b9f0-b3b16568b671";
     const API_BASE = "https://ai-personal-asistan-telegram.vercel.app";
     let cachedTransactions = [];
+    let currentAiMode = 'desc';
 
     function switchTab(tabId) {
       const allTabs = ['analytics', 'data', 'chat', 'notifications', 'profile'];
@@ -699,30 +740,101 @@ const HTML_SOURCE = `<!DOCTYPE html>
       }
     }
 
-    function switchDataSubView(sub) {
-      const vGantt = document.getElementById('sub-view-gantt');
-      const vLedger = document.getElementById('sub-view-ledger');
-      const btnGantt = document.getElementById('sub-btn-gantt');
-      const btnLedger = document.getElementById('sub-btn-ledger');
-
-      if (sub === 'gantt') {
-        vGantt.style.display = 'block';
-        vLedger.style.display = 'none';
-        btnGantt.className = "flex-1 py-1.5 rounded-lg text-[11px] font-mono font-bold bg-primary text-black transition-all";
-        btnLedger.className = "flex-1 py-1.5 rounded-lg text-[11px] font-mono font-bold text-text-secondary hover:text-text-primary transition-all";
-      } else {
-        vGantt.style.display = 'none';
-        vLedger.style.display = 'block';
-        btnLedger.className = "flex-1 py-1.5 rounded-lg text-[11px] font-mono font-bold bg-primary text-black transition-all";
-        btnGantt.className = "flex-1 py-1.5 rounded-lg text-[11px] font-mono font-bold text-text-secondary hover:text-text-primary transition-all";
-        loadLedgerData();
-      }
-    }
-
     function scrollChatToBottom() {
       const tabChat = document.getElementById('tab-chat');
       if (tabChat) {
         tabChat.scrollTo({ top: tabChat.scrollHeight + 300, behavior: 'smooth' });
+      }
+    }
+
+    // --- AI SETTINGS MODAL & LOGIC ---
+    function openAiSettingsModal() {
+      document.getElementById('modal-ai-settings').classList.add('active');
+    }
+
+    function closeAiSettingsModal() {
+      document.getElementById('modal-ai-settings').classList.remove('active');
+    }
+
+    function switchAiMode(mode) {
+      currentAiMode = mode;
+      const descView = document.getElementById('ai-mode-desc-view');
+      const bulletView = document.getElementById('ai-mode-bullet-view');
+      const btnDesc = document.getElementById('ai-mode-desc-btn');
+      const btnBullet = document.getElementById('ai-mode-bullet-btn');
+
+      if (mode === 'desc') {
+        descView.style.display = 'block';
+        bulletView.style.display = 'none';
+        btnDesc.className = "flex-1 py-1.5 rounded-lg text-[10px] font-bold bg-primary text-black transition-all";
+        btnBullet.className = "flex-1 py-1.5 rounded-lg text-[10px] font-bold text-text-secondary transition-all";
+      } else {
+        descView.style.display = 'none';
+        bulletView.style.display = 'block';
+        btnBullet.className = "flex-1 py-1.5 rounded-lg text-[10px] font-bold bg-primary text-black transition-all";
+        btnDesc.className = "flex-1 py-1.5 rounded-lg text-[10px] font-bold text-text-secondary transition-all";
+      }
+    }
+
+    async function saveManualAiPreference() {
+      const value = currentAiMode === 'desc'
+        ? document.getElementById('ai-pref-desc-input').value.trim()
+        : document.getElementById('ai-pref-bullet-input').value.trim();
+
+      if (!value) {
+        alert('Mohon isi teks preferensi AI!');
+        return;
+      }
+
+      const key = currentAiMode === 'desc' ? 'MANUAL_PREFERENCE_DESKRIPSI' : 'MANUAL_PREFERENCE_BULLET_POINTS';
+
+      try {
+        await fetch(\`\${API_BASE}/api/mobile/crud\`, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            action: 'save_preference',
+            payload: {
+              user_id: USER_ID,
+              key: key,
+              value: value
+            }
+          })
+        });
+        alert('✅ Preferensi AI berhasil disimpan ke database Supabase!');
+        closeAiSettingsModal();
+      } catch (e) {
+        alert('Gagal menyimpan preferensi AI.');
+      }
+    }
+
+    async function generateAutoSummary() {
+      const days = document.getElementById('auto-summary-days').value;
+      const resContainer = document.getElementById('summary-result-container');
+      resContainer.classList.remove('hidden');
+      resContainer.textContent = '⏳ Sedang mengompilasi rangkuman otomatis...';
+
+      try {
+        const res = await fetch(\`\${API_BASE}/api/mobile/crud\`, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            action: 'generate_auto_summary',
+            payload: {
+              user_id: USER_ID,
+              days: Number(days)
+            }
+          })
+        });
+        const data = await res.json();
+        if (data.ok && data.summary) {
+          resContainer.textContent = data.summary.replace(/\\n/g, '
+');
+        } else {
+          resContainer.textContent = 'Gagal menghasilkan rangkuman.';
+        }
+      } catch (e) {
+        resContainer.textContent = 'Terjadi kesalahan jaringan saat memproses rangkuman.';
       }
     }
 
@@ -734,7 +846,6 @@ const HTML_SOURCE = `<!DOCTYPE html>
       appendUserBubble(text);
       input.value = '';
 
-      // Check if user is asking for Gantt chart specifically -> render rich visual Gantt widget!
       if (/(gantt|timeline|jadwal kegiatan|peta waktu)/i.test(text)) {
         setTimeout(() => {
           appendRichGanttBubble();
@@ -822,10 +933,8 @@ const HTML_SOURCE = `<!DOCTYPE html>
               <span class="material-symbols-outlined text-[14px]">calendar_view_month</span> Visual Gantt Chart Agenda & Target Anda:
             </p>
             
-            <!-- Mini Visual Gantt Widget inside chat -->
             <div class="bg-background rounded-lg p-2.5 border border-border space-y-2 font-mono text-[9px] overflow-x-auto hide-scrollbar">
               <div class="min-w-[320px] space-y-2">
-                <!-- Bar 1 -->
                 <div class="space-y-0.5">
                   <div class="flex justify-between text-text-primary">
                     <span class="font-bold">🏔️ Trip ke Dieng</span>
@@ -838,7 +947,6 @@ const HTML_SOURCE = `<!DOCTYPE html>
                   </div>
                 </div>
 
-                <!-- Bar 2 -->
                 <div class="space-y-0.5">
                   <div class="flex justify-between text-text-primary">
                     <span class="font-bold">🛵 Narik Gojek Rutin</span>
@@ -851,7 +959,6 @@ const HTML_SOURCE = `<!DOCTYPE html>
                   </div>
                 </div>
 
-                <!-- Bar 3 -->
                 <div class="space-y-0.5">
                   <div class="flex justify-between text-text-primary">
                     <span class="font-bold">🎓 Wisuda Telkom Univ</span>
@@ -860,19 +967,6 @@ const HTML_SOURCE = `<!DOCTYPE html>
                   <div class="h-4 bg-surface-elevated rounded overflow-hidden relative">
                     <div class="absolute left-[35%] right-[55%] top-0.5 bottom-0.5 bg-emerald rounded flex items-center justify-center text-black font-bold text-[8px]">
                       Selesai
-                    </div>
-                  </div>
-                </div>
-
-                <!-- Bar 4 -->
-                <div class="space-y-0.5">
-                  <div class="flex justify-between text-text-primary">
-                    <span class="font-bold">💳 Cicilan Bank Jago</span>
-                    <span class="text-coral">Tgl 20 (Rp 67.940)</span>
-                  </div>
-                  <div class="h-4 bg-surface-elevated rounded overflow-hidden relative">
-                    <div class="absolute left-[62%] w-6 top-0.5 bottom-0.5 bg-coral rounded flex items-center justify-center text-white text-[8px]">
-                      20
                     </div>
                   </div>
                 </div>
@@ -911,8 +1005,7 @@ const HTML_SOURCE = `<!DOCTYPE html>
             else if (wCode >= 51 && wCode <= 67) desc = "Hujan Ringan";
             else if (wCode >= 80) desc = "Hujan Deras";
 
-            // Try reverse geocoding for real district/city
-            let city = "Lokasi Anda";
+            let city = "Kota Malang";
             try {
               const geoRes = await fetch(\`https://nominatim.openstreetmap.org/reverse?lat=\${lat}&lon=\${lon}&format=json\`);
               const geoData = await geoRes.json();
