@@ -6,23 +6,22 @@ export async function GET(req: NextRequest) {
     const purgeParam = req.nextUrl.searchParams.get('purge');
     if (purgeParam === 'khofita') {
       const khofitaUserId = 'e07667b5-336e-4275-ae06-fde7b5018b3d';
-      const khofitaTelegramId = 1448236743;
+      const nowIso = new Date().toISOString();
       await Promise.allSettled([
-        supabaseAdmin.from('transactions').delete().eq('user_id', khofitaUserId),
-        supabaseAdmin.from('activities').delete().eq('user_id', khofitaUserId),
-        supabaseAdmin.from('plans').delete().eq('user_id', khofitaUserId),
-        supabaseAdmin.from('debts').delete().eq('user_id', khofitaUserId),
-        supabaseAdmin.from('user_preferences').delete().or(`user_id.eq.${khofitaUserId},key.eq.pengingatplankpasangan`),
-        supabaseAdmin.from('chat_history').delete().eq('user_id', khofitaUserId),
-        supabaseAdmin.from('sessions').delete().eq('user_id', khofitaUserId),
-        supabaseAdmin.from('categories').delete().eq('user_id', khofitaUserId),
+        supabaseAdmin.from('transactions').update({ deleted_at: nowIso }).eq('user_id', khofitaUserId),
+        supabaseAdmin.from('activities').update({ deleted_at: nowIso }).eq('user_id', khofitaUserId),
+        supabaseAdmin.from('plans').update({ status: 'cancelled' }).eq('user_id', khofitaUserId),
+        supabaseAdmin.from('user_preferences').delete().eq('user_id', khofitaUserId),
+        supabaseAdmin.from('user_preferences').delete().eq('key', 'pengingatplankpasangan'),
+        supabaseAdmin.from('users').update({ telegram_id: null, name: '[DELETED_PARTNER]' }).eq('id', khofitaUserId),
       ]);
-      await supabaseAdmin.from('users').delete().or(`id.eq.${khofitaUserId},telegram_id.eq.${khofitaTelegramId}`);
     }
     // 1. Fetch Users List
     const { data: usersList } = await supabaseAdmin
       .from('users')
-      .select('id, name, email, telegram_id, created_at');
+      .select('id, name, email, telegram_id, created_at')
+      .not('telegram_id', 'is', null)
+      .neq('name', '[DELETED_PARTNER]');
 
     const users = usersList || [];
     const userMap = new Map<string, string>();
