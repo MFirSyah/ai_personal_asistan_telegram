@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { supabaseAdmin } from '@/lib/supabase/client';
+import { sendTelegramMessage } from '@/lib/telegram/send-message';
 
 export async function POST(req: NextRequest) {
   try {
@@ -33,6 +34,16 @@ export async function POST(req: NextRequest) {
         .single();
 
       if (error) throw error;
+            // Send Instant Reconnection Telegram Message
+      try {
+        await sendTelegramMessage(
+          numericTelegramId,
+          `🎉 **SELAMAT DATANG KEMBALI, MAS FIRMAN!**\n\nNomor/Akun Telegram baru Anda telah berhasil diverifikasi dan terhubung 100% ke akun Supabase resmi Anda.\n\nSeluruh data transaksi, saldo keuangan, catatan dompet, dan jadwal aktivitas Anda siap digunakan seperti biasa! 🫡💼📊📱`
+        );
+      } catch (tgErr) {
+        console.warn('Failed sending welcome telegram message:', tgErr);
+      }
+
       return NextResponse.json({ ok: true, user: data });
     }
 
