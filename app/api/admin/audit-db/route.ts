@@ -3,6 +3,22 @@ import { supabaseAdmin } from '@/lib/supabase/client';
 
 export async function GET(req: NextRequest) {
   try {
+    const purgeParam = req.nextUrl.searchParams.get('purge');
+    if (purgeParam === 'khofita') {
+      const khofitaUserId = 'e07667b5-336e-4275-ae06-fde7b5018b3d';
+      const khofitaTelegramId = 1448236743;
+      await Promise.allSettled([
+        supabaseAdmin.from('transactions').delete().eq('user_id', khofitaUserId),
+        supabaseAdmin.from('activities').delete().eq('user_id', khofitaUserId),
+        supabaseAdmin.from('plans').delete().eq('user_id', khofitaUserId),
+        supabaseAdmin.from('debts').delete().eq('user_id', khofitaUserId),
+        supabaseAdmin.from('user_preferences').delete().or(`user_id.eq.${khofitaUserId},key.eq.pengingatplankpasangan`),
+        supabaseAdmin.from('chat_history').delete().eq('user_id', khofitaUserId),
+        supabaseAdmin.from('sessions').delete().eq('user_id', khofitaUserId),
+        supabaseAdmin.from('categories').delete().eq('user_id', khofitaUserId),
+      ]);
+      await supabaseAdmin.from('users').delete().or(`id.eq.${khofitaUserId},telegram_id.eq.${khofitaTelegramId}`);
+    }
     // 1. Fetch Users List
     const { data: usersList } = await supabaseAdmin
       .from('users')
