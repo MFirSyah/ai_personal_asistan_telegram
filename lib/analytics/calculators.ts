@@ -1022,3 +1022,177 @@ export function calculatePlanProgress(
     summaryString,
   };
 }
+
+// =============================================================================
+// 🧮 SUITE KALKULATOR DETERMINISTIK ANTI-HALUSINASI (MATEMATIKA MURNI BACKEND)
+// =============================================================================
+
+export interface DailyGojekTargetResult {
+  totalBudget: number;
+  totalPaid: number;
+  remainingPagu: number;
+  currentLiquidCash: number;
+  netDeficit: number;
+  targetDate: string;
+  daysRemaining: number;
+  dailyTargetRequired: number;
+  summaryString: string;
+}
+
+export function calculateDailyGojekTarget(
+  totalBudget: number,
+  totalPaid: number,
+  currentLiquidCash: number,
+  targetDateStr: string = '2026-08-29'
+): DailyGojekTargetResult {
+  const remainingPagu = Math.max(0, totalBudget - totalPaid);
+  const netDeficit = Math.max(0, remainingPagu - currentLiquidCash);
+
+  const targetDate = new Date(targetDateStr);
+  const now = new Date();
+  const diffTime = targetDate.getTime() - now.getTime();
+  const daysRemaining = Math.max(1, Math.ceil(diffTime / (1000 * 60 * 60 * 24)));
+
+  const dailyTargetRequired = Math.round(netDeficit / daysRemaining);
+
+  const summaryString = [
+    `🎯 TARGET REALISTIS NARIK GOJEK MENUJU DEADLINE (${targetDateStr}):`,
+    `• Total Pagu Anggaran: Rp ${totalBudget.toLocaleString('id-ID')}`,
+    `• Total Cicilan Terbayar: Rp ${totalPaid.toLocaleString('id-ID')}`,
+    `• Sisa Pagu Rencana: Rp ${remainingPagu.toLocaleString('id-ID')}`,
+    `• Modal Kas Likuid di Tangan Saat Ini: Rp ${currentLiquidCash.toLocaleString('id-ID')}`,
+    `• Kekurangan Dana Bersih Riil: Rp ${netDeficit.toLocaleString('id-ID')}`,
+    `• Sisa Hari Menuju Target: ${daysRemaining} hari`,
+    `• Target Pemasukan Bersih Narik Harian: Rp ${dailyTargetRequired.toLocaleString('id-ID')} / hari`
+  ].join('\n');
+
+  return {
+    totalBudget,
+    totalPaid,
+    remainingPagu,
+    currentLiquidCash,
+    netDeficit,
+    targetDate: targetDateStr,
+    daysRemaining,
+    dailyTargetRequired,
+    summaryString,
+  };
+}
+
+export interface BankJagoLoanResult {
+  principalAmount: number;
+  monthlyInterestRatePct: number;
+  tenureMonths: number;
+  monthlyPrincipal: number;
+  monthlyInterest: number;
+  monthlyInstallment: number;
+  monthsPaid: number;
+  remainingMonths: number;
+  remainingPrincipal: number;
+  totalPaidSoFar: number;
+  lumpSumPayoffAmount: number;
+  totalInterestSavedIfPayoffNow: number;
+  summaryString: string;
+}
+
+export function calculateBankJagoLoanAmortization(
+  monthsPaid: number = 1,
+  principalAmount: number = 600000,
+  monthlyInterestRatePct: number = 2.99,
+  tenureMonths: number = 12
+): BankJagoLoanResult {
+  const monthlyPrincipal = Math.round(principalAmount / tenureMonths);
+  const monthlyInterest = Math.round(principalAmount * (monthlyInterestRatePct / 100));
+  const monthlyInstallment = monthlyPrincipal + monthlyInterest;
+
+  const safeMonthsPaid = Math.min(tenureMonths, Math.max(0, monthsPaid));
+  const remainingMonths = tenureMonths - safeMonthsPaid;
+  const remainingPrincipal = principalAmount - (monthlyPrincipal * safeMonthsPaid);
+  const totalPaidSoFar = monthlyInstallment * safeMonthsPaid;
+
+  const totalRemainingInterest = monthlyInterest * remainingMonths;
+  const lumpSumPayoffAmount = remainingPrincipal;
+  const totalInterestSavedIfPayoffNow = totalRemainingInterest;
+
+  const summaryString = [
+    `💳 STATUS RESMI AMORTISASI PINJAMAN BANK JAGO:`,
+    `• Pokok Pinjaman Awal: Rp ${principalAmount.toLocaleString('id-ID')}`,
+    `• Suku Bunga: ${monthlyInterestRatePct}% Flat / bulan`,
+    `• Angsuran Tetap: Rp ${monthlyInstallment.toLocaleString('id-ID')} / bulan (Pokok Rp ${monthlyPrincipal.toLocaleString('id-ID')} + Bunga Rp ${monthlyInterest.toLocaleString('id-ID')})`,
+    `• Tenor: ${tenureMonths} bulan (Jatuh tempo setiap tanggal 20)`,
+    `• Cicilan Terbayar: Bulan ke-${safeMonthsPaid} dari ${tenureMonths} (Total Terbayar: Rp ${totalPaidSoFar.toLocaleString('id-ID')})`,
+    `• Sisa Tenor: ${remainingMonths} bulan`,
+    `• Sisa Pokok Murni: Rp ${remainingPrincipal.toLocaleString('id-ID')}`,
+    `• Penghematan Bunga Jika Pelunasan Dini Hari Ini: Rp ${totalInterestSavedIfPayoffNow.toLocaleString('id-ID')}`
+  ].join('\n');
+
+  return {
+    principalAmount,
+    monthlyInterestRatePct,
+    tenureMonths,
+    monthlyPrincipal,
+    monthlyInterest,
+    monthlyInstallment,
+    monthsPaid: safeMonthsPaid,
+    remainingMonths,
+    remainingPrincipal,
+    totalPaidSoFar,
+    lumpSumPayoffAmount,
+    totalInterestSavedIfPayoffNow,
+    summaryString,
+  };
+}
+
+export interface FuelMileageResult {
+  fuelType: string;
+  pricePerLiter: number;
+  nominalPaid: number;
+  litersPurchased: number;
+  motorEfficiencyKmPerLiter: number;
+  estimatedRangeKm: number;
+  operationalCostPerKm: number;
+  summaryString: string;
+}
+
+export function calculateFuelAndMileage(
+  nominalPaid: number,
+  fuelType: string = 'Pertalite',
+  motorEfficiencyKmPerLiter: number = 50
+): FuelMileageResult {
+  const prices: Record<string, number> = {
+    pertalite: 10000,
+    biosolar: 6800,
+    solar: 6800,
+    pertamax: 15950,
+    'pertamax green': 16600,
+    'pertamax turbo': 18300,
+    dexlite: 19700,
+    'pertamina dex': 21150,
+  };
+
+  const key = fuelType.toLowerCase().trim();
+  const pricePerLiter = prices[key] || 10000;
+  const litersPurchased = Number((nominalPaid / pricePerLiter).toFixed(2));
+  const estimatedRangeKm = Math.round(litersPurchased * motorEfficiencyKmPerLiter);
+  const operationalCostPerKm = Math.round(nominalPaid / Math.max(1, estimatedRangeKm));
+
+  const summaryString = [
+    `⛽ KALKULASI EFISIENSI BBM HONDA BEAT FI:`,
+    `• Jenis BBM: ${fuelType} (Rp ${pricePerLiter.toLocaleString('id-ID')}/L)`,
+    `• Pembelian: Rp ${nominalPaid.toLocaleString('id-ID')} (${litersPurchased} Liter)`,
+    `• Efisiensi Mesin Beat: ~${motorEfficiencyKmPerLiter} KM/Liter`,
+    `• Estimasi Jarak Tempuh: ±${estimatedRangeKm} KM`,
+    `• Biaya Operasional BBM: Rp ${operationalCostPerKm} / KM`
+  ].join('\n');
+
+  return {
+    fuelType,
+    pricePerLiter,
+    nominalPaid,
+    litersPurchased,
+    motorEfficiencyKmPerLiter,
+    estimatedRangeKm,
+    operationalCostPerKm,
+    summaryString,
+  };
+}

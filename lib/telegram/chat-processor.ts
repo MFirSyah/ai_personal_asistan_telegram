@@ -8,6 +8,9 @@ import {
   calculateLoanRisk,
   calculateRealtimeLedger,
   calculatePlanProgress,
+  calculateDailyGojekTarget,
+  calculateBankJagoLoanAmortization,
+  calculateFuelAndMileage,
 } from '@/lib/analytics/calculators';
 
 import {
@@ -195,15 +198,29 @@ export async function processChatRespondDirect(
           updated_at: new Date().toISOString(),
         });
 
-        // Proactive Grounding: Calculate Full Plan / Trip Progress
-        const isPlanOrTripQuery = /(dieng|trip|wisata|liburan|tiket|cicil|nyicil|sisa bayar|kurang bayar|sudah bayar)/i.test(userMessage);
+        // Proactive Grounding: Calculate Full Plan / Trip Progress & Daily Target
+        const isPlanOrTripQuery = /(dieng|trip|wisata|liburan|tiket|cicil|nyicil|sisa bayar|kurang bayar|sudah bayar|rencana|target)/i.test(userMessage);
         if (isPlanOrTripQuery) {
           const diengProgress = calculatePlanProgress('dieng', allActiveTxs, 1040000);
+          const dailyTarget = calculateDailyGojekTarget(1040000, diengProgress.totalPaid, ledger.totalLiquidCash, '2026-08-29');
           runtimePrefs.push({
             id: 'dieng-plan-progress',
             user_id: userId,
             key: 'REKAP RESMI PROGRES CICILAN TIKET & TRIP DIENG (DATABASE SUPABASE)',
-            value: diengProgress.summaryString,
+            value: `${diengProgress.summaryString}\n\n${dailyTarget.summaryString}`,
+            updated_at: new Date().toISOString(),
+          });
+        }
+
+        // Proactive Grounding: Calculate Bank Jago Loan Amortization
+        const isLoanQuery = /(jago|pinjaman|cicilan|angsuran|bunga|pokok|pelunasan|tagihan bulanan)/i.test(userMessage);
+        if (isLoanQuery) {
+          const jagoLoan = calculateBankJagoLoanAmortization(1, 600000, 2.99, 12);
+          runtimePrefs.push({
+            id: 'jago-loan-amortization',
+            user_id: userId,
+            key: 'REKAP RESMI AMORTISASI PINJAMAN BANK JAGO (DATABASE SUPABASE)',
+            value: jagoLoan.summaryString,
             updated_at: new Date().toISOString(),
           });
         }

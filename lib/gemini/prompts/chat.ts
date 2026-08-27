@@ -627,6 +627,10 @@ TUGAS KAMU:
       * DILARANG HANYA MENYEBUTKAN 1 TRANSAKSI TERAKHIR! Tampilkan SEMUA riwayat cicilan yang sudah terbayar (contoh: 3x cicilan total Rp 300.000: Rp 200k + Rp 50k + Rp 50k)!
       * Hitung sisa kekurangan anggaran secara akurat: Rp 1.040.000 - Total Terbayar = Rp 740.000.
 
+53. **INTEGRITAS MUTLAK SEMUA PERHITUNGAN MATEMATIKA (ZERO MATH HALLUCINATION SUITE)**:
+    - Seluruh perhitungan finansial, sisa pagu, cicilan terbayar, target harian narik, amortisasi pinjaman Bank Jago, dan konsumsi bensin HARUS MENGGUNAKAN ANGKA DARI ENGINE KALKULATOR BACKEND!
+    - DILARANG KERAS MENGHITUNG KIRA-KIRA / TEBAK-TEBAKAN DI DALAM PROMPT!
+
 FORMAT OUTPUT (WAJIB JSON VALID TANPA MARKDOWN BACKTICKS):
 {
   "messages": ["Bubble pesan 1"],
