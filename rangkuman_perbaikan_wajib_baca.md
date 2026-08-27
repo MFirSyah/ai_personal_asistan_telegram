@@ -383,6 +383,19 @@ Katalog **300 Poin Master Audit** ini menjadi dokumen panduan mutlak (*Ultimate 
 
 
 
+
+
+### 2.21 Koreksi & Rekonsiliasi Data Tagihan Hutang Rifky (Rp 150.000)
+- **Pertanyaan / Temuan Pengguna:**
+  - *"oh ya, pada data saya, seingat saya saya belum bayar ke rifky, kok ini datanya jadi 100, padahal kan harusnya 150 ribu, dimana salahnya"*
+- **Penyebab / Akar Masalah:**
+  - Pada saat inisialisasi awal (*seed default*) modul Dynamic Hub di route `/api/mobile/dynamic` dan file `app.js`, data tagihan contoh/mock `bill-rifky` secara tidak sengaja tertulis dengan nominal `100000` (Rp 100.000) karena pembulatan template, padahal nominal kewajiban hutang yang sebenarnya belum dibayar oleh Mas Firman adalah **Rp 150.000** (Jatuh tempo 05 September 2026).
+- **Tindakan Koreksi yang Dilakukan:**
+  1. Mengoreksi baris data pada `/api/mobile/dynamic/route.ts` dan `app.js` menjadi `amount: 150000`.
+  2. Melakukan sinkronisasi database live Supabase pada tabel `user_preferences` kunci `DYNAMIC_BILLS` sehingga nilai hutang ke Rifky menjadi **Rp 150.000 (Status: Belum Dibayar / Scheduled)**.
+  3. Memperbarui kartu tagihan di Tab 4 (Notifikasi & Tagihan) dan Dynamic Hub di seluruh aplikasi.
+
+
 ### 2.20 Hierarki Z-Index Modal & Auto Scroll-to-Top (Anti-Tertimpa Modal Induk)
 - **Masalah Pengguna:**
   - Saat membuka form edit / tambah data motor dari dalam Dynamic Hub, modal anak (`#modal-vehicle`) berpotensi tertimpa atau terhalang oleh modal induk (`#modal-dynamic-hub`) karena keduanya berada pada layer z-index yang sama (100).
