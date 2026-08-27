@@ -52,7 +52,7 @@ const HTML_SOURCE = `<!DOCTYPE html>
       -webkit-user-select: none !important;
       user-select: none !important;
     }
-    input, textarea {
+    input, textarea, select {
       -webkit-user-select: text !important;
       user-select: text !important;
     }
@@ -556,7 +556,7 @@ const HTML_SOURCE = `<!DOCTYPE html>
       <span class="material-symbols-outlined text-[20px]">storage</span>
     </button>
 
-    <!-- Center Robot Button: Tap to Switch Chat, Hold 3 Seconds to Trigger SOS -->
+    <!-- Center Robot Button -->
     <div class="relative flex items-center justify-center select-none" oncontextmenu="return false;">
       <button id="nav-btn-chat" class="w-10 h-10 rounded-full bg-lime text-black flex items-center justify-center lime-glow border-2 border-background shadow-lg transition-transform active:scale-95 select-none" oncontextmenu="return false;">
         <span class="material-symbols-outlined text-[20px]" style="font-variation-settings: 'FILL' 1;">smart_toy</span>
@@ -624,7 +624,7 @@ const HTML_SOURCE = `<!DOCTYPE html>
   </div>
 
   <!-- ========================================================================= -->
-  <!-- ✏️ MODAL EDIT PENGATURAN DARURAT (DIBUKA SAAT DIKETUK DARI PROFIL) -->
+  <!-- ✏️ MODAL EDIT PENGATURAN DARURAT (ICE) -->
   <!-- ========================================================================= -->
   <div id="modal-edit-ice" class="modal-overlay">
     <div class="bg-surface border-2 border-coral rounded-2xl p-4 w-full max-w-sm space-y-3 font-mono max-h-[90vh] overflow-y-auto hide-scrollbar">
@@ -664,6 +664,207 @@ const HTML_SOURCE = `<!DOCTYPE html>
       <div class="flex gap-2 pt-1">
         <button onclick="closeEditIceModal()" class="flex-1 py-2 bg-surface-elevated text-text-secondary font-bold rounded-lg border border-border text-xs active:scale-95">Batal</button>
         <button onclick="saveEmergencyProfileFromModal()" class="flex-1 py-2 bg-coral text-white font-bold rounded-lg text-xs shadow-md active:scale-95">Simpan Data</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- ========================================================================= -->
+  <!-- 🛵 NATIVE IN-APP MODAL: TAMBAH / EDIT MOTOR FLEET -->
+  <!-- ========================================================================= -->
+  <div id="modal-vehicle" class="modal-overlay">
+    <div class="bg-surface border-2 border-primary rounded-2xl p-4 w-full max-w-sm space-y-3 font-mono max-h-[90vh] overflow-y-auto hide-scrollbar">
+      <div class="flex justify-between items-center border-b border-border/50 pb-2">
+        <div class="flex items-center gap-1.5">
+          <span class="material-symbols-outlined text-primary text-[18px]">two_wheeler</span>
+          <h3 class="font-headline font-bold text-sm text-text-primary" id="modal-vehicle-title">Tambah Data Motor</h3>
+        </div>
+        <button onclick="closeVehicleModal()" class="text-text-secondary hover:text-text-primary text-sm font-bold active:scale-90">✕</button>
+      </div>
+
+      <input type="hidden" id="modal-veh-id" value=""/>
+
+      <div class="space-y-2 text-[10px]">
+        <div>
+          <label class="text-[8px] text-text-secondary uppercase">Merk & Tipe Motor</label>
+          <input id="modal-veh-name" type="text" placeholder="Contoh: Honda Beat FI, Vario 125, NMAX" class="w-full bg-surface-elevated border border-border rounded p-1.5 text-text-primary text-xs outline-none mt-0.5"/>
+        </div>
+        <div class="grid grid-cols-2 gap-2">
+          <div>
+            <label class="text-[8px] text-text-secondary uppercase">Nomor Plat Polisi</label>
+            <input id="modal-veh-plate" type="text" placeholder="Contoh: N 4567 XX" class="w-full bg-surface-elevated border border-border rounded p-1.5 text-text-primary text-xs outline-none mt-0.5"/>
+          </div>
+          <div>
+            <label class="text-[8px] text-text-secondary uppercase">Bahan Bakar</label>
+            <select id="modal-veh-fuel" class="w-full bg-surface-elevated border border-border rounded p-1.5 text-text-primary text-xs outline-none mt-0.5">
+              <option value="Pertalite">Pertalite (RON 90)</option>
+              <option value="Pertamax">Pertamax (RON 92)</option>
+              <option value="Shell Super">Shell Super</option>
+            </select>
+          </div>
+        </div>
+        <div class="grid grid-cols-2 gap-2">
+          <div>
+            <label class="text-[8px] text-text-secondary uppercase">Konsumsi BBM (KM/L)</label>
+            <input id="modal-veh-eff" type="number" step="0.1" placeholder="Contoh: 50.2" class="w-full bg-surface-elevated border border-border rounded p-1.5 text-text-primary text-xs outline-none mt-0.5"/>
+          </div>
+          <div>
+            <label class="text-[8px] text-text-secondary uppercase">Kapasitas Tangki (Liter)</label>
+            <input id="modal-veh-tank" type="number" step="0.1" placeholder="Contoh: 4.2" class="w-full bg-surface-elevated border border-border rounded p-1.5 text-text-primary text-xs outline-none mt-0.5"/>
+          </div>
+        </div>
+        <div class="grid grid-cols-2 gap-2">
+          <div>
+            <label class="text-[8px] text-text-secondary uppercase">Odometer Saat Ini (KM)</label>
+            <input id="modal-veh-km" type="number" placeholder="Contoh: 32500" class="w-full bg-surface-elevated border border-border rounded p-1.5 text-text-primary text-xs outline-none mt-0.5"/>
+          </div>
+          <div>
+            <label class="text-[8px] text-text-secondary uppercase">Interval Servis (KM)</label>
+            <input id="modal-veh-interval" type="number" placeholder="Contoh: 2500" value="2500" class="w-full bg-surface-elevated border border-border rounded p-1.5 text-text-primary text-xs outline-none mt-0.5"/>
+          </div>
+        </div>
+        <label class="flex items-center gap-2 p-1.5 rounded bg-surface-elevated border border-border/50 cursor-pointer mt-1">
+          <input type="checkbox" id="modal-veh-active" class="w-3.5 h-3.5 rounded text-primary focus:ring-0"/>
+          <span class="text-[9px] text-lime font-bold">Jadikan Motor Utama (Aktif untuk Gojek / Harian)</span>
+        </label>
+      </div>
+
+      <div class="flex gap-2 pt-1">
+        <button onclick="closeVehicleModal()" class="flex-1 py-2 bg-surface-elevated text-text-secondary font-bold rounded-lg border border-border text-xs active:scale-95">Batal</button>
+        <button onclick="submitVehicleData()" class="flex-1 py-2 bg-primary text-black font-bold rounded-lg text-xs shadow-md active:scale-95">Simpan Motor</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- ========================================================================= -->
+  <!-- 💳 NATIVE IN-APP MODAL: TAMBAH DOMPET (WALLET) -->
+  <!-- ========================================================================= -->
+  <div id="modal-wallet" class="modal-overlay">
+    <div class="bg-surface border-2 border-tosca rounded-2xl p-4 w-full max-w-sm space-y-3 font-mono">
+      <div class="flex justify-between items-center border-b border-border/50 pb-2">
+        <div class="flex items-center gap-1.5">
+          <span class="material-symbols-outlined text-tosca text-[18px]">account_balance_wallet</span>
+          <h3 class="font-headline font-bold text-sm text-text-primary">Tambah Dompet Baru</h3>
+        </div>
+        <button onclick="closeWalletModal()" class="text-text-secondary hover:text-text-primary text-sm font-bold active:scale-90">✕</button>
+      </div>
+      <div class="space-y-2 text-[10px]">
+        <div>
+          <label class="text-[8px] text-text-secondary uppercase">Nama Dompet / Rekening</label>
+          <input id="modal-w-name" type="text" placeholder="Contoh: BCA, DANA, ShopeePay" class="w-full bg-surface-elevated border border-border rounded p-1.5 text-text-primary text-xs outline-none mt-0.5"/>
+        </div>
+        <div>
+          <label class="text-[8px] text-text-secondary uppercase">Saldo Awal (Rp)</label>
+          <input id="modal-w-balance" type="number" placeholder="Contoh: 100000" class="w-full bg-surface-elevated border border-border rounded p-1.5 text-text-primary text-xs outline-none mt-0.5"/>
+        </div>
+        <div>
+          <label class="text-[8px] text-text-secondary uppercase">Kategori Dompet</label>
+          <select id="modal-w-type" class="w-full bg-surface-elevated border border-border rounded p-1.5 text-text-primary text-xs outline-none mt-0.5">
+            <option value="cash">Uang Tunai (Cash)</option>
+            <option value="ewallet">E-Wallet (Gopay / OVO / DANA)</option>
+            <option value="bank">Bank / Rekening</option>
+          </select>
+        </div>
+      </div>
+      <div class="flex gap-2 pt-1">
+        <button onclick="closeWalletModal()" class="flex-1 py-2 bg-surface-elevated text-text-secondary font-bold rounded-lg border border-border text-xs active:scale-95">Batal</button>
+        <button onclick="submitWalletData()" class="flex-1 py-2 bg-tosca text-black font-bold rounded-lg text-xs shadow-md active:scale-95">Simpan Dompet</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- ========================================================================= -->
+  <!-- 🎯 NATIVE IN-APP MODAL: TAMBAH TARGET MENABUNG (GOAL) -->
+  <!-- ========================================================================= -->
+  <div id="modal-goal" class="modal-overlay">
+    <div class="bg-surface border-2 border-lime rounded-2xl p-4 w-full max-w-sm space-y-3 font-mono">
+      <div class="flex justify-between items-center border-b border-border/50 pb-2">
+        <div class="flex items-center gap-1.5">
+          <span class="material-symbols-outlined text-lime text-[18px]">target</span>
+          <h3 class="font-headline font-bold text-sm text-text-primary">Tambah Target Menabung</h3>
+        </div>
+        <button onclick="closeGoalModal()" class="text-text-secondary hover:text-text-primary text-sm font-bold active:scale-90">✕</button>
+      </div>
+      <div class="space-y-2 text-[10px]">
+        <div>
+          <label class="text-[8px] text-text-secondary uppercase">Nama Target / Sinking Fund</label>
+          <input id="modal-g-title" type="text" placeholder="Contoh: Ganti Ban Beat, Beli Laptop" class="w-full bg-surface-elevated border border-border rounded p-1.5 text-text-primary text-xs outline-none mt-0.5"/>
+        </div>
+        <div>
+          <label class="text-[8px] text-text-secondary uppercase">Pagu Nominal Target (Rp)</label>
+          <input id="modal-g-target" type="number" placeholder="Contoh: 500000" class="w-full bg-surface-elevated border border-border rounded p-1.5 text-text-primary text-xs outline-none mt-0.5"/>
+        </div>
+        <div>
+          <label class="text-[8px] text-text-secondary uppercase">Target Tanggal Selesai</label>
+          <input id="modal-g-date" type="date" class="w-full bg-surface-elevated border border-border rounded p-1.5 text-text-primary text-xs outline-none mt-0.5"/>
+        </div>
+      </div>
+      <div class="flex gap-2 pt-1">
+        <button onclick="closeGoalModal()" class="flex-1 py-2 bg-surface-elevated text-text-secondary font-bold rounded-lg border border-border text-xs active:scale-95">Batal</button>
+        <button onclick="submitGoalData()" class="flex-1 py-2 bg-lime text-black font-bold rounded-lg text-xs shadow-md active:scale-95">Simpan Target</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- ========================================================================= -->
+  <!-- 💳 NATIVE IN-APP MODAL: TAMBAH TAGIHAN (BILL) -->
+  <!-- ========================================================================= -->
+  <div id="modal-bill" class="modal-overlay">
+    <div class="bg-surface border-2 border-amber rounded-2xl p-4 w-full max-w-sm space-y-3 font-mono">
+      <div class="flex justify-between items-center border-b border-border/50 pb-2">
+        <div class="flex items-center gap-1.5">
+          <span class="material-symbols-outlined text-amber text-[18px]">credit_card</span>
+          <h3 class="font-headline font-bold text-sm text-text-primary">Tambah Tagihan Baru</h3>
+        </div>
+        <button onclick="closeBillModal()" class="text-text-secondary hover:text-text-primary text-sm font-bold active:scale-90">✕</button>
+      </div>
+      <div class="space-y-2 text-[10px]">
+        <div>
+          <label class="text-[8px] text-text-secondary uppercase">Nama Tagihan / Cicilan</label>
+          <input id="modal-b-name" type="text" placeholder="Contoh: Sewa Kos, Listrik PLN" class="w-full bg-surface-elevated border border-border rounded p-1.5 text-text-primary text-xs outline-none mt-0.5"/>
+        </div>
+        <div class="grid grid-cols-2 gap-2">
+          <div>
+            <label class="text-[8px] text-text-secondary uppercase">Nominal (Rp/Bulan)</label>
+            <input id="modal-b-amount" type="number" placeholder="Contoh: 200000" class="w-full bg-surface-elevated border border-border rounded p-1.5 text-text-primary text-xs outline-none mt-0.5"/>
+          </div>
+          <div>
+            <label class="text-[8px] text-text-secondary uppercase">Jatuh Tempo (Tgl 1-31)</label>
+            <input id="modal-b-due" type="number" min="1" max="31" placeholder="15" class="w-full bg-surface-elevated border border-border rounded p-1.5 text-text-primary text-xs outline-none mt-0.5"/>
+          </div>
+        </div>
+      </div>
+      <div class="flex gap-2 pt-1">
+        <button onclick="closeBillModal()" class="flex-1 py-2 bg-surface-elevated text-text-secondary font-bold rounded-lg border border-border text-xs active:scale-95">Batal</button>
+        <button onclick="submitBillData()" class="flex-1 py-2 bg-amber text-black font-bold rounded-lg text-xs shadow-md active:scale-95">Simpan Tagihan</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- ========================================================================= -->
+  <!-- ⚡ NATIVE IN-APP MODAL: TAMBAH PINTASAN CHAT (PILL) -->
+  <!-- ========================================================================= -->
+  <div id="modal-pill" class="modal-overlay">
+    <div class="bg-surface border-2 border-lime rounded-2xl p-4 w-full max-w-sm space-y-3 font-mono">
+      <div class="flex justify-between items-center border-b border-border/50 pb-2">
+        <div class="flex items-center gap-1.5">
+          <span class="material-symbols-outlined text-lime text-[18px]">bolt</span>
+          <h3 class="font-headline font-bold text-sm text-text-primary">Tambah Tombol Pintasan</h3>
+        </div>
+        <button onclick="closePillModal()" class="text-text-secondary hover:text-text-primary text-sm font-bold active:scale-90">✕</button>
+      </div>
+      <div class="space-y-2 text-[10px]">
+        <div>
+          <label class="text-[8px] text-text-secondary uppercase">Label Tombol</label>
+          <input id="modal-p-label" type="text" placeholder="Contoh: Kopi 10k, Bensin 20k" class="w-full bg-surface-elevated border border-border rounded p-1.5 text-text-primary text-xs outline-none mt-0.5"/>
+        </div>
+        <div>
+          <label class="text-[8px] text-text-secondary uppercase">Perintah Chat Otomatis</label>
+          <input id="modal-p-query" type="text" placeholder="Contoh: saya beli es kopi 10000 cash kertas" class="w-full bg-surface-elevated border border-border rounded p-1.5 text-text-primary text-xs outline-none mt-0.5"/>
+        </div>
+      </div>
+      <div class="flex gap-2 pt-1">
+        <button onclick="closePillModal()" class="flex-1 py-2 bg-surface-elevated text-text-secondary font-bold rounded-lg border border-border text-xs active:scale-95">Batal</button>
+        <button onclick="submitPillData()" class="flex-1 py-2 bg-lime text-black font-bold rounded-lg text-xs shadow-md active:scale-95">Simpan Pintasan</button>
       </div>
     </div>
   </div>
