@@ -62,16 +62,19 @@ const HTML_SOURCE = `<!DOCTYPE html>
     }
     .tosca-bloom { box-shadow: 0 0 12px rgba(0, 168, 168, 0.3); }
     .lime-glow { box-shadow: 0 0 14px rgba(210, 240, 0, 0.4); }
+    
     .tab-pane {
       display: none;
       width: 100%;
       height: 100%;
       overflow-y: auto;
-      padding-bottom: 70px;
+      padding-bottom: 68px !important;
+      -webkit-overflow-scrolling: touch;
     }
     #tab-chat {
-      padding-bottom: 155px !important;
+      padding-bottom: 164px !important;
     }
+    
     .modal-overlay {
       display: none;
       position: fixed;
@@ -92,12 +95,12 @@ const HTML_SOURCE = `<!DOCTYPE html>
 <body class="flex flex-col h-full w-full text-xs">
 
   <!-- ========================================================================= -->
-  <!-- 🔝 TOP APP BAR (HEADER RAPHAEL DENGAN STATUS SALDO & CUACA REAL) -->
+  <!-- 🔝 TOP APP BAR (HEADER RAPHAEL DENGAN STATUS SALDO DINAMIS & CUACA REAL) -->
   <!-- ========================================================================= -->
   <header class="glass-panel px-3.5 py-2.5 flex justify-between items-center border-b border-border/50 shrink-0 z-40">
     <div class="flex items-center gap-2">
       <!-- Interactive Robot Icon -> Opens AI Settings Modal -->
-      <button onclick="openAiSettingsModal()" class="relative active:scale-95 transition-transform" title="Klik untuk Pengaturan Preferensi AI">
+      <button onclick="openAiSettingsModal()" class="relative active:scale-95 transition-transform" title="Pengaturan Preferensi AI">
         <div class="w-8 h-8 rounded-full bg-surface-elevated flex items-center justify-center border border-primary/40 tosca-bloom">
           <span class="material-symbols-outlined text-primary text-[18px]">smart_toy</span>
         </div>
@@ -115,11 +118,11 @@ const HTML_SOURCE = `<!DOCTYPE html>
       </div>
     </div>
 
-    <!-- Quick Balances Pill -->
-    <div class="glass-panel px-2.5 py-1 rounded-full flex items-center gap-2 border border-border/60">
+    <!-- Quick Dynamic Balances Pill -->
+    <div class="glass-panel px-2.5 py-1 rounded-full flex items-center gap-2 border border-border/60" id="header-balance-pill">
       <div class="flex items-center gap-1">
         <span class="text-[9px] font-mono text-text-secondary">KAS</span>
-        <span class="text-[11px] font-mono font-bold text-lime" id="header-cash">Rp 455k</span>
+        <span class="text-[11px] font-mono font-bold text-lime" id="header-cash">Rp 152k</span>
       </div>
       <span class="w-px h-2.5 bg-border"></span>
       <div class="flex items-center gap-1">
@@ -135,7 +138,7 @@ const HTML_SOURCE = `<!DOCTYPE html>
   <main class="flex-1 overflow-hidden relative w-full">
 
     <!-- ======================================================================= -->
-    <!-- 📊 TAB 1: ANALYTICS & TIMELINE GANTT CHART -->
+    <!-- 📊 TAB 1: ANALYTICS & TIMELINE GANTT CHART (DYNAMIC GOALS & NET WORTH) -->
     <!-- ======================================================================= -->
     <div id="tab-analytics" class="tab-pane px-3.5 py-2.5 space-y-2.5">
       <div class="flex justify-between items-center">
@@ -161,22 +164,22 @@ const HTML_SOURCE = `<!DOCTYPE html>
       <div class="grid grid-cols-2 gap-2 font-mono">
         <div class="bg-surface rounded-xl p-2.5 border border-border">
           <span class="text-[8px] text-text-secondary uppercase">Total Pemasukan</span>
-          <p class="text-xs font-bold text-emerald mt-0.5">Rp 3.450.000</p>
+          <p class="text-xs font-bold text-emerald mt-0.5" id="metric-income">Rp 3.450.000</p>
           <span class="text-[8px] text-emerald">▲ +12% vs lalu</span>
         </div>
         <div class="bg-surface rounded-xl p-2.5 border border-border">
           <span class="text-[8px] text-text-secondary uppercase">Total Pengeluaran</span>
-          <p class="text-xs font-bold text-coral mt-0.5">Rp 2.120.000</p>
+          <p class="text-xs font-bold text-coral mt-0.5" id="metric-expense">Rp 2.120.000</p>
           <span class="text-[8px] text-coral">▼ -5% vs lalu</span>
         </div>
         <div class="bg-surface rounded-xl p-2.5 border border-border">
           <span class="text-[8px] text-text-secondary uppercase">Sisa Kas Likuid</span>
-          <p class="text-xs font-bold text-tosca mt-0.5">Rp 1.330.000</p>
-          <span class="text-[8px] text-text-secondary">Aman Terjaga</span>
+          <p class="text-xs font-bold text-tosca mt-0.5" id="metric-liquid">Rp 325.500</p>
+          <span class="text-[8px] text-text-secondary">5 Dompet Aktif</span>
         </div>
         <div class="bg-surface rounded-xl p-2.5 border border-border">
           <span class="text-[8px] text-text-secondary uppercase">Daily Burn Rate</span>
-          <p class="text-xs font-bold text-lime mt-0.5">Rp 68.000<span class="text-[8px] text-text-secondary">/hr</span></p>
+          <p class="text-xs font-bold text-lime mt-0.5" id="metric-burn">Rp 68.000<span class="text-[8px] text-text-secondary">/hr</span></p>
           <span class="text-[8px] text-lime">Stabil Normal</span>
         </div>
       </div>
@@ -243,34 +246,21 @@ const HTML_SOURCE = `<!DOCTYPE html>
         </div>
       </div>
 
-      <!-- Sinking Fund & Loan Overview -->
+      <!-- DYNAMIC GOALS & SINKING FUNDS CARD -->
       <div class="bg-surface rounded-xl p-3 border border-border space-y-2">
-        <h4 class="font-headline font-bold text-[9px] uppercase text-text-secondary tracking-wider">Target & Beban Cicilan</h4>
-        <div class="space-y-1.5 font-mono text-[10px]">
-          <div class="p-2 rounded bg-surface-elevated space-y-1">
-            <div class="flex justify-between">
-              <span>🎯 Sinking Fund Dieng</span>
-              <span class="text-lime font-bold">Terbayar: Rp 300.000 (29%)</span>
-            </div>
-            <div class="w-full h-2 bg-surface rounded-full overflow-hidden">
-              <div class="h-full bg-primary rounded-full" style="width: 29%"></div>
-            </div>
-          </div>
-          <div class="p-2 rounded bg-surface-elevated space-y-1">
-            <div class="flex justify-between">
-              <span>💳 Bank Jago (Rp 67.940/bln)</span>
-              <span class="text-coral font-bold">Jatuh Tempo: Tgl 20</span>
-            </div>
-            <div class="w-full h-2 bg-surface rounded-full overflow-hidden">
-              <div class="h-full bg-amber rounded-full" style="width: 8%"></div>
-            </div>
-          </div>
+        <div class="flex justify-between items-center">
+          <h4 class="font-headline font-bold text-[9px] uppercase text-text-secondary tracking-wider">Target & Sinking Funds</h4>
+          <button onclick="openDynamicHubModal('goals')" class="text-lime text-[9px] font-mono font-bold hover:underline">+ Kelola Target</button>
+        </div>
+        <div id="dynamic-goals-container" class="space-y-1.5 font-mono text-[10px]">
+          <!-- Live Dynamic Goals will render here -->
         </div>
       </div>
+
     </div>
 
     <!-- ======================================================================= -->
-    <!-- 🗄️ TAB 2: DATABASE DATA CORE (DUAL VIEW: TRANSAKSI & AKTIVITAS WITH FULL EDIT) -->
+    <!-- 🗄️ TAB 2: DATABASE DATA CORE (DUAL VIEW: TRANSAKSI & AKTIVITAS WITH FULL CRUD) -->
     <!-- ======================================================================= -->
     <div id="tab-data" class="tab-pane px-3.5 py-2.5 space-y-2.5">
       
@@ -298,11 +288,9 @@ const HTML_SOURCE = `<!DOCTYPE html>
           </div>
         </div>
 
-        <div class="flex gap-1.5 overflow-x-auto hide-scrollbar text-[10px] font-mono py-0.5">
-          <button onclick="filterWallet('all')" class="px-2.5 py-1 bg-primary text-black font-bold rounded-full shrink-0">Semua</button>
-          <button onclick="filterWallet('Cash')" class="px-2.5 py-1 bg-surface-elevated text-text-secondary rounded-full border border-border shrink-0">Cash</button>
-          <button onclick="filterWallet('Gopay')" class="px-2.5 py-1 bg-surface-elevated text-text-secondary rounded-full border border-border shrink-0">Gopay</button>
-          <button onclick="filterWallet('Jago')" class="px-2.5 py-1 bg-surface-elevated text-text-secondary rounded-full border border-border shrink-0">Bank Jago</button>
+        <!-- Dynamic Wallet Filters -->
+        <div id="dynamic-wallet-filter-container" class="flex gap-1.5 overflow-x-auto hide-scrollbar text-[10px] font-mono py-0.5">
+          <!-- Dynamic filter chips will render here -->
         </div>
 
         <div id="ledger-list-container" class="space-y-1.5">
@@ -340,14 +328,14 @@ const HTML_SOURCE = `<!DOCTYPE html>
       <!-- Message Stream Container -->
       <div id="chat-messages-container" class="space-y-2.5 w-full">
         
-        <!-- Welcome Message -->
-        <div class="flex items-start gap-2">
+        <!-- Initial Welcome Message -->
+        <div class="flex items-start gap-2" id="welcome-message-bubble">
           <div class="w-7 h-7 rounded-full bg-surface-elevated flex items-center justify-center border border-primary/40 text-primary shrink-0 mt-0.5">
             <span class="material-symbols-outlined text-[16px]">smart_toy</span>
           </div>
           <div class="bg-surface rounded-xl rounded-tl-sm p-3 max-w-[92%] border border-border shadow-lg space-y-2 text-text-primary text-[11px] leading-relaxed">
             <p>
-              Selamat datang, <b>Mas Firman</b>. Asisten <b>Raphael</b> siap mendampingi pencatatan keuangan, progres sinking fund, analisis narik Gojek, pembuatan chart visual beragam, dan peta navigasi agenda Anda.
+              Selamat datang, <b>Mas Firman</b>. Asisten <b>Raphael</b> siap mendampingi pencatatan keuangan, progres sinking fund, analisis narik Gojek, scan struk foto, pembuatan chart visual, dan navigasi agenda Anda.
             </p>
 
             <!-- Dieng Progress Card Widget -->
@@ -386,10 +374,13 @@ const HTML_SOURCE = `<!DOCTYPE html>
     </div>
 
     <!-- ======================================================================= -->
-    <!-- 🔔 TAB 4: NOTIFICATIONS & SMART ALERTS (REAL GPS WEATHER) -->
+    <!-- 🔔 TAB 4: NOTIFICATIONS & SMART ALERTS (DYNAMIC BILLS & REAL WEATHER) -->
     <!-- ======================================================================= -->
     <div id="tab-notifications" class="tab-pane px-3.5 py-2.5 space-y-2.5">
-      <h2 class="font-headline font-bold text-sm text-text-primary">Pusat Notifikasi & Pengingat</h2>
+      <div class="flex justify-between items-center">
+        <h2 class="font-headline font-bold text-sm text-text-primary">Pusat Notifikasi & Pengingat</h2>
+        <button onclick="openDynamicHubModal('bills')" class="text-lime text-[9px] font-mono font-bold hover:underline">+ Kelola Tagihan</button>
+      </div>
 
       <!-- Live GPS Weather Card -->
       <div class="bg-surface rounded-xl p-3 border-l-4 border-tosca border border-border space-y-1.5 shadow-md">
@@ -411,33 +402,15 @@ const HTML_SOURCE = `<!DOCTYPE html>
         </div>
       </div>
 
-      <!-- Urgent Card: Bank Jago -->
-      <div class="bg-surface rounded-xl p-3 border-l-4 border-coral border border-border space-y-1 shadow-md">
-        <div class="flex justify-between items-center">
-          <span class="text-[10px] font-mono font-bold text-coral flex items-center gap-1">
-            <span class="material-symbols-outlined text-[13px]">warning</span> CICILAN BANK JAGO
-          </span>
-          <span class="text-[8px] font-mono px-1.5 py-0.5 rounded bg-coral/20 text-coral font-bold">TGL 20</span>
-        </div>
-        <p class="text-sm font-mono font-bold text-text-primary">Rp 67.940 <span class="text-[9px] text-text-secondary font-normal">/ bulan</span></p>
-        <p class="text-[10px] text-text-secondary">Autodebet setiap tanggal 20. Sisa tenor 11 bulan (Pokok Rp 50.000 + Bunga Rp 17.940).</p>
+      <!-- Dynamic Bills & Installments Container -->
+      <div id="dynamic-bills-container" class="space-y-2">
+        <!-- Live dynamic bills will render here -->
       </div>
 
-      <!-- Debt Card: Rifky -->
-      <div class="bg-surface rounded-xl p-3 border-l-4 border-amber border border-border space-y-1">
-        <div class="flex justify-between items-center">
-          <span class="text-[10px] font-mono font-bold text-amber flex items-center gap-1">
-            <span class="material-symbols-outlined text-[13px]">handshake</span> HUTANG KE RIFKY
-          </span>
-          <span class="text-[8px] font-mono px-1.5 py-0.5 rounded bg-amber/20 text-amber font-bold">TGL 5</span>
-        </div>
-        <p class="text-sm font-mono font-bold text-text-primary">Rp 100.000</p>
-        <p class="text-[10px] text-text-secondary">Rencana pembayaran setiap tanggal 5 awal bulan.</p>
-      </div>
     </div>
 
     <!-- ======================================================================= -->
-    <!-- ⚙️ TAB 5: PROFILE & SYSTEM SETTINGS -->
+    <!-- ⚙️ TAB 5: PROFILE, DYNAMIC HUB & SYSTEM SETTINGS -->
     <!-- ======================================================================= -->
     <div id="tab-profile" class="tab-pane px-3.5 py-2.5 space-y-2.5">
       <h2 class="font-headline font-bold text-sm text-text-primary">Profil & Pengaturan Sistem</h2>
@@ -460,83 +433,64 @@ const HTML_SOURCE = `<!DOCTYPE html>
         </button>
       </div>
 
-      <!-- Quick AI Summarizer Action Card in Profile -->
-      <div class="bg-surface rounded-xl p-3 border border-border space-y-1.5">
+      <!-- MASTER DYNAMIC HUB CARD -->
+      <div class="bg-surface rounded-xl p-3 border-2 border-primary/40 tosca-bloom space-y-2">
         <div class="flex justify-between items-center">
-          <span class="font-headline font-bold text-xs text-text-primary flex items-center gap-1">
-            <span class="material-symbols-outlined text-lime text-[13px]">auto_awesome</span> Rangkuman Otomatis Raphael
+          <span class="font-headline font-bold text-xs text-text-primary flex items-center gap-1.5">
+            <span class="material-symbols-outlined text-lime text-[16px]">widgets</span> KELOLA ENTITAS DINAMIS
           </span>
-          <button onclick="openAiSettingsModal()" class="text-lime text-[9px] font-mono font-bold hover:underline">Konfigurasi</button>
+          <span class="text-[9px] font-mono px-2 py-0.5 rounded bg-lime/20 text-lime font-bold">8 ASPEK</span>
         </div>
         <p class="text-[10px] text-text-secondary leading-relaxed">
-          Raphael secara cerdas merangkum arus kas, burn rate, dan agenda Anda berdasarkan preferensi rentang hari yang Anda tentukan.
+          Atur dompet, target menabung, tagihan, kategori, dan tombol pintasan chat secara mandiri kapan saja tanpa batas.
         </p>
+        <button onclick="openDynamicHubModal('wallets')" class="w-full py-2 bg-gradient-to-r from-primary to-tosca text-black font-bold rounded-lg text-xs font-mono shadow flex items-center justify-center gap-1.5 active:scale-95">
+          <span class="material-symbols-outlined text-[15px]">tune</span> Buka Dynamic Hub Manager
+        </button>
       </div>
 
-      <!-- Wallet Balances Overview -->
+      <!-- Dynamic Wallet Balances Overview -->
       <div class="bg-surface rounded-xl p-3 border border-border space-y-1.5 font-mono text-[10px]">
         <div class="flex justify-between items-center border-b border-border/50 pb-1">
           <span class="font-bold text-text-secondary uppercase text-[9px] tracking-wider">Status Dompet Terhubung</span>
-          <button onclick="loadLedgerData()" class="text-primary text-[9px] hover:underline">🔄 Sinkron Ulang</button>
+          <button onclick="openDynamicHubModal('wallets')" class="text-lime text-[9px] hover:underline">+ Atur Dompet</button>
         </div>
-        <div class="space-y-1">
-          <div class="flex justify-between p-1.5 rounded bg-surface-elevated">
-            <span>💵 Cash Kertas</span>
-            <span class="font-bold text-lime">Rp 152.000</span>
-          </div>
-          <div class="flex justify-between p-1.5 rounded bg-surface-elevated">
-            <span>🪙 Cash Koin</span>
-            <span class="font-bold text-lime">Rp 9.500</span>
-          </div>
-          <div class="flex justify-between p-1.5 rounded bg-surface-elevated">
-            <span>📱 Gopay Driver</span>
-            <span class="font-bold text-tosca">Rp 164.000</span>
-          </div>
-          <div class="flex justify-between p-1.5 rounded bg-surface-elevated">
-            <span>🏦 SeaBank</span>
-            <span class="font-bold text-text-primary">Rp 0</span>
-          </div>
-          <div class="flex justify-between p-1.5 rounded bg-surface-elevated">
-            <span>🏦 Bank Jago</span>
-            <span class="font-bold text-text-primary">Rp 0</span>
-          </div>
+        <div id="dynamic-wallets-list" class="space-y-1">
+          <!-- Dynamic wallets render here -->
         </div>
       </div>
+
     </div>
 
   </main>
 
   <!-- ========================================================================= -->
-  <!-- 💬 CHAT INPUT DOCK (HANYA MUNCUL DI TAB 3) -->
+  <!-- 💬 CHAT INPUT DOCK (FLOATING 12PX DI ATAS NAVBAR WITH RECEIPT & VOICE) -->
   <!-- ========================================================================= -->
-  <div id="chat-input-wrapper" class="fixed bottom-14 left-0 right-0 z-30 px-3 max-w-lg mx-auto space-y-1.5">
+  <div id="chat-input-wrapper" class="fixed bottom-[68px] left-0 right-0 z-30 px-3 max-w-lg mx-auto space-y-1.5">
     
-    <!-- Quick Action Pills -->
-    <div class="flex gap-1.5 overflow-x-auto hide-scrollbar py-0.5">
-      <button onclick="sendQuickAction('buatkan line chart tren arus kas harian dan burn rate')" class="shrink-0 bg-surface-elevated hover:bg-surface-high border border-border px-2.5 py-1 rounded-full text-[10px] font-mono flex items-center gap-1 text-tosca active:scale-95">
-        <span class="material-symbols-outlined text-[12px]">show_chart</span> Line Chart Tren Kas
-      </button>
-      <button onclick="sendQuickAction('buatkan donut chart alokasi pengeluaran per kategori')" class="shrink-0 bg-surface-elevated hover:bg-surface-high border border-border px-2.5 py-1 rounded-full text-[10px] font-mono flex items-center gap-1 text-amber active:scale-95">
-        <span class="material-symbols-outlined text-[12px]">pie_chart</span> Donut Chart Kategori
-      </button>
-      <button onclick="sendQuickAction('buatkan chart analisis perbandingan pemasukan vs pengeluaran')" class="shrink-0 bg-surface-elevated hover:bg-surface-high border border-border px-2.5 py-1 rounded-full text-[10px] font-mono flex items-center gap-1 text-lime active:scale-95">
-        <span class="material-symbols-outlined text-[12px]">bar_chart</span> Bar Chart Keuangan
-      </button>
-      <button onclick="sendQuickAction('tampilkan visual gantt chart')" class="shrink-0 bg-surface-elevated hover:bg-surface-high border border-border px-2.5 py-1 rounded-full text-[10px] font-mono flex items-center gap-1 text-primary active:scale-95">
-        <span class="material-symbols-outlined text-[12px]">calendar_month</span> Gantt Chart
-      </button>
-      <button onclick="sendQuickAction('tampilkan rute dan peta lokasi trip ke Dieng')" class="shrink-0 bg-surface-elevated hover:bg-surface-high border border-border px-2.5 py-1 rounded-full text-[10px] font-mono flex items-center gap-1 text-emerald active:scale-95">
-        <span class="material-symbols-outlined text-[12px]">map</span> Peta & Rute Dieng
-      </button>
+    <!-- Dynamic Quick Action Pills -->
+    <div id="dynamic-pills-container" class="flex gap-1.5 overflow-x-auto hide-scrollbar py-0.5">
+      <!-- Dynamic chips will render here -->
     </div>
 
-    <!-- Floating Input Bar -->
-    <div class="glass-panel rounded-full p-1 pl-3 pr-1 flex items-center gap-1.5 border border-border focus-within:border-primary tosca-bloom">
-      <input id="chat-input-text" type="text" placeholder="Tanya Raphael atau minta chart..." class="flex-1 bg-transparent border-none focus:ring-0 text-[11px] font-body text-text-primary placeholder:text-text-secondary/50 h-8 outline-none" onkeydown="if(event.key==='Enter') sendMessage()"/>
-      <button onclick="startVoiceSTT()" class="text-text-secondary hover:text-lime p-1 active:scale-95">
+    <!-- Floating Input Bar with Receipt OCR Photo Attachment -->
+    <div class="glass-panel rounded-full p-1 pl-2.5 pr-1 flex items-center gap-1 border border-border focus-within:border-primary tosca-bloom">
+      <!-- Hidden Receipt File / Camera Input -->
+      <input id="receipt-file-input" type="file" accept="image/*" class="hidden" onchange="handleReceiptSelected(event)"/>
+      
+      <!-- Receipt Camera / Photo Button -->
+      <button onclick="triggerReceiptUpload()" class="text-text-secondary hover:text-tosca p-1 active:scale-95 transition-colors" title="Foto / Lampirkan Struk Belanja">
+        <span class="material-symbols-outlined text-[18px]">add_a_photo</span>
+      </button>
+
+      <input id="chat-input-text" type="text" placeholder="Tanya Raphael, minta chart, atau lampirkan struk..." class="flex-1 bg-transparent border-none focus:ring-0 text-[11px] font-body text-text-primary placeholder:text-text-secondary/50 h-8 outline-none px-1" onkeydown="if(event.key==='Enter') sendMessage()"/>
+      
+      <button onclick="startVoiceSTT()" class="text-text-secondary hover:text-lime p-1 active:scale-95 transition-colors" title="Voice Input">
         <span class="material-symbols-outlined text-[18px]">mic</span>
       </button>
-      <button onclick="sendMessage()" class="w-8 h-8 rounded-full bg-lime text-black flex items-center justify-center font-bold active:scale-95 transition-transform lime-glow shrink-0">
+      
+      <button onclick="sendMessage()" class="w-8 h-8 rounded-full bg-lime text-black flex items-center justify-center font-bold active:scale-95 transition-transform lime-glow shrink-0" title="Kirim">
         <span class="material-symbols-outlined text-[16px]">send</span>
       </button>
     </div>
@@ -547,32 +501,87 @@ const HTML_SOURCE = `<!DOCTYPE html>
   <!-- ========================================================================= -->
   <nav class="fixed bottom-0 left-0 right-0 w-full h-14 bg-surface border-t border-border/80 shadow-2xl z-50 flex justify-around items-center px-2">
     
-    <!-- Tab 1: Analytics -->
     <button onclick="switchTab('analytics')" id="nav-btn-analytics" class="p-2 text-text-secondary hover:text-primary transition-colors flex flex-col items-center active:scale-90">
       <span class="material-symbols-outlined text-[20px]">analytics</span>
     </button>
 
-    <!-- Tab 2: Data Core -->
     <button onclick="switchTab('data')" id="nav-btn-data" class="p-2 text-text-secondary hover:text-primary transition-colors flex flex-col items-center active:scale-90">
       <span class="material-symbols-outlined text-[20px]">storage</span>
     </button>
 
-    <!-- Tab 3 (CENTER HERO / DEFAULT): Raphael Chat Hub -->
     <button onclick="switchTab('chat')" id="nav-btn-chat" class="w-10 h-10 rounded-full bg-lime text-black flex items-center justify-center lime-glow border-2 border-background shadow-lg transition-transform active:scale-95">
       <span class="material-symbols-outlined text-[20px]" style="font-variation-settings: 'FILL' 1;">smart_toy</span>
     </button>
 
-    <!-- Tab 4: Notifications -->
     <button onclick="switchTab('notifications')" id="nav-btn-notifications" class="p-2 text-text-secondary hover:text-primary transition-colors flex flex-col items-center active:scale-90">
       <span class="material-symbols-outlined text-[20px]">notifications</span>
     </button>
 
-    <!-- Tab 5: Profile -->
     <button onclick="switchTab('profile')" id="nav-btn-profile" class="p-2 text-text-secondary hover:text-primary transition-colors flex flex-col items-center active:scale-90">
       <span class="material-symbols-outlined text-[20px]">settings</span>
     </button>
 
   </nav>
+
+  <!-- ========================================================================= -->
+  <!-- 🎛️ MASTER MODAL: KELOLA ENTITAS DINAMIS (DYNAMIC HUB) -->
+  <!-- ========================================================================= -->
+  <div id="modal-dynamic-hub" class="modal-overlay">
+    <div class="bg-surface border border-border rounded-2xl p-4 w-full max-w-sm space-y-3 font-mono max-h-[90vh] overflow-y-auto hide-scrollbar">
+      <div class="flex justify-between items-center border-b border-border/50 pb-2">
+        <div class="flex items-center gap-1.5">
+          <span class="material-symbols-outlined text-lime text-[18px]">tune</span>
+          <h3 class="font-headline font-bold text-sm text-text-primary">Dynamic Entities Hub</h3>
+        </div>
+        <button onclick="closeDynamicHubModal()" class="text-text-secondary hover:text-text-primary text-sm font-bold active:scale-90">✕</button>
+      </div>
+
+      <!-- 5 Dynamic Sub-Tabs -->
+      <div class="flex gap-1 overflow-x-auto hide-scrollbar bg-surface-elevated p-1 rounded-xl border border-border text-[9px] font-mono font-bold">
+        <button id="dh-tab-wallets-btn" onclick="switchDynamicHubTab('wallets')" class="px-2.5 py-1.5 rounded-lg bg-primary text-black shrink-0">💳 Dompet</button>
+        <button id="dh-tab-goals-btn" onclick="switchDynamicHubTab('goals')" class="px-2.5 py-1.5 rounded-lg text-text-secondary shrink-0">🎯 Target</button>
+        <button id="dh-tab-bills-btn" onclick="switchDynamicHubTab('bills')" class="px-2.5 py-1.5 rounded-lg text-text-secondary shrink-0">💳 Tagihan</button>
+        <button id="dh-tab-pills-btn" onclick="switchDynamicHubTab('pills')" class="px-2.5 py-1.5 rounded-lg text-text-secondary shrink-0">⚡ Pintasan</button>
+      </div>
+
+      <!-- Sub-Tab 1: Wallets -->
+      <div id="dh-view-wallets" class="space-y-2.5">
+        <div class="flex justify-between items-center">
+          <span class="text-xs font-bold text-text-primary">Daftar Dompet Aktif</span>
+          <button onclick="openAddWalletModal()" class="px-2 py-1 bg-lime text-black rounded text-[9px] font-bold">+ Tambah</button>
+        </div>
+        <div id="dh-wallets-list-container" class="space-y-1.5"></div>
+      </div>
+
+      <!-- Sub-Tab 2: Goals -->
+      <div id="dh-view-goals" class="space-y-2.5" style="display: none;">
+        <div class="flex justify-between items-center">
+          <span class="text-xs font-bold text-text-primary">Target Menabung & Sinking Fund</span>
+          <button onclick="openAddGoalModal()" class="px-2 py-1 bg-lime text-black rounded text-[9px] font-bold">+ Target Baru</button>
+        </div>
+        <div id="dh-goals-list-container" class="space-y-1.5"></div>
+      </div>
+
+      <!-- Sub-Tab 3: Bills -->
+      <div id="dh-view-bills" class="space-y-2.5" style="display: none;">
+        <div class="flex justify-between items-center">
+          <span class="text-xs font-bold text-text-primary">Daftar Tagihan & Cicilan</span>
+          <button onclick="openAddBillModal()" class="px-2 py-1 bg-lime text-black rounded text-[9px] font-bold">+ Tagihan Baru</button>
+        </div>
+        <div id="dh-bills-list-container" class="space-y-1.5"></div>
+      </div>
+
+      <!-- Sub-Tab 4: Pills -->
+      <div id="dh-view-pills" class="space-y-2.5" style="display: none;">
+        <div class="flex justify-between items-center">
+          <span class="text-xs font-bold text-text-primary">Tombol Pintasan Chat Cepat</span>
+          <button onclick="openAddPillModal()" class="px-2 py-1 bg-lime text-black rounded text-[9px] font-bold">+ Pintasan Baru</button>
+        </div>
+        <div id="dh-pills-list-container" class="space-y-1.5"></div>
+      </div>
+
+    </div>
+  </div>
 
   <!-- ========================================================================= -->
   <!-- 🤖 MODAL DIALOG: PENGATURAN PREFERENSI AI & AUTO-SUMMARIZER -->
@@ -628,12 +637,9 @@ const HTML_SOURCE = `<!DOCTYPE html>
           </select>
         </div>
 
-        <button onclick="generateAutoSummary()" class="w-full py-2 bg-lime text-black font-bold rounded-lg text-xs shadow-md flex items-center justify-center gap-1 active:scale-95">
+        <button onclick="executeGenerateAndPurgeSummary()" class="w-full py-2 bg-lime text-black font-bold rounded-lg text-xs shadow-md flex items-center justify-center gap-1 active:scale-95">
           <span class="material-symbols-outlined text-[14px]">bolt</span> Generate Rangkuman Sekarang
         </button>
-
-        <div id="summary-result-container" class="hidden p-2 rounded-lg bg-surface-elevated border border-border text-[10px] text-text-primary font-mono whitespace-pre-wrap leading-relaxed">
-        </div>
       </div>
     </div>
   </div>
@@ -665,11 +671,7 @@ const HTML_SOURCE = `<!DOCTYPE html>
         <div>
           <label class="text-[10px] text-text-secondary uppercase">Dompet / Sumber Dana</label>
           <select id="modal-tx-wallet" class="w-full bg-surface-elevated border border-border rounded-lg p-2 text-text-primary outline-none mt-0.5">
-            <option value="Cash Kertas">Cash Kertas</option>
-            <option value="Cash Koin">Cash Koin</option>
-            <option value="Gopay">Gopay</option>
-            <option value="Bank Jago">Bank Jago</option>
-            <option value="SeaBank">SeaBank</option>
+            <!-- Dynamic wallet options render here -->
           </select>
         </div>
         <div>
