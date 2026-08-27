@@ -270,3 +270,166 @@ Berikut adalah rekaman lengkap kegagalan teknis yang pernah terjadi beserta perb
 
 ---
 *Dokumen ini adalah Single Source of Truth arsitektur mobile Raphael. Terakhir diperbarui & divalidasi: 27 Agustus 2026.*
+
+
+---
+
+# 🔍 MASTER AUDIT KOMPREHENSIF APLIKASI RAPHAEL MOBILE: 100 TEMUAN GAP FITUR & CELAH BUG SISTEM
+**Dokumen:** Master Audit Gap Fitur Ekosistem (Telegram & Web App vs Mobile App) serta Analisis 50 Potensi Celah Bug & Error.  
+**Sistem Target:** Raphael Mobile (`com.datacore.app`) & Ekosistem Next.js Supabase (`ai_personal_asistan_telegram`).  
+**Pengguna:** Mas Firman (`fc2758d3-78bb-4e22-b9f0-b3b16568b671`).  
+**Tanggal Audit:** 27 Agustus 2026.  
+**Metodologi:** Static Code Analysis, Cross-Ecosystem Capability Matrix, Edge-Case Stress Analysis, Fault Tree Analysis (FTA), dan Security/UX Audit.
+
+---
+
+> [!IMPORTANT]
+> **PANDUAN MUTLAK SINGLE SOURCE OF TRUTH**:
+> Dokumen ini adalah acuan baku (*blueprint*) bagi AI dan Pengembang. Setiap temuan pada Bagian A (Gap Fitur) dan Bagian B (Potensi Bug) harus diselesaikan secara bertahap tanpa merusak stabilitas kode yang sudah berjalan.
+
+---
+
+## 📑 DAFTAR ISI AUDIT
+1. [BAGIAN A: 50 FITUR TELEGRAM BOT & WEB APP YANG BELUM MASUK KE MOBILE APP](#bagian-a-50-fitur-telegram-bot--web-app-yang-belum-masuk-ke-mobile-app)
+   - [A.1 Finansial, Kalkulator & Analitik Lanjutan (Poin 1–10)](#a1-finansial-kalkulator--analitik-lanjutan)
+   - [A.2 Rencana Hidup, Logistik, Roadmap & Rekomendasi (Poin 11–20)](#a2-rencana-hidup-logistik-roadmap--rekomendasi)
+   - [A.3 Ekspor, Laporan, Dokumen & Notifikasi (Poin 21–30)](#a3-ekspor-laporan-dokumen--notifikasi)
+   - [A.4 Super Admin, Data Inspector & Mutasi Data (Poin 31–40)](#a4-super-admin-data-inspector--mutasi-data)
+   - [A.5 Persona AI, Slang, Format 3 Lapis & Interaksi (Poin 41–50)](#a5-persona-ai-slang-format-3-lapis--interaksi)
+2. [BAGIAN B: 50 POTENSI BUG, ERROR, EDGE CASES & KERENTANAN SISTEM](#bagian-b-50-potensi-bug-error-edge-cases--kerentanan-sistem)
+   - [B.1 Jaringan, Koneksi & Penanganan Offline (Poin 51–60)](#b1-jaringan-koneksi--penanganan-offline)
+   - [B.2 Integritas Data, Validasi Form & Keamanan (Poin 61–70)](#b2-integritas-data-validasi-form--keamanan)
+   - [B.3 Kinerja Memori, Siklus Hidup WebView & DOM (Poin 71–80)](#b3-kinerja-memori-siklus-hidup-webview--dom)
+   - [B.4 Logika Bisnis, Penalaran AI & Algoritma (Poin 81–90)](#b4-logika-bisnis-penalaran-ai--algoritma)
+   - [B.5 Antarmuka Responsif, Aksesibilitas & UI/UX (Poin 91–100)](#b5-antarmuka-responsif-aksesibilitas--uiux)
+
+---
+
+## 🏛️ BAGIAN A: 50 FITUR TELEGRAM BOT & WEB APP YANG BELUM MASUK KE MOBILE APP
+
+### A.1 Finansial, Kalkulator & Analitik Lanjutan
+1. **Split Bill WhatsApp Generator (`lib/features/split-bill.ts`)**: Fitur pembagian tagihan patungan per item (*itemized split*) yang otomatis membuat format teks tagihan WhatsApp siap kirim.
+2. **Kalkulator Penghematan Pelunasan Awal Bank Jago (`calculateEarlyRepaymentSavings`)**: Simulasi penghematan bunga hingga Rp 215.280 jika cicilan Jago dilunasi lebih awal.
+3. **Kalkulator Sinking Fund Tahunan STNK Motor Beat (`calculateSinkingFund`)**: Perhitungan alokasi tabungan harian/bulanan untuk pos tahunan (Pajak Rp 250k / 12 bln = Rp 20.833/bln).
+4. **Kalkulator Kekayaan Bersih Realtime (`calculateNetWorth`)**: Menghitung Total Saldo Kas Likuid dikurangi Sisa Pokok Hutang Bank Jago & Rifky.
+5. **Rasio Efisiensi Bensin Gojek (`calculateGojekEfficiency`)**: Perhitungan otomatis perbandingan biaya bensin Pertalite Beat terhadap omzet harian Gojek (Target ROI >5.0x).
+6. **Deteksi Kebocoran Kas Mikro / Latte Factor (<Rp 15.000)**: Peringatan dini akumulasi pembelian es teh/kopi kecil yang menggerus arus kas tanpa disadari.
+7. **Widget Streak & Apresiasi "No-Spend Day"**: Pencatat hari tanpa pengeluaran untuk meningkatkan kedisiplinan menabung Mas Firman.
+8. **Live Mutasi 5 Dompet Lengkap**: Visualisasi kartu saldo live untuk *Cash Kertas, Cash Koin, Gopay Driver, SeaBank, dan Bank Jago*.
+9. **Disambiguasi Skala Nominal & Valuta Asing**: Parsing otomatis istilah "50k", "50rb", "$10 USD" ke Rupiah secara kontekstual.
+10. **Validator Pos Anggaran 50/30/20**: Evaluasi persentase apakah kebutuhan pokok <50%, keinginan <30%, dan tabungan/investasi >20%.
+
+### A.2 Rencana Hidup, Logistik, Roadmap & Rekomendasi
+11. **Tabel CRUD Rencana Jangka Panjang (`plans` Table)**: Manajemen list rencana liburan & karir (bukan hanya hardcoded widget).
+12. **Checklist Logistik Wisata Pegunungan Dieng**: Rekomendasi otomatis pakaian hangat/polar, homestay dengan water heater, dan persiapan motor Beat.
+13. **Tabel Resmi Harga BBM Pertamina Jawa Timur**: Auto-grounding harga BBM (Pertalite Rp 10.000, Pertamax Rp 15.950, Solar Rp 6.800, Dexlite Rp 19.700).
+14. **Carousel Kartu Rekomendasi Tempat (Minimal 5 Item)**: Rekomendasi kuliner/tempat wisata terpisah dengan tombol Google Maps & Dynamic Custom Details (Spot Foto, Wifi, Jam Operasional).
+15. **Pelacak Kebiasaan Harian Berbasis Kalender WIB (`lib/features/habits-and-tasks.ts`)**: Habit streak tracker yang membandingkan hari kalender Asia/Jakarta.
+16. **Engine Simulasi Finansial "What-If"**: Prediksi tanggal pencapaian target tabungan Dieng jika narik Gojek ditambah Rp 30.000/hari.
+17. **Generator Rute Navigasi Multi-Titik Two-Wheeler**: Pembuatan link rute khusus sepeda motor di Google Maps (Malang–Kediri–Nganjuk–Wonosobo–Dieng).
+18. **Pendeteksi Tabrakan Jadwal Cerdas (`checkActivityCollision`)**: Peringatan jika ada dua agenda dalam rentang 60 menit di tanggal kalender yang sama.
+19. **Matriks Prioritas Tugas (Eisenhower Matrix)**: Pengelompokan agenda ke kuadran: *Penting-Mendesak, Penting-Tidak Mendesak, Mendesak-Tidak Penting, Eliminasi*.
+20. **Visual Tracker Rincian Biaya Dieng**: Pembagian pagu Rp 1.040.000 menjadi Tiket Rp 340.000, Uang Jajan Rp 500.000, dan Perlengkapan Rp 200.000.
+
+### A.3 Ekspor, Laporan, Dokumen & Notifikasi
+21. **Generator & Pengunduh Laporan Eksekutif PDF (`lib/features/pdf-report.ts`)**: Pembuatan dokumen PDF resmi arus kas bulanan yang aman dari unicode crash.
+22. **Ekspor Cadangan Database Format SQL (`/api/export?format=sql`)**: Pengunduhan dump SQL database Supabase untuk backup lokal.
+23. **Monitoring Sinkronisasi Google Sheets Realtime**: Indikator status stream sinkronisasi Google Sheets dan tombol *Force Sync*.
+24. **Pengirim Briefing Pagi Otomatis (Jam 07:00 WIB)**: Notifikasi push briefing agenda dan batas belanja harian.
+25. **Pengatur Jam Briefing Kustom**: Pengaturan jam briefing pagi sesuai jam bangun Mas Firman di tab profil.
+26. **Generator Laporan Email Eksekutif**: Pengiriman ringkasan keuangan mingguan langsung ke email Mas Firman via Nodemailer.
+27. **Kotak Masuk (*Notification Center History*)**: Riwayat seluruh pengingat, anomali, dan peringatan saldo yang pernah dikirimkan.
+28. **Sanitasi Formula Injection pada Ekspor CSV**: Pencegahan karakter formula Excel berbahaya (`=`, `+`, `-`, `@`) saat download CSV.
+29. **Rangkuman Evaluasi Finansial Bulanan (*Monthly Digest*)**: Analisis perbandingan bulan ke bulan (*Month-over-Month growth*).
+30. **Filter Kategori Notifikasi**: Pemfilteran notifikasi berdasarkan *Urgen/Cicilan, Cuaca, dan Info Pengeluaran*.
+
+### A.4 Super Admin, Data Inspector & Mutasi Data
+31. **Super Admin Data Inspector Interaktif (`/admin/data-inspector`)**: Penampil seluruh 14 tabel Supabase secara langsung di mobile.
+32. **Manajer Soft-Delete & Restore Database (`/api/admin/mutate`)**: Kemampuan memulihkan transaksi yang tidak sengaja terhapus.
+33. **Rekonsiliasi Saldo & Audit Database Live (`/api/admin/audit-db`)**: Endpoint verifikasi keabsahan total mutasi vs saldo buku.
+34. **Pemantau Batas Laju Request (*Rate Limiter Bar*)**: Monitoring sisa kuota 15 RPM / 1.000 request harian.
+35. **Manajemen Akun Pasangan / Partner Link**: Fitur menghubungkan atau melepaskan tautan akun Khofita.
+36. **Pelacak Masa Aktif Sesi Login (*Session TTL Manager*)**: Pemantauan durasi sesi login 3 hari di Supabase.
+37. **Pemeriksa Kesehatan Sistem (*Health & Warmup Diagnostics*)**: Endpoint pengecekan status serverless, latency, dan koneksi Supabase.
+38. **Penampil Log Runtime Webhook**: Stream log aktivitas webhook untuk debugging transaksi secara instan.
+39. **Manajemen Kategori Kustom (CRUD Kategori)**: Menambah, mengubah nama, dan menghapus kategori transaksi.
+40. **Manajer Buku Hutang & Cicilan (`debts` & `installments`)**: Form pembayaran cicilan yang otomatis mengurangi sisa tenor angsuran.
+
+### A.5 Persona AI, Slang, Format 3 Lapis & Interaksi
+41. **Kamus Slang & Boso Walikan Malang NLP**: Pemahaman kata lokal Malang (*oyi, sam, ker, nawak, mbois*) dalam instruksi chat.
+42. **Kamus Slang Nominal Keuangan**: Pemahaman kata *gocap* (50k), *ceban* (10k), *goceng* (5k) secara instan.
+43. **Standarisasi Respon 3 Lapis Eksekutif (Aturan 46)**: *Lapis 1 Jawaban Langsung -> Lapis 2 Data Kuantitatif -> Lapis 3 Saran Butler Konkret*.
+44. **Modal Klarifikasi Dompet Proaktif (Aturan 50)**: Pop-up pemilihan dompet cepat saat transaksi dicatat tanpa menyebut metode pembayaran.
+45. **Resolusi Kata Ganti Subjek Multi-Turn (Aturan 35)**: Mengikat kata ganti "dia/mereka" pada subjek yang baru saja dibahas.
+46. **Penjadwalan Ulang Agenda Bersyarat Cuaca (Aturan 34)**: Penanganan kondisi "kalo hujan gak jadi narik" tanpa menghapus agenda utama.
+47. **Sensor Otomatis Privasi PIN/Password (Aturan 45)**: Pemblokiran otomatis penyimpanan teks PIN, Password, dan OTP.
+48. **Keyboard Cepat Kategori Populer**: Tombol cepat 1-ketuk `[ ⛽ Bensin ] [ 🍔 Makan ] [ 🅿️ Parkir ] [ 🛵 Gojek ]`.
+49. **Lencana Verifikasi Anti Data Dummy**: Tanda centang hijau bahwa data yang dijawab AI 100% valid dari query database.
+50. **Pemilih Model AI & Fallback Chain**: Pilihan manual antara `gemini-3.5-flash-lite`, `gemini-3.1-flash-lite`, dan `gemini-3.6-flash`.
+
+---
+
+## 🚨 BAGIAN B: 50 POTENSI BUG, ERROR, EDGE CASES & KERENTANAN SISTEM
+
+### B.1 Jaringan, Koneksi & Penanganan Offline
+51. **Unhandled Fetch Error saat Offline**: Panggilan `fetch()` tanpa blok catch global dapat memicu unhandled rejection dan membekukan tampilan.
+52. **Vercel Serverless Cold-Start Timeout**: Latensi >10 detik saat fungsi serverless pertama kali bangun dapat membuat request timeout di WebView.
+53. **Stale Local State vs Cloud DB**: Ketidakcocokan data lokal jika pengguna melakukan mutasi di bot Telegram lalu membuka mobile app tanpa refresh.
+54. **Gagal Parsing Respons HTML 502/504**: Saat server backend down, API mengembalikan halaman HTML 502 yang memicu syntax error pada `res.json()`.
+55. **Race Condition Multi-Tap Tombol Kirim/Simpan**: Pengguna mengetuk tombol simpan berkali-kali secara cepat menyebabkan duplikasi transaksi di database.
+56. **Kegagalan Background Polling saat Layar Mati**: WebView Android menangguhkan timer JS (`setTimeout`/`setInterval`) saat layar HP mati.
+57. **Kegagalan Retry Polling pada Jaringan 3G/Edge**: Tidak adanya mekanisme *exponential backoff retry* pada koneksi internet lambat.
+58. **DNS Resolution Latency pada CDN Eksternal**: Ketergantungan CDN eksternal dapat memperlambat load awal WebView.
+59. **Websocket / Long-polling Absence**: Belum adanya real-time listener Supabase untuk sinkronisasi instan tanpa reload manual.
+60. **CORS Preflight Failure pada HTTP Custom Header**: Header otentikasi kustom dapat memicu blokir CORS jika endpoint Next.js belum mengizinkannya.
+
+### B.2 Integritas Data, Validasi Form & Keamanan
+61. **Input Nominal Negatif / Desimal Liar**: Input `-50000` atau `0.000001` dapat merusak kalkulasi surplus dan kesehatan kas.
+62. **Potensi SQL / PostgREST Injection pada Kolom Deskripsi**: Karakter khusus PostgREST (`.eq`, `.or`, `&`) pada input teks yang belum disanitasi.
+63. **Cross-Site Scripting (XSS) pada Chat Bubble**: Karakter `<script>` atau `<img onerror=...>` pada bubble chat yang dievaluasi langsung via innerHTML.
+64. **Input Tanggal Kosong / Format ISO Invalid**: Input tanggal yang tidak valid menghasilkan nilai `NaN` atau `Invalid Date` di database.
+65. **Input Nominal Teks Huruf ("lima puluh ribu")**: Mengisi kolom nominal dengan teks menyebabkan nilai tersimpan sebagai `NaN` atau `0`.
+66. **Transaksi Sampah Rp 0 Tanpa Keterangan**: Gambar non-struk yang lolos filter OCR mengotori database dengan transaksi Rp 0.
+67. **Overflow Karakter Emoji 4-Byte (UTF-8 MB4)**: Karakter emoji langka dapat memotong teks pada kolom database tertentu.
+68. **String Truncation pada Deskripsi Panjang**: Deskripsi melebihi 255 karakter dapat ditolak oleh constraint database.
+69. **Collision Short ID pada Pencarian Data**: Short ID 8-karakter berpotensi ganda jika volume data transaksi bertambah ribuan.
+70. **Missing User ID UUID FK Violation**: Kegagalan membaca `USER_ID` dari state lokal menyebabkan request ditolak oleh Supabase constraint.
+
+### B.3 Kinerja Memori, Siklus Hidup WebView & DOM
+71. **Memory Leak Instansiasi Chart.js Berulang**: Membuka chart berkali-kali tanpa memanggil `chartInstance.destroy()` menyebabkan memory leak canvas di Android.
+72. **DOM Bloat pada Chat Messages Container**: Ribuan elemen bubble chat yang menumpuk tanpa virtual scrolling memperlambat performa rendering ponsel.
+73. **Memory Spike Base64 Gambar Struk 4K/12MP**: Membaca foto struk resolusi tinggi langsung ke base64 DataURL dapat memakan memori RAM >50MB di WebView.
+74. **FileReader Crash saat Memilih File Non-Gambar**: Pengguna memilih file video atau dokumen di file chooser struk menyebabkan reader gagal decode.
+75. **Keyboard Android Soft-Input Layout Glitch**: Saat keyboard virtual Android muncul, input text tertutup atau navbar terdorong ke tengah layar.
+76. **Android Hardware Back-Button Trap**: Menekan tombol kembali bawaan Android langsung menutup aplikasi alih-alih menutup modal pop-up yang aktif.
+77. **GPS Geolocation Infinite Hang saat GPS HP Mati**: Pemanggilan `getCurrentPosition` tanpa parameter timeout membekukan indikator cuaca.
+78. **Nominatim Reverse Geocoding Rate Limit 429**: Pengambilan nama kota cuaca berulang dapat diblokir oleh rate limiter OpenStreetMap.
+79. **Voice STT Unhandled Error saat Izin Mikrofon Ditolak**: API SpeechRecognition melempar error tak tertangani jika pengguna menolak izin mikrofon.
+80. **WebView Killed by OS saat Backgrounding**: Android mematikan proses WebView saat RAM menipis, menghilangkan state chat sementara.
+
+### B.4 Logika Bisnis, Penalaran AI & Algoritma
+81. **Division by Zero pada Kalkulasi Rasio**: Perhitungan rasio tabungan membagi nilai 0 jika total pemasukan bulan berjalan belum ada data.
+82. **Day 1 Month Spike pada Proyeksi Kas**: Pengeluaran besar di tanggal 1 bulan membuat estimasi akhir bulan meledak secara tidak realistis.
+83. **Pembalikan Logika Negasi ("Selain Poin Ini...")**: AI salah menafsirkan kalimat pengecualian dan mengeksekusi aksi yang justru dilarang.
+84. **False Alarm Bentrok Jadwal Beda Bulan**: Algoritma collision detector hanya mengecek selisih menit jam tanpa memvalidasi tanggal kalender.
+85. **Pencampuran Saldo Uang Kertas vs Uang Koin**: AI memotong dompet Cash Koin untuk pembayaran besar yang seharusnya menggunakan Cash Kertas.
+86. **Spam Pertanyaan Ulang (Duplicate Bubble Dispatch)**: Pengiriman gelembung pesan duplikat akibat pengulangan follow-up question.
+87. **Overfitting Jenis Bahan Bakar**: AI menjawab harga Pertalite padahal pengguna secara eksplisit menanyakan harga Pertamax Turbo.
+88. **Hilangnya Subjek Multi-Turn pada Edit Pesan**: Mengedit pesan di tengah history chat dapat membuat AI kehilangan konteks referensi kalimat sebelumnya.
+89. **Pemotongan Data (*Data Truncation*) pada Auto-Summarizer**: Rangkuman otomatis kehilangan ringkasan transaksi lama jika query database dibatasi terlalu sedikit.
+90. **Rounding Error Rp 1 pada Fitur Split Bill**: Pembagian nominal ganjil (misal Rp 100.000 dibagi 3 orang) menyisakan selisih pecahan desimal.
+
+### B.5 Antarmuka Responsif, Aksesibilitas & UI/UX
+91. **Text Truncation pada Layar Sempit (<360px)**: Teks nominal uang terpotong pada smartphone beresolusi layar kecil.
+92. **Pixelation Ikon pada Perangkat Low-DPI**: Ikon SVG/Canvas blur pada layar Android dengan pixel density rendah.
+93. **Backdrop Click Listener Missing pada Modal**: Modal dialog tidak bisa ditutup dengan mengetuk area hitam di luar kotak modal.
+94. **Ketiadaan Skeleton / Loading State saat Fetch Data**: Layar kosong tanpa indikator loading saat database sedang dimuat.
+95. **Kontras Warna Teks Redup pada Dark Mode**: Teks abu-abu sekunder (`#64748B`) sulit dibaca di bawah sinar matahari langsung.
+96. **Inkonsistensi Format Tanggal Antar Tab**: Penggunaan campuran format `YYYY-MM-DD` dan `DD/MM/YYYY` yang membingungkan pengguna.
+97. **Ketiadaan Banner Notifikasi Offline**: Pengguna tidak mengetahui apakah aplikasi sedang terputus dari koneksi internet.
+98. **Unbounded Expansion pada Chat Input Textarea**: Input bar membesar tak terkontrol jika pengguna menyalin teks ribuan baris.
+99. **Ukuran Tombol Interaktif <48dp**: Tombol kecil yang menyulitkan navigasi jempol sesuai standar Material Design.
+100. **Z-Index Collision Antara Modal (`z-100`) dan Tooltip (`z-50`)**: Komponen tooltip atau floating button menembus di atas layer modal dialog.
+
+---
+*Master Audit Komprehensif ini dikunci sebagai Single Source of Truth arsitektur ekosistem Raphael Mobile. Terakhir divalidasi: 27 Agustus 2026.*
