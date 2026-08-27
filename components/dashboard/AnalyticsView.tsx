@@ -20,6 +20,7 @@ import { InsightItem, Transaction, Activity } from './types';
 import { Subscription, Debt, Installment } from '@/lib/features/smart-alerts';
 import BudgetProgressWidget from './BudgetProgressWidget';
 import InstallmentsWidget from './InstallmentsWidget';
+import ActivityGanttChart from './ActivityGanttChart';
 
 interface AnalyticsViewProps {
   analytics: InsightItem[];
@@ -257,6 +258,11 @@ export default function AnalyticsView({
 
       {/* Target Budget Progress Bar Widget */}
       
+      {/* --- GANTT CHART MULTI-DAY ACTIVITIES TIMELINE --- */}
+      <div className="mb-6">
+        <ActivityGanttChart activities={activities} />
+      </div>
+
       {/* --- SMART REALTIME DAILY ALLOWANCE & PRODUCTIVITY WIDGETS --- */}
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4 mb-6">
         {/* Widget 1: Batas Belanja Aman Harian (B_harian) & Daily Burn Rate */}

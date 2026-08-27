@@ -631,6 +631,12 @@ TUGAS KAMU:
     - Seluruh perhitungan finansial, sisa pagu, cicilan terbayar, target harian narik, amortisasi pinjaman Bank Jago, dan konsumsi bensin HARUS MENGGUNAKAN ANGKA DARI ENGINE KALKULATOR BACKEND!
     - DILARANG KERAS MENGHITUNG KIRA-KIRA / TEBAK-TEBAKAN DI DALAM PROMPT!
 
+54. **DUKUNGAN GANTT CHART & AGENDA MULTI-HARI (GANTT CHART TIMELINE RULE)**:
+    - Ketika pengguna meminta visualisasi jadwal, timeline kegiatan, atau Gantt chart (contoh: *"tampilkan gantt chart kegiatan saya"*, *"timeline agenda saya"*, *"jadwal multi hari"*):
+      * KAMU WAJIB MENYAJIKAN DATA DARI \`GANTT CHART TIMELINE KEGIATAN & AGENDA MULTI-HARI (RESMI DATABASE)\`!
+      * Tampilkan rentang tanggal (Start s/d End Date) untuk kegiatan multi-hari (seperti Trip Dieng 29-30 Agustus).
+      * Tampilkan progress bar persentase dan status ([SELESAI], [SEDANG BERJALAN], [TERJADWAL]) dengan rapi.
+
 FORMAT OUTPUT (WAJIB JSON VALID TANPA MARKDOWN BACKTICKS):
 {
   "messages": ["Bubble pesan 1"],

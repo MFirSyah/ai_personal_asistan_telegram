@@ -1,3 +1,4 @@
+import { generateTelegramGanttChart } from '@/lib/analytics/gantt';
 import { fetchLiveWeather, OFFICIAL_FACTS } from '@/lib/services/live-grounding';
 
 import {
@@ -208,6 +209,19 @@ export async function processChatRespondDirect(
             user_id: userId,
             key: 'REKAP RESMI PROGRES CICILAN TIKET & TRIP DIENG (DATABASE SUPABASE)',
             value: `${diengProgress.summaryString}\n\n${dailyTarget.summaryString}`,
+            updated_at: new Date().toISOString(),
+          });
+        }
+
+        // Proactive Grounding: Gantt Chart for Activities and Multi-day Events
+        const isGanttQuery = /(gantt|timeline|jadwal kegiatan|rentang kegiatan|jadwal multi hari|peta waktu)/i.test(userMessage);
+        if (isGanttQuery) {
+          const ganttChartString = generateTelegramGanttChart(activities, plans);
+          runtimePrefs.push({
+            id: 'gantt-chart-timeline',
+            user_id: userId,
+            key: 'GANTT CHART TIMELINE KEGIATAN & AGENDA MULTI-HARI (RESMI DATABASE)',
+            value: ganttChartString,
             updated_at: new Date().toISOString(),
           });
         }
