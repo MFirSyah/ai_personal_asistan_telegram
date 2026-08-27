@@ -9,7 +9,7 @@ const HTML_SOURCE = `<!DOCTYPE html>
   <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover"/>
   <title>Raphael</title>
   <script src="https://cdn.tailwindcss.com?plugins=forms"></script>
-  <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+  <script src="chart.min.js"></script>
   <link href="https://fonts.googleapis.com/css2?family=Montserrat:wght@500;600;700;800;900&family=Inter:wght@400;500;600;700&family=JetBrains+Mono:wght@500;600;700&display=swap" rel="stylesheet"/>
   <link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&display=swap" rel="stylesheet"/>
   <script>
@@ -70,7 +70,7 @@ const HTML_SOURCE = `<!DOCTYPE html>
       padding-bottom: 70px;
     }
     #tab-chat {
-      padding-bottom: 150px !important;
+      padding-bottom: 155px !important;
     }
     .modal-overlay {
       display: none;
@@ -347,7 +347,7 @@ const HTML_SOURCE = `<!DOCTYPE html>
           </div>
           <div class="bg-surface rounded-xl rounded-tl-sm p-3 max-w-[92%] border border-border shadow-lg space-y-2 text-text-primary text-[11px] leading-relaxed">
             <p>
-              Selamat datang, <b>Mas Firman</b>. Asisten <b>Raphael</b> siap mendampingi pencatatan keuangan, progres sinking fund, analisis narik Gojek, pembuatan chart visual, dan peta navigasi agenda Anda.
+              Selamat datang, <b>Mas Firman</b>. Asisten <b>Raphael</b> siap mendampingi pencatatan keuangan, progres sinking fund, analisis narik Gojek, pembuatan chart visual beragam, dan peta navigasi agenda Anda.
             </p>
 
             <!-- Dieng Progress Card Widget -->
@@ -513,17 +513,20 @@ const HTML_SOURCE = `<!DOCTYPE html>
     
     <!-- Quick Action Pills -->
     <div class="flex gap-1.5 overflow-x-auto hide-scrollbar py-0.5">
+      <button onclick="sendQuickAction('buatkan line chart tren arus kas harian dan burn rate')" class="shrink-0 bg-surface-elevated hover:bg-surface-high border border-border px-2.5 py-1 rounded-full text-[10px] font-mono flex items-center gap-1 text-tosca active:scale-95">
+        <span class="material-symbols-outlined text-[12px]">show_chart</span> Line Chart Tren Kas
+      </button>
+      <button onclick="sendQuickAction('buatkan donut chart alokasi pengeluaran per kategori')" class="shrink-0 bg-surface-elevated hover:bg-surface-high border border-border px-2.5 py-1 rounded-full text-[10px] font-mono flex items-center gap-1 text-amber active:scale-95">
+        <span class="material-symbols-outlined text-[12px]">pie_chart</span> Donut Chart Kategori
+      </button>
       <button onclick="sendQuickAction('buatkan chart analisis perbandingan pemasukan vs pengeluaran')" class="shrink-0 bg-surface-elevated hover:bg-surface-high border border-border px-2.5 py-1 rounded-full text-[10px] font-mono flex items-center gap-1 text-lime active:scale-95">
-        <span class="material-symbols-outlined text-[12px]">bar_chart</span> Buat Chart Keuangan
-      </button>
-      <button onclick="sendQuickAction('tampilkan rute dan peta lokasi trip ke Dieng')" class="shrink-0 bg-surface-elevated hover:bg-surface-high border border-border px-2.5 py-1 rounded-full text-[10px] font-mono flex items-center gap-1 text-tosca active:scale-95">
-        <span class="material-symbols-outlined text-[12px]">map</span> Peta & Rute Dieng
-      </button>
-      <button onclick="sendQuickAction('rincian plan trip dieng dan sisa cicilan tiketku')" class="shrink-0 bg-surface-elevated hover:bg-surface-high border border-border px-2.5 py-1 rounded-full text-[10px] font-mono flex items-center gap-1 text-amber active:scale-95">
-        <span class="material-symbols-outlined text-[12px]">landscape</span> Plan Dieng
+        <span class="material-symbols-outlined text-[12px]">bar_chart</span> Bar Chart Keuangan
       </button>
       <button onclick="sendQuickAction('tampilkan visual gantt chart')" class="shrink-0 bg-surface-elevated hover:bg-surface-high border border-border px-2.5 py-1 rounded-full text-[10px] font-mono flex items-center gap-1 text-primary active:scale-95">
         <span class="material-symbols-outlined text-[12px]">calendar_month</span> Gantt Chart
+      </button>
+      <button onclick="sendQuickAction('tampilkan rute dan peta lokasi trip ke Dieng')" class="shrink-0 bg-surface-elevated hover:bg-surface-high border border-border px-2.5 py-1 rounded-full text-[10px] font-mono flex items-center gap-1 text-emerald active:scale-95">
+        <span class="material-symbols-outlined text-[12px]">map</span> Peta & Rute Dieng
       </button>
     </div>
 
@@ -728,7 +731,7 @@ const HTML_SOURCE = `<!DOCTYPE html>
     </div>
   </div>
 
-  <!-- ⚡ PURE SCRIPT -->
+  <!-- ⚡ SCRIPT -->
   <script src="app.js"></script>
 </body>
 </html>
