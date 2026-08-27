@@ -338,7 +338,7 @@ const HTML_SOURCE = `<!DOCTYPE html>
           <div class="p-2 rounded-lg bg-surface-elevated space-y-1">
             <div class="flex justify-between items-center">
               <span class="font-bold text-text-primary flex items-center gap-1">
-                <span class="material-symbols-outlined text-tosca text-[13px]">landscape</span> Trip ke Dieng (22 - 30 Ags)
+                <span class="material-symbols-outlined text-tosca text-[13px]">landscape</span> Trip ke Dieng (29 Ags 17:00 - 30 Ags 23:00)
               </span>
               <span class="text-tosca font-bold text-[9px]">50% Prep (Sisa Rp 740k)</span>
             </div>
@@ -346,7 +346,7 @@ const HTML_SOURCE = `<!DOCTYPE html>
               <div class="h-full bg-gradient-to-r from-tosca to-primary rounded-full" style="width: 50%"></div>
             </div>
             <div class="flex justify-between text-[8px] text-text-secondary">
-              <span>🗓️ 29-30 Agustus (2 Hari Liburan)</span>
+              <span>🗓️ 29 Ags (17:00 WIB) - 30 Ags (23:00 WIB)</span>
               <span>Pagu: Rp 1.040.000</span>
             </div>
           </div>

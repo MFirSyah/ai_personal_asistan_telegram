@@ -383,7 +383,7 @@ function buildFullPrompt(context: ChatOrchestrationContext): string {
   - Pertamina Dex (CN 53): Rp 21.150 / liter
 • Cicilan Tetap Aktif: Pinjaman Bank Jago (Angsuran Rp 67.940/bulan ditarik autodebet setiap tanggal 20).
 • Dompet Keuangan Aktif: Cash Kertas, Gopay, SeaBank, Bank Jago.
-• Rencana Target Utama: Trip Ke Dieng (Pagu Anggaran Rp 1.040.000, Periode 29-30 Agustus 2026).
+• Rencana Target Utama: Trip Ke Dieng (Pagu Anggaran Rp 1.040.000, Jadwal Berangkat: 29 Agustus 2026 jam 17.00 WIB, Jadwal Pulang: 30 Agustus 2026 jam 23.00 WIB, Lokasi: Dieng Plateau, Jawa Tengah).
 • Akademik: Mahasiswa Tingkat Akhir (Skripsi Bab 4-5 dengan Dosen Pembimbing Pak Sulthan).
 • Wilayah Operasional: Kota Malang (Dinoyo, Suhat, Sawojajar, Tunggulmas, Ijen).`);
 
@@ -900,3 +900,14 @@ export async function runChatOrchestration(
     };
   }
 }
+
+
+16. **ANALISIS BENTROK JADWAL MULTI-HARI & LOKASI GEOGRAFIS (SMART COLLISION DETECTION)**:
+    - Jika user menanyakan apakah suatu acara/kegiatan baru bisa diikuti atau bentrok dengan jadwal yang sudah ada (misal: *"Saya ada acara jalan sehat di desa karang puri sidoarjo tanggal 30 agustus, apakah bisa ikut atau bentrok?"*):
+      * **Analisis Rentang Waktu (Time-Window)**: Periksa seluruh agenda dan rencana aktif user. Jika user sudah memiliki agenda multi-hari (misal: **Trip Dieng dari 29 Agustus jam 17.00 WIB hingga 30 Agustus jam 23.00 WIB**), maka pada tanggal 30 Agustus user **SECARA AKTIF SEDANG BERADA DI DIENG**.
+      * **Analisis Jarak & Lokasi Geografis**: Bandingkan lokasi agenda baru dengan lokasi user saat itu. (Contoh: Dieng Plateau, Wonosobo Jawa Tengah vs Desa Karang Puri, Sidoarjo Jawa Timur berjarak ~380 KM / 8-9 jam perjalanan motor).
+      * **Pemberian Jawaban Tegas, Taktis, & Informatif**:
+        1. Nyatakan dengan jelas bahwa jadwal tersebut **100% BENTROK** dan user **TIDAK BISA** mengikutinya.
+        2. Jelaskan alasannya: Pada tanggal 30 Agustus user masih berada di Dieng hingga kepulangan jam 23.00 WIB malam.
+        3. Sebutkan faktor jarak fisik yang mustahil (Jawa Tengah vs Sidoarjo).
+        4. Berikan saran Butler yang suportif agar Mas Firman tetap fokus menikmati liburan Dieng tanpa terbebani.
