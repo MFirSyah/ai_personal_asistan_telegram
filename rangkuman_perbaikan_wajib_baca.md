@@ -371,6 +371,22 @@ Katalog **300 Poin Master Audit** ini menjadi dokumen panduan mutlak (*Ultimate 
 *Terakhir divalidasi & disinkronisasi ke seluruh repositori: 27 Agustus 2026.*
 
 
+
+
+### 2.15 Rangkuman Koreksi & Preferensi Chat AI Otomatis (Anti-Redundansi & Dual Form Synthesis)
+- **Kebutuhan Pengguna:** Tombol "Generate Rangkuman Sekarang" pada Setting AI berfungsi sebagai mesin *Meta-Learning / Self-Learning Preference Extractor*. Sistem harus membaca seluruh percakapan, instruksi, dan koreksi dari Mas Firman di chat (panggilan nama, gaya menjawab to-the-point, fakta kendaraan Beat 50km/L, cicilan Bank Jago tgl 20, target Dieng Rp 1.040.000, dll.), lalu merangkumnya menjadi 2 format instruksi AI yang bersih, saling melengkapi, dan **bebas duplikasi (anti-redundansi)**.
+- **Arsitektur Solusi:**
+  1. **Dual-Format Synthesis Engine (LLM Gemini Prompt):**
+     - **Format 1 (Deskripsi Naratif / `MANUAL_PREFERENCE_DESKRIPSI`)**: Merangkum identitas Mas Firman, peran butler Raphael, filosofi komunikasi, dan konteks umum secara elegan tanpa menumpuk angka berulang.
+     - **Format 2 (Poin-Poin Baku / `MANUAL_PREFERENCE_BULLET_POINTS`)**: Merangkum aturan operasional tegas per baris berawalan `-` yang terstruktur, ringkas, dan actionable.
+     - **Deduplikasi Cerdas**: Jika ada poin atau instruksi yang maknanya sama di riwayat chat, sistem otomatis menggabungkannya (*merge & consolidate*) agar tidak dobel.
+  2. **Alur Eksekusi:**
+     - Pengguna menekan tombol `[⚡ Generate Rangkuman Sekarang]` di Setting AI.
+     - Endpoint `/api/mobile/crud` (`generate_preference_instructions`) memproses riwayat chat via Gemini LLM.
+     - Hasil otomatis disimpan ke tabel `user_preferences` di Supabase dan mengisi form input di modal Setting AI.
+     - Chat lama dibersihkan dan digantikan dengan satu kartu konfirmasi eksekutif: `🧠 PREFERENSI & KOREKSI AI DISINTESIS DARI CHAT`.
+
+
 ### 2.14 Implementasi Master Dynamic Entities Hub (8 Aspek Dinamis & 300 Audit Hardening)
 - **Kebutuhan Pengguna:** Membuat seluruh entitas sistem (dompet & rekening, target menabung sinking fund, daftar tagihan cicilan, kategori belanja, tombol pintasan chat, fakta personal AI, dan batasan guardrails) menjadi 100% dinamis tanpa ada batasan kaku (*Zero-Code Dynamic Extensibility*). Pengguna bebas menambah, mengubah, dan menghapus entitas kapan saja langsung lewat antarmuka aplikasi.
 - **Arsitektur Solusi:**
