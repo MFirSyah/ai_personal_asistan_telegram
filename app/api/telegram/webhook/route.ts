@@ -56,8 +56,8 @@ export async function POST(req: NextRequest) {
     const data = cb.data;
 
     const user = await getUserByTelegramId(fromId);
-    if (!user) {
-      await sendTelegramMessage(fromId, '🚫 Akses ditolak. Akun Telegram kamu belum terhubung dengan akun Supabase resmi.');
+    if (!user || (fromId !== 1084842050 && String(user.id) !== 'fc2758d3-78bb-4e22-b9f0-b3b16568b671')) {
+      await sendTelegramMessage(fromId, '🔒 **AKSES DITOLAK (BOT PRIVAT)**\n\nBot Asisten ini bersifat **eksklusif dan privat untuk Mas Firman**. Akses untuk pengguna lain dinonaktifkan.');
       return NextResponse.json({ ok: true });
     }
 
@@ -161,18 +161,13 @@ export async function POST(req: NextRequest) {
   const text = (message.text || '').trim();
   const photo = message.photo;
 
-  // 1. Identify User — STRICT SECURITY CHECK
+  // 1. Identify User — STRICT SECURITY CHECK & 100% PRIVATE TO MAS FIRMAN
   const user = await getUserByTelegramId(telegramId);
-  if (!user) {
-    const appBaseUrl = process.env.NEXT_PUBLIC_APP_URL || 'https://ai-personal-asistan-telegram.vercel.app';
-    const loginUrl = `${appBaseUrl}/dashboard/login?telegram_id=${telegramId}`;
-
+  const isMasFirman = telegramId === 1084842050 || (user && String(user.id) === 'fc2758d3-78bb-4e22-b9f0-b3b16568b671');
+  if (!user || !isMasFirman) {
     await sendTelegramMessage(
       chatId,
-      `🔒 **AKSES DITOLAK (AKUN BELUM TERHUBUNG)**\n\nHalo ${message.from.first_name || 'Teman'}!\nBot Asisten ini bersifat **privat**. Akun Telegram kamu (${telegramId}) belum terdaftar di sistem.\n\nJika kamu adalah pengguna resmi, silakan login dengan Email & Password Supabase kamu melalui tombol di bawah untuk menghubungkan akun Telegram ini:`,
-      {
-        inline_keyboard: [[{ text: '🔑 Login & Hubungkan Akun', url: loginUrl }]],
-      }
+      `🔒 **AKSES DITOLAK (BOT PRIVAT MAS FIRMAN)**\n\nHalo ${message.from.first_name || 'Teman'}!\nMohon maaf, Bot Asisten Keuangan & Aktivitas ini bersifat **100% Privat dan Eksklusif untuk Mas Firman**.\n\nAkses bagi pengguna lain telah dinonaktifkan secara permanen.`
     );
     return NextResponse.json({ ok: true });
   }

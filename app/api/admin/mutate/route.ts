@@ -115,6 +115,33 @@ export async function POST(req: NextRequest) {
       return NextResponse.json({ ok: true });
     }
 
+        if (action === 'purge_user_completely') {
+      const { user_id, telegram_id } = payload;
+      if (!user_id && !telegram_id) {
+        return NextResponse.json({ error: 'user_id or telegram_id required' }, { status: 400 });
+      }
+
+      await Promise.allSettled([
+        supabaseAdmin.from('transactions').delete().eq('user_id', user_id),
+        supabaseAdmin.from('activities').delete().eq('user_id', user_id),
+        supabaseAdmin.from('plans').delete().eq('user_id', user_id),
+        supabaseAdmin.from('debts').delete().eq('user_id', user_id),
+        supabaseAdmin.from('user_preferences').delete().or(`user_id.eq.${user_id},key.eq.pengingatplankpasangan`),
+        supabaseAdmin.from('chat_history').delete().eq('user_id', user_id),
+        supabaseAdmin.from('sessions').delete().eq('user_id', user_id),
+        supabaseAdmin.from('categories').delete().eq('user_id', user_id),
+      ]);
+
+      if (user_id) {
+        await supabaseAdmin.from('users').delete().eq('id', user_id);
+      }
+      if (telegram_id) {
+        await supabaseAdmin.from('users').delete().eq('telegram_id', telegram_id);
+      }
+
+      return NextResponse.json({ ok: true, message: `User ${user_id} and all related data purged permanently.` });
+    }
+
     return NextResponse.json({ error: 'Unknown action' }, { status: 400 });
   } catch (err: any) {
     return NextResponse.json({ error: err.message }, { status: 500 });
