@@ -211,6 +211,16 @@ Berikut adalah rekaman lengkap kegagalan teknis yang pernah terjadi beserta perb
      - **Tab Chat (Tab 3):** `padding-bottom: 152px !important;` (Tinggi Navbar 56px + Input Dock 84px + Spasi 12px = 152px).
   3. **Hasil:** Konten berhenti dengan rapi dan dekat di atas navbar dengan jarak harmonis 12px, tanpa tertimpa dan tanpa ruang kosong berlebih.
 
+
+
+### 2.12 Elevasi Floating Input Dock Chat 12px di Atas Bottom Navbar
+- **Gejala:** Bilah tempat mengetik chat (`#chat-input-wrapper`) sebelumnya menempel persis pada garis tepi atas bottom navbar (`bottom-14` / 56px) tanpa adanya celah udara, sehingga tombol-tombol terkesan berdesakan dengan navigasi.
+- **Akar Masalah:** Posisi `fixed bottom-14` (56px) berhimpitan langsung dengan tinggi navbar 56px.
+- **Solusi Definitif:**
+  1. Menaikkan posisi input dock menjadi `fixed bottom-[68px]` sehingga tercipta celah mengambang (*floating clearance*) 12px yang bersih dan elegan di atas navbar.
+  2. Menyesuaikan scroll padding Tab Chat menjadi `padding-bottom: 164px !important;` agar bubble chat terakhir tidak tertutup oleh tombol input saat di-scroll maksimal.
+  3. **Hasil:** Tampilan bar input chat terlihat lebih modern, melayang secara estetis (*floating glass bar*), dan nyaman dijangkau oleh jempol tanpa risiko salah ketuk tab navigasi.
+
 ## 🛠️ BAB III: PANDUAN TEKNIS FITUR UTAMA & ENGINE GRAFIK
 
 ### 3.1 Ringkasan 5 Tab Aplikasi Raphael
