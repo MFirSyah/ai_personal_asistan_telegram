@@ -377,6 +377,23 @@ Katalog **300 Poin Master Audit** ini menjadi dokumen panduan mutlak (*Ultimate 
 
 
 
+
+
+### 2.18 Eliminasi Seleksi Teks Android pada Long-Press Navbar & Redesain Ringkas Profil SOS
+- **Masalah Pengguna:**
+  1. Ketika tombol robot di navbar tengah diklik tahan, muncul popup/tooltip bawaan sistem Android (Salin / Tempel / Magnifier), yang memblokir fungsi tahan 3 detik untuk mengaktifkan SOS.
+  2. Form pengaturan SOS di Tab Profil memakan tempat terlalu panjang sehingga tampilan profil menjadi penuh dan kurang rapi.
+- **Solusi Rekayasa:**
+  1. **Anti-Context Menu & Anti-Text Selection:**
+     - Menetapkan `-webkit-touch-callout: none !important; -webkit-user-select: none !important; user-select: none !important;` pada body dan seluruh elemen navbar.
+     - Menambahkan handler `oncontextmenu="return false;"` dan `e.preventDefault()` pada tombol robot `#nav-btn-chat`.
+     - Menghapus atribut `title="..."` pada elemen interaktif yang memicu tooltip native Android.
+     - Menambahkan animasi visual `.coral-pulse` (lingkaran merah berdenyut) saat tombol robot sedang ditahan selama 3 detik, sebelum memicu haptic vibration (getaran) dan membuka modal darurat.
+  2. **Redesain Ringkas Profil SOS (Tab 5):**
+     - Mengubah form panjang menjadi **Kartu Ringkasan SOS (Emergency ICE Summary Card)** yang elegan (menampilkan Gol. Darah, No BPJS, Kontak Darurat).
+     - Menyediakan tombol **`[✏️ Atur Data]`** yang membuka modal khusus `#modal-edit-ice` untuk melihat, mengubah, dan menyimpan seluruh data profil medis darurat tanpa mengorbankan kerapian Tab Profil.
+
+
 ### 2.17 Implementasi Manajemen Multi-Motor Dinamis & Emergency SOS Long-Press 3 Detik
 - **Kebutuhan Pengguna:**
   1. Pengguna memiliki beberapa unit motor yang digunakan bergantian untuk narik Gojek maupun aktivitas harian, sehingga memerlukan kemampuan menambah, mengubah, dan mengganti motor aktif agar kalkulasi konsumsi BBM (KM/L), ROI, dan odometer servis berkala selalu presisi.
