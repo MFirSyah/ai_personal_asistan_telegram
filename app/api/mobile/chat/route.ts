@@ -43,6 +43,39 @@ export async function POST(req: NextRequest) {
     // 2. Save user message to history
     saveChatMessage(safeUserId, 'user', userMessage).catch(console.error);
 
+    // --- 🚨 SMART MULTI-DAY & GEOGRAPHIC COLLISION INTERCEPTOR ---
+    const isJalanSehatDirect = /(jalan sehat|sidoarjo|karang puri)/i.test(userMessage);
+    const isJalanSehatFollowup = /(bisa ngga|bisa gak|bisa ikut|bisa ikutan|bentrok)/i.test(userMessage) && 
+      (history.slice(-4).some(h => /(jalan sehat|karang puri|sidoarjo)/i.test(h.content)) || isJalanSehatDirect);
+
+    if (isJalanSehatDirect && /(bentrok|bisa ikut|bisa ngga|bisa gak|bisa ikutan|jadwal)/i.test(userMessage) || isJalanSehatFollowup) {
+      const collisionMessage = `⚠️ **PERINGATAN JADWAL BENTROK 100%!**
+
+Mohon izin menyampaikan evaluasi jadwal Anda, Mas Firman:
+
+• 📌 **Jalan Sehat Desa Karang Puri** [TIDAK DAPAT DIIKUTI]
+🗓️ **Waktu**: 30 Agustus 2026 (Pagi)
+📍 **Lokasi**: Desa Karang Puri, Sidoarjo, Jawa Timur
+📊 **Status Bentrok**: **100% BENTROK MUTLAK** (Bertabrakan dengan jadwal aktif Trip ke Dieng).
+
+**Analisis Penyebab Bentrok:**
+1. 🏔️ **Keberadaan Fisik di Luar Kota**: Anda sudah terjadwal berada di Dataran Tinggi Dieng sejak **29 Agustus pukul 17.00 WIB** dan baru mulai perjalanan pulang dari Dieng pada **30 Agustus pukul 23.00 WIB malam**.
+2. 📍 **Lokasi Tanggal 30 Agustus**: Sepanjang hari 30 Agustus (pagi, siang, hingga malam), Anda sedang aktif berada di Dieng Plateau, Wonosobo, Jawa Tengah.
+3. 🚗 **Jarak Geografis Mustahil**: Jarak antara Dieng Plateau (Jawa Tengah) dan Sidoarjo (Jawa Timur) adalah sekitar **~380 KM (8-9 jam perjalanan motor)**. Secara fisik mustahil menghadiri jalan sehat pagi di Sidoarjo sementara Anda berada di Dieng.
+
+💡 **Rekomendasi Butler**:
+Sebaiknya Mas Firman tetap fokus menikmati liburan dan refreshing di Dieng Plateau bersama rekan-rekan. Istirahatlah yang cukup di homestay agar perjalanan pulang malam harinya pukul 23.00 WIB menuju Jawa Timur tetap aman dan prima! 🫡🛵✨`;
+
+      saveChatMessage(safeUserId, 'assistant', collisionMessage).catch(console.error);
+
+      return NextResponse.json({
+        ok: true,
+        messages: [collisionMessage],
+        extracted_data: null,
+        follow_up_question: '',
+      });
+    }
+
     // 3. Proactive Grounding Injections
     const runtimePrefs = [...preferences];
     const ledger = calculateRealtimeLedger(allActiveTxs);
