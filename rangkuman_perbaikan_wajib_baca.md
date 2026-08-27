@@ -391,6 +391,22 @@ Katalog **300 Poin Master Audit** ini menjadi dokumen panduan mutlak (*Ultimate 
 
 
 
+
+
+### 2.25 Audit Isolasi Data & Pembersihan Total Tagihan Dummy / Sewa Kos
+- **Temuan Pengguna:**
+  - *"wait, setelah saya pahami, ada beberapa data khofita dan data saya kamu merge jadi satu yah? contoh nya ini ada bayar kos, padahal saya tidak sedang nge kos"*
+- **Hasil Investigasi Mendalam:**
+  - Database transaksi riil (`transactions`) dan agenda (`activities`) Mas Firman di Supabase sebenarnya murni tanpa ada catatan sewa kos maupun data Khofita.
+  - Item "Sewa Kos Bulanan Malang (Rp 500.000)" muncul murni dari **data template/mock bawaan prototype awal** pada array `DYNAMIC_BILLS` (`bill-kos`) di `route.ts` dan `app.js`.
+- **Tindakan Pembersihan & Isolasi Total:**
+  1. Menghapus item `bill-kos` ("Sewa Kos Bulanan Malang") secara permanen dari Supabase `user_preferences`, `route.ts`, dan `app.js`.
+  2. Memastikan hanya ada 2 tagihan/kewajiban riil milik Mas Firman:
+     - **Cicilan Bank Jago**: Rp 67.940 (Jatuh tempo tgl 20)
+     - **Hutang ke Rifky**: Rp 150.000 (Jatuh tempo tgl 5)
+  3. Memastikan isolasi data 100% bersih dan tidak ada data placeholder mahasiswa/pasangan yang tercampur ke akun Mas Firman.
+
+
 ### 2.24 Integrasi Modul Pengaturan Identitas, Jadwal Morning Briefing, & Status Sesi ke Tab Profil Mobile
 - **Pertanyaan Pengguna:**
   - *"Pada profil juga, di web app ada setting nama saya, jadwal morning briefing, Status Sesi & Integrasi, tapi di mobile app tidak ada"*
