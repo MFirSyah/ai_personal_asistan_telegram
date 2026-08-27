@@ -7,7 +7,7 @@ const HTML_SOURCE = `<!DOCTYPE html>
 <head>
   <meta charset="utf-8"/>
   <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover"/>
-  <title>DATA_CORE_V1 - Mobile AI Assistant</title>
+  <title>DATA_CORE_V1</title>
   <script src="https://cdn.tailwindcss.com?plugins=forms"></script>
   <link href="https://fonts.googleapis.com/css2?family=Montserrat:wght@500;600;700;800;900&family=Inter:wght@400;500;600;700&family=JetBrains+Mono:wght@500;600;700&display=swap" rel="stylesheet"/>
   <link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&display=swap" rel="stylesheet"/>
@@ -24,7 +24,6 @@ const HTML_SOURCE = `<!DOCTYPE html>
             border: "#28323E",
             primary: "#00A8A8",
             "primary-dark": "#008080",
-            "primary-container": "#004F4F",
             lime: "#D2F000",
             tosca: "#00B4D8",
             emerald: "#10B981",
@@ -56,27 +55,25 @@ const HTML_SOURCE = `<!DOCTYPE html>
     .hide-scrollbar::-webkit-scrollbar { display: none; }
     .hide-scrollbar { -ms-overflow-style: none; scrollbar-width: none; }
     .glass-panel {
-      background: rgba(20, 26, 32, 0.88);
+      background: rgba(20, 26, 32, 0.92);
       backdrop-filter: blur(16px);
       -webkit-backdrop-filter: blur(16px);
       border: 1px solid rgba(40, 50, 62, 0.7);
     }
     .tosca-bloom { box-shadow: 0 0 16px rgba(0, 168, 168, 0.35); }
     .lime-glow { box-shadow: 0 0 16px rgba(210, 240, 0, 0.4); }
-    .tab-content { display: none; }
-    .tab-content.active { display: flex; flex-direction: column; animation: fadeIn 0.2s ease-out; }
-    @keyframes fadeIn {
-      from { opacity: 0; transform: translateY(4px); }
-      to { opacity: 1; transform: translateY(0); }
-    }
-    .safe-bottom-padding {
-      padding-bottom: calc(96px + env(safe-area-inset-bottom, 12px));
+    .tab-pane {
+      display: none;
+      width: 100%;
+      height: 100%;
+      overflow-y: auto;
+      padding-bottom: 120px;
     }
     .modal-overlay {
       display: none;
       position: fixed;
       inset: 0;
-      background: rgba(0, 0, 0, 0.75);
+      background: rgba(0, 0, 0, 0.8);
       backdrop-filter: blur(8px);
       z-index: 100;
       align-items: center;
@@ -84,14 +81,18 @@ const HTML_SOURCE = `<!DOCTYPE html>
       padding: 16px;
     }
     .modal-overlay.active { display: flex; animation: fadeIn 0.2s ease-out; }
+    @keyframes fadeIn {
+      from { opacity: 0; transform: translateY(4px); }
+      to { opacity: 1; transform: translateY(0); }
+    }
   </style>
 </head>
 <body class="flex flex-col h-full w-full select-none text-xs">
 
   <!-- ========================================================================= -->
-  <!-- 🔝 TOP APP BAR -->
+  <!-- 🔝 TOP APP BAR (HEADER BERSIH DENGAN STATUS & SALDO CEPAT) -->
   <!-- ========================================================================= -->
-  <header class="glass-panel sticky top-0 z-40 px-3.5 py-2.5 flex justify-between items-center border-b border-border/50 shrink-0">
+  <header class="glass-panel px-4 py-3 flex justify-between items-center border-b border-border/50 shrink-0 z-40">
     <div class="flex items-center gap-2.5">
       <div class="relative">
         <div class="w-8 h-8 rounded-full bg-surface-elevated flex items-center justify-center border border-primary/40 tosca-bloom">
@@ -100,7 +101,7 @@ const HTML_SOURCE = `<!DOCTYPE html>
         <div class="absolute bottom-0 right-0 w-2.5 h-2.5 bg-lime rounded-full border-2 border-background animate-pulse"></div>
       </div>
       <div>
-        <h1 class="font-headline font-bold text-sm leading-tight flex items-center gap-1 text-text-primary">
+        <h1 class="font-headline font-bold text-sm leading-tight flex items-center gap-1.5 text-text-primary">
           DATA_CORE_V1
           <span class="text-[9px] font-mono px-1 rounded bg-primary/20 text-primary border border-primary/30">PRO</span>
         </h1>
@@ -110,103 +111,115 @@ const HTML_SOURCE = `<!DOCTYPE html>
       </div>
     </div>
 
-    <!-- Quick Balances Pill -->
-    <div class="glass-panel px-2.5 py-1 rounded-full flex items-center gap-1.5 border border-border/60">
-      <span class="text-[9px] font-mono text-text-secondary">KAS</span>
-      <span class="text-[11px] font-mono font-bold text-lime" id="header-cash">Rp 455k</span>
+    <!-- Quick Balance Pill -->
+    <div class="glass-panel px-2.5 py-1 rounded-full flex items-center gap-2 border border-border/60">
+      <div class="flex items-center gap-1">
+        <span class="text-[9px] font-mono text-text-secondary">KAS</span>
+        <span class="text-[11px] font-mono font-bold text-lime">Rp 455k</span>
+      </div>
       <span class="w-px h-2.5 bg-border"></span>
-      <span class="text-[9px] font-mono text-text-secondary">GOPAY</span>
-      <span class="text-[11px] font-mono font-bold text-tosca" id="header-gopay">Rp 164k</span>
+      <div class="flex items-center gap-1">
+        <span class="text-[9px] font-mono text-text-secondary">GOPAY</span>
+        <span class="text-[11px] font-mono font-bold text-tosca">Rp 164k</span>
+      </div>
     </div>
   </header>
 
   <!-- ========================================================================= -->
-  <!-- 📱 MAIN VIEW CANVAS (CONTAINER FOR 5 TABS) -->
+  <!-- 📱 MAIN VIEW CANVAS (5 ISOLATED INDEPENDENT TABS) -->
   <!-- ========================================================================= -->
-  <main class="flex-1 overflow-y-auto hide-scrollbar safe-bottom-padding relative w-full">
+  <main class="flex-1 overflow-hidden relative w-full">
 
     <!-- ======================================================================= -->
     <!-- 📊 TAB 1: ANALYTICS & SMART INSIGHTS -->
     <!-- ======================================================================= -->
-    <section id="tab-analytics" class="tab-content px-3.5 py-3 space-y-3 w-full max-w-lg mx-auto">
+    <div id="tab-analytics" class="tab-pane px-4 py-3 space-y-3">
       <div class="flex justify-between items-center">
         <h2 class="font-headline font-bold text-base text-text-primary">Analisis Keuangan & Aktivitas</h2>
         <span class="text-[10px] font-mono px-2 py-0.5 rounded-full bg-primary/10 text-primary border border-primary/20">Realtime</span>
       </div>
 
       <!-- Health Score Card -->
-      <div class="bg-surface rounded-xl p-3.5 border border-border relative overflow-hidden tosca-bloom">
+      <div class="bg-surface rounded-xl p-4 border border-border relative overflow-hidden tosca-bloom">
         <div class="flex items-center justify-between">
           <div>
             <span class="text-[9px] font-mono uppercase tracking-widest text-primary font-bold">Financial Health Score</span>
-            <h3 class="text-xl font-mono font-black text-text-primary mt-0.5">88<span class="text-xs text-text-secondary">/100</span></h3>
-            <p class="text-[11px] text-text-secondary mt-0.5">Kondisi Keuangan Sangat Sehat & Beban Cicilan Terkendali.</p>
+            <h3 class="text-2xl font-mono font-black text-text-primary mt-0.5">88<span class="text-xs text-text-secondary">/100</span></h3>
+            <p class="text-[11px] text-text-secondary mt-1 max-w-[220px]">Kondisi Keuangan Sangat Sehat & Beban Cicilan Terkendali.</p>
           </div>
-          <div class="w-12 h-12 rounded-full bg-surface-elevated border-2 border-primary flex items-center justify-center font-mono font-bold text-lime text-base shrink-0">
+          <div class="w-14 h-14 rounded-full bg-surface-elevated border-2 border-primary flex items-center justify-center font-mono font-bold text-lime text-lg shrink-0">
             A+
           </div>
         </div>
       </div>
 
       <!-- 2x2 Metric Grid -->
-      <div class="grid grid-cols-2 gap-2 font-mono">
+      <div class="grid grid-cols-2 gap-2.5 font-mono">
         <div class="bg-surface rounded-xl p-3 border border-border">
           <span class="text-[9px] text-text-secondary uppercase">Total Pemasukan</span>
-          <p class="text-sm font-bold text-emerald mt-0.5" id="stat-income">Rp 3.450.000</p>
+          <p class="text-sm font-bold text-emerald mt-0.5">Rp 3.450.000</p>
           <span class="text-[9px] text-emerald">▲ +12% vs lalu</span>
         </div>
         <div class="bg-surface rounded-xl p-3 border border-border">
           <span class="text-[9px] text-text-secondary uppercase">Total Pengeluaran</span>
-          <p class="text-sm font-bold text-coral mt-0.5" id="stat-expense">Rp 2.120.000</p>
+          <p class="text-sm font-bold text-coral mt-0.5">Rp 2.120.000</p>
           <span class="text-[9px] text-coral">▼ -5% vs lalu</span>
         </div>
         <div class="bg-surface rounded-xl p-3 border border-border">
           <span class="text-[9px] text-text-secondary uppercase">Sisa Kas Likuid</span>
-          <p class="text-sm font-bold text-tosca mt-0.5" id="stat-balance">Rp 1.330.000</p>
-          <span class="text-[9px] text-text-secondary">Aman & Terjaga</span>
+          <p class="text-sm font-bold text-tosca mt-0.5">Rp 1.330.000</p>
+          <span class="text-[9px] text-text-secondary">Aman Terjaga</span>
         </div>
         <div class="bg-surface rounded-xl p-3 border border-border">
           <span class="text-[9px] text-text-secondary uppercase">Daily Burn Rate</span>
-          <p class="text-sm font-bold text-lime mt-0.5" id="stat-burn">Rp 68.000<span class="text-[9px] text-text-secondary">/hr</span></p>
+          <p class="text-sm font-bold text-lime mt-0.5">Rp 68.000<span class="text-[9px] text-text-secondary">/hr</span></p>
           <span class="text-[9px] text-lime">Stabil Normal</span>
         </div>
       </div>
 
       <!-- Sinking Fund & Loan Overview -->
-      <div class="bg-surface rounded-xl p-3.5 border border-border space-y-2">
+      <div class="bg-surface rounded-xl p-3.5 border border-border space-y-2.5">
         <h4 class="font-headline font-bold text-[10px] uppercase text-text-secondary tracking-wider">Target & Beban Cicilan</h4>
         <div class="space-y-2 font-mono text-[11px]">
-          <div class="p-2 rounded bg-surface-elevated">
-            <div class="flex justify-between mb-1">
+          <div class="p-2.5 rounded-lg bg-surface-elevated space-y-1">
+            <div class="flex justify-between">
               <span>🎯 Trip Dieng (Rp 1.040.000)</span>
               <span class="text-lime font-bold">Terbayar: Rp 300.000 (29%)</span>
             </div>
             <div class="w-full h-2 bg-surface rounded-full overflow-hidden">
               <div class="h-full bg-primary rounded-full" style="width: 29%"></div>
             </div>
+            <div class="flex justify-between text-[9px] text-text-secondary">
+              <span>🗓️ 29-30 Agustus 2026</span>
+              <span>Sisa: Rp 740.000</span>
+            </div>
           </div>
-          <div class="p-2 rounded bg-surface-elevated">
-            <div class="flex justify-between mb-1">
+          <div class="p-2.5 rounded-lg bg-surface-elevated space-y-1">
+            <div class="flex justify-between">
               <span>💳 Bank Jago (Rp 67.940/bln)</span>
               <span class="text-coral font-bold">Jatuh Tempo: Tgl 20</span>
             </div>
             <div class="w-full h-2 bg-surface rounded-full overflow-hidden">
               <div class="h-full bg-amber rounded-full" style="width: 8%"></div>
             </div>
+            <div class="flex justify-between text-[9px] text-text-secondary">
+              <span>Tenor: Sisa 11 Bulan</span>
+              <span>Autodebet Bank Jago</span>
+            </div>
           </div>
         </div>
       </div>
-    </section>
+    </div>
 
     <!-- ======================================================================= -->
     <!-- 🗄️ TAB 2: DATA CORE & GANTT TIMELINE (FULL CRUD) -->
     <!-- ======================================================================= -->
-    <section id="tab-data" class="tab-content px-3.5 py-3 space-y-3 w-full max-w-lg mx-auto">
+    <div id="tab-data" class="tab-pane px-4 py-3 space-y-3">
       <div class="flex justify-between items-center">
         <h2 class="font-headline font-bold text-base text-text-primary">Data Core & Timeline</h2>
         <div class="flex gap-1.5">
           <button onclick="openAddModal()" class="px-2.5 py-1 bg-lime text-black font-mono font-bold text-[10px] rounded-lg flex items-center gap-1 shadow-md">
-            <span class="material-symbols-outlined text-[14px]">add</span> Tambah Data
+            <span class="material-symbols-outlined text-[14px]">add</span> Tambah
           </button>
           <button onclick="exportToExcel()" class="px-2 py-1 bg-primary/20 border border-primary text-primary text-[10px] font-mono font-bold rounded-lg flex items-center gap-1">
             <span class="material-symbols-outlined text-[12px]">download</span> Excel
@@ -232,8 +245,7 @@ const HTML_SOURCE = `<!DOCTYPE html>
             <span class="text-lime">HARI INI: 27 AGUSTUS</span>
           </div>
 
-          <div id="gantt-items-container" class="space-y-2">
-            <!-- Dynamic Gantt Items -->
+          <div class="space-y-2">
             <div class="p-2.5 bg-surface-elevated rounded-lg border border-border space-y-1">
               <div class="flex justify-between items-center">
                 <span class="font-bold text-text-primary text-[11px] flex items-center gap-1">
@@ -265,6 +277,22 @@ const HTML_SOURCE = `<!DOCTYPE html>
                 <span>Target: Rp 150.000 / hari</span>
               </div>
             </div>
+
+            <div class="p-2.5 bg-surface-elevated rounded-lg border border-border space-y-1">
+              <div class="flex justify-between items-center">
+                <span class="font-bold text-text-primary text-[11px] flex items-center gap-1">
+                  <span class="material-symbols-outlined text-emerald text-[14px]">school</span> Wisuda Telkom University
+                </span>
+                <span class="text-[9px] font-mono px-1.5 py-0.5 rounded bg-emerald/20 text-emerald border border-emerald/30 font-bold">SELESAI (100%)</span>
+              </div>
+              <div class="w-full h-2 bg-surface rounded-full overflow-hidden">
+                <div class="h-full bg-emerald rounded-full" style="width: 100%"></div>
+              </div>
+              <div class="flex justify-between text-[9px] font-mono text-text-secondary">
+                <span>🗓️ 12 Agustus 2026</span>
+                <span>Status: Sukses Selesai</span>
+              </div>
+            </div>
           </div>
         </div>
       </div>
@@ -282,12 +310,12 @@ const HTML_SOURCE = `<!DOCTYPE html>
           <!-- Live items will load here -->
         </div>
       </div>
-    </section>
+    </div>
 
     <!-- ======================================================================= -->
-    <!-- 💬 TAB 3: AI BUTLER CHAT HUB (CENTER HERO / DEFAULT LANDING SCREEN) -->
+    <!-- 💬 TAB 3: AI BUTLER CHAT HUB (CENTER HERO & DEFAULT SCREEN) -->
     <!-- ======================================================================= -->
-    <section id="tab-chat" class="tab-content active px-3.5 py-3 flex flex-col min-h-full w-full max-w-lg mx-auto">
+    <div id="tab-chat" class="tab-pane px-4 py-3 space-y-3" style="display: block;">
       
       <!-- Timestamp Badge -->
       <div class="text-center my-1">
@@ -297,7 +325,7 @@ const HTML_SOURCE = `<!DOCTYPE html>
       </div>
 
       <!-- Message Stream Container -->
-      <div id="chat-messages-container" class="space-y-3 mb-24 w-full">
+      <div id="chat-messages-container" class="space-y-3 w-full">
         
         <!-- Welcome Butler Message -->
         <div class="flex items-start gap-2">
@@ -306,7 +334,7 @@ const HTML_SOURCE = `<!DOCTYPE html>
           </div>
           <div class="bg-surface rounded-xl rounded-tl-sm p-3 max-w-[92%] border border-border shadow-lg space-y-2.5">
             <p class="text-text-primary text-[11px] leading-relaxed">
-              Selamat datang, <b>Mas Firman</b>. Asisten AI Butler siap mencatat transaksi, menghitung sinking fund, menganalisis performa Gojek, dan menyusun timeline agenda Anda.
+              Selamat datang, <b>Mas Firman</b>. Asisten AI Butler siap mendampingi pencatatan keuangan, progres sinking fund, analisis narik Gojek, dan timeline agenda Anda.
             </p>
 
             <!-- Dieng Progress Card Widget -->
@@ -342,12 +370,12 @@ const HTML_SOURCE = `<!DOCTYPE html>
 
       </div>
 
-    </section>
+    </div>
 
     <!-- ======================================================================= -->
     <!-- 🔔 TAB 4: NOTIFICATIONS & SMART ALERTS -->
     <!-- ======================================================================= -->
-    <section id="tab-notifications" class="tab-content px-3.5 py-3 space-y-2.5 w-full max-w-lg mx-auto">
+    <div id="tab-notifications" class="tab-pane px-4 py-3 space-y-2.5">
       <h2 class="font-headline font-bold text-base text-text-primary">Pusat Notifikasi & Pengingat</h2>
 
       <!-- Urgent Card: Bank Jago -->
@@ -387,12 +415,12 @@ const HTML_SOURCE = `<!DOCTYPE html>
           <p class="text-[11px] text-text-secondary">Cerah Berawan • Suhu ideal untuk narik Gojek sore ini.</p>
         </div>
       </div>
-    </section>
+    </div>
 
     <!-- ======================================================================= -->
     <!-- ⚙️ TAB 5: PROFILE & SETTINGS (LENGKAP) -->
     <!-- ======================================================================= -->
-    <section id="tab-profile" class="tab-content px-3.5 py-3 space-y-3 w-full max-w-lg mx-auto">
+    <div id="tab-profile" class="tab-pane px-4 py-3 space-y-3">
       <h2 class="font-headline font-bold text-base text-text-primary">Profil & Pengaturan Sistem</h2>
 
       <!-- User Badge -->
@@ -412,7 +440,7 @@ const HTML_SOURCE = `<!DOCTYPE html>
       <div class="bg-surface rounded-xl p-3.5 border border-border space-y-2 font-mono text-[11px]">
         <div class="flex justify-between items-center border-b border-border/50 pb-1.5">
           <span class="font-bold text-text-secondary uppercase text-[10px] tracking-wider">Status Dompet Terhubung</span>
-          <button onclick="loadInitialData()" class="text-primary text-[10px] hover:underline">🔄 Sinkron Ulang</button>
+          <button onclick="loadLedgerData()" class="text-primary text-[10px] hover:underline">🔄 Sinkron Ulang</button>
         </div>
         <div class="space-y-1.5">
           <div class="flex justify-between p-2 rounded bg-surface-elevated">
@@ -462,12 +490,12 @@ const HTML_SOURCE = `<!DOCTYPE html>
           Mode Privat Mas Firman aktif. Akses pengguna lain telah diblokir secara permanen dari server dan database.
         </p>
       </div>
-    </section>
+    </div>
 
   </main>
 
   <!-- ========================================================================= -->
-  <!-- 💬 CHAT QUICK ACTIONS & INPUT DOCK (ALWAYS VISIBLE IN TAB 3) -->
+  <!-- 💬 CHAT INPUT DOCK (HANYA TERLIHAT PADA TAB 3) -->
   <!-- ========================================================================= -->
   <div id="chat-input-wrapper" class="fixed bottom-16 left-0 right-0 z-30 px-3 max-w-lg mx-auto space-y-1.5">
     
@@ -576,7 +604,7 @@ const HTML_SOURCE = `<!DOCTYPE html>
   </div>
 
   <!-- ========================================================================= -->
-  <!-- ⚡ CLIENT-SIDE APPLICATION SCRIPT -->
+  <!-- ⚡ CLIENT-SIDE APPLICATION SCRIPT (100% ISOLATED TAB CONTROLLER) -->
   <!-- ========================================================================= -->
   <script>
     const USER_ID = "fc2758d3-78bb-4e22-b9f0-b3b16568b671";
@@ -584,28 +612,33 @@ const HTML_SOURCE = `<!DOCTYPE html>
     let cachedTransactions = [];
 
     function switchTab(tabId) {
-      document.querySelectorAll('.tab-content').forEach(el => el.classList.remove('active'));
-      const activeEl = document.getElementById('tab-' + tabId);
-      if (activeEl) activeEl.classList.add('active');
+      const allTabs = ['analytics', 'data', 'chat', 'notifications', 'profile'];
+      
+      // 100% Isolate: Hide all other tab panes completely
+      allTabs.forEach(t => {
+        const pane = document.getElementById('tab-' + t);
+        if (pane) {
+          pane.style.display = (t === tabId) ? 'block' : 'none';
+        }
+      });
 
+      // Show chat input dock only on Tab 3 (chat)
       const chatInputWrapper = document.getElementById('chat-input-wrapper');
-      if (tabId === 'chat') {
-        chatInputWrapper.style.display = 'block';
-      } else {
-        chatInputWrapper.style.display = 'none';
+      if (chatInputWrapper) {
+        chatInputWrapper.style.display = (tabId === 'chat') ? 'block' : 'none';
       }
 
-      const navButtons = ['analytics', 'data', 'chat', 'notifications', 'profile'];
-      navButtons.forEach(btn => {
+      // Update bottom nav bar buttons
+      allTabs.forEach(btn => {
         const el = document.getElementById('nav-btn-' + btn);
         if (el) {
           if (btn === 'chat') {
-            el.className = tabId === 'chat' 
+            el.className = (tabId === 'chat')
               ? "w-11 h-11 rounded-full bg-lime text-black flex items-center justify-center lime-glow -translate-y-2 border-2 border-background shadow-lg transition-transform scale-105"
               : "w-11 h-11 rounded-full bg-surface-elevated text-text-secondary flex items-center justify-center -translate-y-2 border-2 border-background shadow-lg transition-transform";
           } else {
-            el.className = tabId === btn 
-              ? "p-2 text-primary flex flex-col items-center" 
+            el.className = (tabId === btn)
+              ? "p-2 text-primary flex flex-col items-center"
               : "p-2 text-text-secondary hover:text-primary transition-colors flex flex-col items-center";
           }
         }
@@ -649,7 +682,8 @@ const HTML_SOURCE = `<!DOCTYPE html>
           <span class="material-symbols-outlined text-[14px]">smart_toy</span> Butler sedang memproses analisis...
         </div>
       \`;
-      container.scrollTop = container.scrollHeight;
+      const tabChat = document.getElementById('tab-chat');
+      tabChat.scrollTop = tabChat.scrollHeight;
 
       try {
         const res = await fetch(\`\${API_BASE}/api/chat\`, {
@@ -690,7 +724,8 @@ const HTML_SOURCE = `<!DOCTYPE html>
           </div>
         </div>
       \`;
-      container.scrollTop = container.scrollHeight;
+      const tabChat = document.getElementById('tab-chat');
+      tabChat.scrollTop = tabChat.scrollHeight;
     }
 
     function appendButlerBubble(text) {
@@ -707,7 +742,8 @@ const HTML_SOURCE = `<!DOCTYPE html>
           </div>
         </div>
       \`;
-      container.scrollTop = container.scrollHeight;
+      const tabChat = document.getElementById('tab-chat');
+      tabChat.scrollTop = tabChat.scrollHeight;
     }
 
     async function loadLedgerData() {
@@ -818,7 +854,7 @@ const HTML_SOURCE = `<!DOCTYPE html>
 
     function startVoiceSTT() {
       if (!('webkitSpeechRecognition' in window) && !('SpeechRecognition' in window)) {
-        alert('Fitur Voice STT membutuhkan mikrofon browser Android.');
+        alert('Fitur Voice STT membutuhkan mikrofon.');
         return;
       }
       const SpeechRecognition = window.SpeechRecognition || window.webkitSpeechRecognition;
@@ -847,7 +883,7 @@ const HTML_SOURCE = `<!DOCTYPE html>
     }
 
     window.onload = () => {
-      loadLedgerData();
+      switchTab('chat');
     };
   </script>
 </body>
