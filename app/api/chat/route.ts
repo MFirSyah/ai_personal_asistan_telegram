@@ -19,23 +19,33 @@ import { generateTelegramGanttChart } from '@/lib/analytics/gantt';
 
 export const dynamic = 'force-dynamic';
 
+const corsHeaders = {
+  'Access-Control-Allow-Origin': '*',
+  'Access-Control-Allow-Methods': 'GET, POST, PUT, DELETE, OPTIONS',
+  'Access-Control-Allow-Headers': 'Content-Type, Authorization, x-user-id, x-requested-with',
+};
+
+export async function OPTIONS() {
+  return new NextResponse(null, { status: 200, headers: corsHeaders });
+}
+
 export async function POST(req: NextRequest) {
   try {
     const { userId, userMessage, userName } = await req.json();
 
     if (!userId || !userMessage) {
-      return NextResponse.json({ error: 'userId and userMessage are required' }, { status: 400 });
+      return NextResponse.json({ error: 'userId and userMessage are required' }, { status: 400, headers: corsHeaders });
     }
 
     const safeUserId = userId || 'fc2758d3-78bb-4e22-b9f0-b3b16568b671';
 
     // 1. Fetch live Supabase context
     const [transactions, activities, plans, preferences, history, categories, allActiveTxs] = await Promise.all([
-      getRecentTransactions(safeUserId, 15),
-      getRecentActivities(safeUserId, 15),
+      getRecentTransactions(safeUserId, 20),
+      getRecentActivities(safeUserId, 20),
       getActivePlans(safeUserId),
-      getUserPreferences(safeUserId, 20),
-      getRecentChatHistory(safeUserId, 20),
+      getUserPreferences(safeUserId, 25),
+      getRecentChatHistory(safeUserId, 25),
       getUserCategories(safeUserId),
       getAllActiveTransactions(safeUserId),
     ]);
@@ -103,9 +113,9 @@ export async function POST(req: NextRequest) {
       messages: result.messages || ['Perintah berhasil diproses.'],
       extracted_data: result.extracted_data || null,
       follow_up_question: result.follow_up_question || '',
-    });
+    }, { headers: corsHeaders });
   } catch (error: any) {
     console.error('Error in /api/chat:', error);
-    return NextResponse.json({ error: error.message || 'Internal Server Error' }, { status: 500 });
+    return NextResponse.json({ error: error.message || 'Internal Server Error' }, { status: 500, headers: corsHeaders });
   }
 }
