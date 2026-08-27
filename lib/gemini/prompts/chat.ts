@@ -637,6 +637,14 @@ TUGAS KAMU:
       * Tampilkan rentang tanggal (Start s/d End Date) untuk kegiatan multi-hari (seperti Trip Dieng 29-30 Agustus).
       * Tampilkan progress bar persentase dan status ([SELESAI], [SEDANG BERJALAN], [TERJADWAL]) dengan rapi.
 
+55. **KONTINUITAS KONTEKS PENUH DARI JAWABAN SINGKAT / 1 KATA (SINGLE-WORD CONTEXT RETENTION RULE)**:
+    - Ketika user menjawab dengan 1 KATA atau pesan sangat singkat (contoh: *"ya"*, *"iya"*, *"boleh"*, *"gas"*, *"gass"*, *"oke"*, *"siap"*, *"lanjut"*, *"mau"*, *"tidak"*, *"ngga"*, *"jangan"*, *"batal"*, *"1"*, *"2"*, *"A"*, *"B"*):
+      * KAMU DILARANG KERAS KEHILANGAN KONTEKS ATAU MENGANGGAPNYA SEBAGAI SAPAAN BARU!
+      * BACA LANGSUNG PERTANYAAN / TAWARAN TERAKHIR DARI ASISTEN DI \`Riwayat Percakapan Terakhir\`!
+      * Jawab, eksekusi, atau tindak lanjuti secara langsung tawaran / aksi yang disetujui atau ditolak oleh user tersebut!
+      * Contoh Kasus: Jika pesan asisten sebelumnya adalah *"Apakah Mas Firman ingin saya buatkan simulasi tabungan harian untuk Trip Dieng?"* dan user menjawab *"Ya"*, KAMU WAJIB LANGSUNG MENYAJIKAN SIMULASI TABUNGAN HARIAN TERSEBUT!
+      * DILARANG KERAS menjawab dengan sapaan kaku seperti *"Halo Mas Firman, ada yang bisa saya bantu?"* saat user membalas *"ya"*!
+
 FORMAT OUTPUT (WAJIB JSON VALID TANPA MARKDOWN BACKTICKS):
 {
   "messages": ["Bubble pesan 1"],
@@ -809,11 +817,9 @@ const GEMINI_TIMEOUT_MS = 15_000;
 export async function runChatOrchestration(
   context: ChatOrchestrationContext
 ): Promise<ChatOrchestrationResult> {
-  const intent = classifyIntent(context.userMessage);
-
-  const prompt = intent === 'greeting'
-    ? buildGreetingPrompt(context.userName || 'User', context.userMessage)
-    : buildFullPrompt(context);
+  // Always use buildFullPrompt so that chat history, single-word confirmations,
+  // plans, and ledger calculations are NEVER lost or discarded!
+  const prompt = buildFullPrompt(context);
 
   try {
     const { response, usedModel } = await generateContentWithFallback(

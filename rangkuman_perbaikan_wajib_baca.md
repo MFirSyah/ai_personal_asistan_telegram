@@ -513,6 +513,16 @@ Bab ini memuat dokumentasi mendalam (*post-mortem*) mengenai setiap kesalahan ya
 - **Hasil Verifikasi:** Sistem resmi menjadi asisten personal tunggal, 0% risiko kebocoran data multi-user.
 
 
+
+### 2.35 Retensi Konteks Jawaban 1 Kata & Eliminasi Greeting Loop (Aturan 55)
+- **Masalah Lama:** Ketika asisten AI mengajukan penawaran/pertanyaan lanjutan (misal: *"Apakah mau saya hitungkan target bensin harian?"*) lalu user membalas singkat dengan 1 kata (*"ya"*, *"boleh"*, *"gas"*, *"oke"*, *"tidak"*), fungsi \`classifyIntent\` lama mendeteksi pesan \`<= 5 karakter\` sebagai sapaan umum (\`greeting\`). Akibatnya, seluruh riwayat percakapan dibuang dan AI membalas kaku: *"Halo Mas Firman, ada yang bisa saya bantu?"* (hilang konteks).
+- **Solusi & Implementasi:**
+  1. **Eliminasi Greeting Prompt Bypass:** Seluruh pesan (termasuk pesan 1 kata) wajib diproses melalui \`buildFullPrompt\` yang memuat riwayat percakapan (\`chatHistory\`), rencana aktif, saldo dompet, dan preferensi.
+  2. **Smart Context Anchor:** Ketika user membalas dengan 1 kata afirmatif/singkat, sistem otomatis memasang anchor pertanyaan/tawaran terakhir asisten ke dalam prompt.
+  3. **Aturan 55 (Single-Word Context Retention Rule):** Memerintahkan model AI secara eksplisit untuk membaca tawaran terakhir asisten dan langsung mengeksekusinya tanpa sapaan ulang.
+- **Hasil Pengujian:** User membalas *"Boleh"* langsung menghasilkan kalkulasi target narik harian secara presisi (Status: 100% Lolos Uji).
+
+
 ## 📅 BAB III: KRONOLOGI LENGKAP PERCAKAPAN, PERMINTAAN USER & EVOLUSI SISTEM
 
 ### 3.1 Fase 1: Setup Fondasi Dasar (12–15 Agustus 2026)

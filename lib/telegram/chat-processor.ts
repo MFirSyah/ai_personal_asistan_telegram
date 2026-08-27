@@ -153,8 +153,21 @@ export async function processChatRespondDirect(
     // Save user message to history asynchronously
     saveChatMessage(userId, 'user', userMessage).catch(console.error);
 
-    // 2. Proactive Grounding: Fetch Live Weather & Official Fuel Prices
+    // 2. Proactive Grounding: Single-Word Context Anchor (Never Lose Conversation Context)
     let runtimePrefs = [...preferences];
+    const isShortOrAffirmative = /^(ya|iya|boleh|gas|gass|oke|siap|baik|lanjut|mau|tidak|ngga|batal|y|ok|bisa|g)$/i.test(userMessage.trim()) || userMessage.trim().length <= 5;
+    if (isShortOrAffirmative && history && history.length > 0) {
+      const lastAssistantMsg = [...history].reverse().find((h) => h.role === 'assistant');
+      if (lastAssistantMsg) {
+        runtimePrefs.push({
+          id: 'context-anchor-last-question',
+          user_id: userId,
+          key: 'PERTANYAAN / TAWARAN TERAKHIR ASISTEN (YANG DIJAWAB OLEH USER DENGAN 1 KATA INI)',
+          value: lastAssistantMsg.content,
+          updated_at: new Date().toISOString(),
+        });
+      }
+    }
     const isOutdoorOrTripQuery = /(cuaca|hujan|narik|gojek|dieng|bromo|trip|liburan|bensin|jalan|sore|pagi|malam|otw)/i.test(userMessage);
     if (isOutdoorOrTripQuery) {
       const locKey = /dieng/i.test(userMessage) ? 'dieng' : (/bromo/i.test(userMessage) ? 'bromo' : 'malang');
