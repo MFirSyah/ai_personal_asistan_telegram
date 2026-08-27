@@ -103,6 +103,17 @@ const HTML_SOURCE = `<!DOCTYPE html>
       align-items: center;
       justify-content: center;
       padding: 16px;
+      overflow-y: auto;
+      -webkit-overflow-scrolling: touch;
+    }
+    .modal-overlay.child-modal {
+      z-index: 150 !important;
+      background: rgba(0, 0, 0, 0.9) !important;
+      backdrop-filter: blur(4px);
+    }
+    .modal-overlay.emergency-modal {
+      z-index: 200 !important;
+      background: rgba(0, 0, 0, 0.92) !important;
     }
     .modal-overlay.active { display: flex; animation: fadeIn 0.15s ease-out; }
     @keyframes fadeIn {
@@ -576,7 +587,7 @@ const HTML_SOURCE = `<!DOCTYPE html>
   <!-- ========================================================================= -->
   <!-- 🚨 EMERGENCY ICE MODAL (PROFIL MEDIS & KONTAK DARURAT) -->
   <!-- ========================================================================= -->
-  <div id="modal-emergency" class="modal-overlay">
+  <div id="modal-emergency" class="modal-overlay emergency-modal">
     <div class="bg-surface border-2 border-coral rounded-2xl p-4 w-full max-w-sm space-y-3 font-mono">
       <div class="flex justify-between items-center border-b border-border/50 pb-2">
         <div class="flex items-center gap-1.5">
@@ -626,7 +637,7 @@ const HTML_SOURCE = `<!DOCTYPE html>
   <!-- ========================================================================= -->
   <!-- ✏️ MODAL EDIT PENGATURAN DARURAT (ICE) -->
   <!-- ========================================================================= -->
-  <div id="modal-edit-ice" class="modal-overlay">
+  <div id="modal-edit-ice" class="modal-overlay child-modal">
     <div class="bg-surface border-2 border-coral rounded-2xl p-4 w-full max-w-sm space-y-3 font-mono max-h-[90vh] overflow-y-auto hide-scrollbar">
       <div class="flex justify-between items-center border-b border-border/50 pb-2">
         <div class="flex items-center gap-1.5">
@@ -671,7 +682,7 @@ const HTML_SOURCE = `<!DOCTYPE html>
   <!-- ========================================================================= -->
   <!-- 🛵 NATIVE IN-APP MODAL: TAMBAH / EDIT MOTOR FLEET -->
   <!-- ========================================================================= -->
-  <div id="modal-vehicle" class="modal-overlay">
+  <div id="modal-vehicle" class="modal-overlay child-modal">
     <div class="bg-surface border-2 border-primary rounded-2xl p-4 w-full max-w-sm space-y-3 font-mono max-h-[90vh] overflow-y-auto hide-scrollbar">
       <div class="flex justify-between items-center border-b border-border/50 pb-2">
         <div class="flex items-center gap-1.5">
@@ -738,7 +749,7 @@ const HTML_SOURCE = `<!DOCTYPE html>
   <!-- ========================================================================= -->
   <!-- 💳 NATIVE IN-APP MODAL: TAMBAH DOMPET (WALLET) -->
   <!-- ========================================================================= -->
-  <div id="modal-wallet" class="modal-overlay">
+  <div id="modal-wallet" class="modal-overlay child-modal">
     <div class="bg-surface border-2 border-tosca rounded-2xl p-4 w-full max-w-sm space-y-3 font-mono">
       <div class="flex justify-between items-center border-b border-border/50 pb-2">
         <div class="flex items-center gap-1.5">
@@ -775,7 +786,7 @@ const HTML_SOURCE = `<!DOCTYPE html>
   <!-- ========================================================================= -->
   <!-- 🎯 NATIVE IN-APP MODAL: TAMBAH TARGET MENABUNG (GOAL) -->
   <!-- ========================================================================= -->
-  <div id="modal-goal" class="modal-overlay">
+  <div id="modal-goal" class="modal-overlay child-modal">
     <div class="bg-surface border-2 border-lime rounded-2xl p-4 w-full max-w-sm space-y-3 font-mono">
       <div class="flex justify-between items-center border-b border-border/50 pb-2">
         <div class="flex items-center gap-1.5">
@@ -808,7 +819,7 @@ const HTML_SOURCE = `<!DOCTYPE html>
   <!-- ========================================================================= -->
   <!-- 💳 NATIVE IN-APP MODAL: TAMBAH TAGIHAN (BILL) -->
   <!-- ========================================================================= -->
-  <div id="modal-bill" class="modal-overlay">
+  <div id="modal-bill" class="modal-overlay child-modal">
     <div class="bg-surface border-2 border-amber rounded-2xl p-4 w-full max-w-sm space-y-3 font-mono">
       <div class="flex justify-between items-center border-b border-border/50 pb-2">
         <div class="flex items-center gap-1.5">
@@ -843,7 +854,7 @@ const HTML_SOURCE = `<!DOCTYPE html>
   <!-- ========================================================================= -->
   <!-- ⚡ NATIVE IN-APP MODAL: TAMBAH PINTASAN CHAT (PILL) -->
   <!-- ========================================================================= -->
-  <div id="modal-pill" class="modal-overlay">
+  <div id="modal-pill" class="modal-overlay child-modal">
     <div class="bg-surface border-2 border-lime rounded-2xl p-4 w-full max-w-sm space-y-3 font-mono">
       <div class="flex justify-between items-center border-b border-border/50 pb-2">
         <div class="flex items-center gap-1.5">
