@@ -381,6 +381,20 @@ Katalog **300 Poin Master Audit** ini menjadi dokumen panduan mutlak (*Ultimate 
 
 
 
+
+
+### 2.20 Hierarki Z-Index Modal & Auto Scroll-to-Top (Anti-Tertimpa Modal Induk)
+- **Masalah Pengguna:**
+  - Saat membuka form edit / tambah data motor dari dalam Dynamic Hub, modal anak (`#modal-vehicle`) berpotensi tertimpa atau terhalang oleh modal induk (`#modal-dynamic-hub`) karena keduanya berada pada layer z-index yang sama (100).
+- **Solusi Rekayasa:**
+  1. **Hierarki Bertingkat Z-Index (*Layering Architecture*):**
+     - Base Modal / Modal Induk (Dynamic Hub, Setting AI, CRUD Transaksi): `z-index: 100`.
+     - Sub-Modal / Form Anak (`#modal-vehicle`, `#modal-wallet`, `#modal-goal`, `#modal-bill`, `#modal-pill`, `#modal-edit-ice`): `z-index: 150 !important;` dilengkapi efek `backdrop-filter: blur(4px);` dan latar belakang gelap 90% opacity, sehingga form anak **100% berada di posisi paling atas** dan menutupi modal di bawahnya dengan sempurna.
+     - Modal Darurat Ekstrem (`#modal-emergency`): `z-index: 200 !important;` (lapisan absolut tertinggi).
+  2. **Auto Reset Scroll-to-Top:**
+     - Menambahkan instruksi `m.scrollTop = 0` dan `box.scrollTop = 0` saat modal motor dibuka, memastikan pengguna langsung melihat judul form dan input paling atas (Nama/Merk Motor) tanpa tergulung ke bawah.
+
+
 ### 2.19 Penggantian Total Browser Prompt Android Menjadi Form Dialog Modal In-App Presisi (Armada Motor & Dynamic Hub)
 - **Masalah Pengguna:**
   - Saat menekan tombol `+ Tambah Motor` pada Dynamic Hub, muncul popup dialog teks putih bawaan sistem Android (*window.prompt browser*), yang merusak estetika desain aplikasi Raphael dan tidak menyediakan form lengkap untuk parameter kendaraan (nama, plat, efisiensi BBM KM/L, kapasitas tangki, odometer saat ini, dan interval servis).
