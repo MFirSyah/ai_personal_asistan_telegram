@@ -221,6 +221,18 @@ Berikut adalah rekaman lengkap kegagalan teknis yang pernah terjadi beserta perb
   2. Menyesuaikan scroll padding Tab Chat menjadi `padding-bottom: 164px !important;` agar bubble chat terakhir tidak tertutup oleh tombol input saat di-scroll maksimal.
   3. **Hasil:** Tampilan bar input chat terlihat lebih modern, melayang secara estetis (*floating glass bar*), dan nyaman dijangkau oleh jempol tanpa risiko salah ketuk tab navigasi.
 
+
+
+### 2.13 Integrasi Fitur OCR Foto Struk Belanja pada Chat Hub
+- **Kebutuhan Pengguna:** Memungkinkan pengguna mengambil foto struk belanja secara langsung lewat kamera HP atau melampirkan foto struk dari galeri di dalam halaman Chat Raphael (persis seperti fitur Telegram Bot).
+- **Arsitektur Solusi:**
+  1. **Attachment Button:** Menambahkan tombol ikon kamera/lampiran `[📷 add_a_photo]` pada bilah floating input chat (`#chat-input-wrapper`).
+  2. **Dedicated Mobile OCR API:** Membangun endpoint `POST /api/mobile/receipt` yang menerima `base64Image`, menjalankan ekstraksi teks & nominal via **Gemini Vision OCR (`processReceiptImage`)**, dan mengklasifikasikan kategori merchant secara otomatis.
+  3. **Rich Receipt Card Bubble:**
+     - Menampilkan pratinjau foto struk (*thumbnail preview*) yang dikirim pengguna.
+     - Menyajikan kartu ekstraksi eksekutif: Nama Merchant, Total Nominal Belanja, Kategori Otomatis, dan Daftar Barang Itemized (nama, qty, harga).
+     - Otomatis mencatat transaksi baru ke database Supabase dan merefresh data pada Tab Database & status saldo dompet.
+
 ## 🛠️ BAB III: PANDUAN TEKNIS FITUR UTAMA & ENGINE GRAFIK
 
 ### 3.1 Ringkasan 5 Tab Aplikasi Raphael
