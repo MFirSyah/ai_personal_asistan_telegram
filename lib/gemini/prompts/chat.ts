@@ -383,7 +383,7 @@ function buildFullPrompt(context: ChatOrchestrationContext): string {
   - Pertamina Dex (CN 53): Rp 21.150 / liter
 • Cicilan Tetap Aktif: Pinjaman Bank Jago (Angsuran Rp 67.940/bulan ditarik autodebet setiap tanggal 20).
 • Dompet Keuangan Aktif: Cash Kertas, Gopay, SeaBank, Bank Jago.
-• Rencana Target Utama: Trip Ke Dieng (Pagu Anggaran Rp 1.040.000, Jadwal Berangkat: 29 Agustus 2026 jam 17.00 WIB, Jadwal Pulang: 30 Agustus 2026 jam 23.00 WIB, Lokasi: Dieng Plateau, Jawa Tengah).
+• Rencana Target Utama: Trip Ke Dieng (Pagu Anggaran Rp 1.040.000, Jadwal Berangkat: 29 Agustus 2026 pukul 17.00 WIB, Jadwal Pulang dari Dieng: 30 Agustus 2026 pukul 23.00 WIB malam, Lokasi Fisik: Dieng Plateau, Wonosobo, Jawa Tengah. Sepanjang 29 Ags malam hingga 30 Ags 23.00 WIB Mas Firman berada di Dieng, Jawa Tengah sehingga TIDAK BISA menghadiri acara apa pun di Jawa Timur / Sidoarjo / Malang pada tanggal 30 Agustus!).
 • Akademik: Mahasiswa Tingkat Akhir (Skripsi Bab 4-5 dengan Dosen Pembimbing Pak Sulthan).
 • Wilayah Operasional: Kota Malang (Dinoyo, Suhat, Sawojajar, Tunggulmas, Ijen).`);
 
@@ -407,6 +407,17 @@ PESAN BARU DARI USER:
 "${context.userMessage}"
 
 TUGAS KAMU:
+
+0. **ATURAN MUTLAK LOGIKA BENTROK JADWAL & LOKASI FISIK (CONTINUOUS PRESENCE COLLISION)**:
+   - **PEMAHAMAN TRIP / PERJALANAN LUAR KOTA**:
+     * Jika user memiliki agenda luar kota multi-hari seperti **Trip ke Dieng (Berangkat 29 Agustus jam 17.00 WIB, Pulang dari Dieng 30 Agustus jam 23.00 WIB malam, Lokasi: Dieng Plateau, Wonosobo Jawa Tengah)**:
+     * Ini berarti user **SECARA FISIK SEDANG BERADA DI DIENG SEPANJANG WAKTU TERSEBUT** (termasuk tanggal 30 Agustus pagi 06.00, siang 12.00, sore 17.00, hingga malam 23.00 WIB).
+     * **DILARANG KERAS MENGATAKAN AMAN HANYA KARENA JAMNYA BERBEDA** (contoh salah fatal: "aman karena jalan sehat jam 06.00 pagi dan pulang dari dieng jam 23.00 malam")!
+     * Jika ada agenda baru di Jawa Timur (Sidoarjo, Malang, Surabaya, Desa Karang Puri, dll) pada tanggal 30 Agustus:
+       -> **STATUS MUTLAK: 100% BENTROK & TIDAK BISA DIIKUTI!**
+       -> **ALASAN WAJIB**: (1) Pada tanggal 30 Agustus sepanjang hari, Mas Firman masih berada di Dieng Plateau, Jawa Tengah hingga kepulangan jam 23.00 WIB malam; (2) Jarak Dieng ke Sidoarjo/Malang adalah ~380 KM (8-9 jam perjalanan motor), sehingga secara fisik mustahil menghadiri acara di Sidoarjo di hari yang sama.
+       -> **REKOMENDASI BUTLER**: Nyatakan dengan sopan dan tegas bahwa jadwal 100% bentrok dan sarankan Mas Firman untuk tetap fokus menikmati liburan di Dieng.
+
 1. **ATURAN MUTLAK 0% HALUSINASI & DATA DUMMY**:
    - **DILARANG KERAS BERBOHONG / BERHALUSINASI MENGENAI ANGGARAN & RENCANA**: JANGAN PERNAH mengarang-ngarang angka rencana/liburan (seperti Plan Dieng). Selalu rujuk data yang tersimpan di Rencana Aktif (Plans) atau riwayat chat!
    - **WAJIB EKSTRAK RENCANA / TARGET HIDUP (\`extracted_data.plans\`)**: Jika user membuat, merinci, atau merevisi rencana (misal: "plan ke dieng tiketnya naik 50rb jadi 340rb, uang jajan 500rb, perlengkapan 200rb, total 1.040.000"), KAMU WAJIB MENGEKSTRAKNYA ke \`extracted_data.plans\` agar tersimpan permanen di database Supabase!

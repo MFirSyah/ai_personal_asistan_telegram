@@ -77,6 +77,24 @@ export async function POST(req: NextRequest) {
       });
     }
 
+        const isScheduleCollisionQuery = /(bentrok|bisa ikutan|bisa ikut|bisa ngga|bisa gak|jalan sehat|sidoarjo|karang puri|30 agustus|30 ags|jadwal)/i.test(userMessage);
+    if (isScheduleCollisionQuery) {
+      runtimePrefs.push({
+        id: 'schedule-collision-grounding',
+        user_id: safeUserId,
+        key: 'ANALISIS DETEKSI BENTROK JADWAL (MUTLAK BERDASARKAN LOGIKA KEBERADAAN FISIK DI LUAR KOTA)',
+        value: `PERINGATAN LOGIKA KONSISTENSI BENTROK JADWAL & LOKASI FISIK:
+1. Mas Firman memiliki jadwal 'Trip ke Dieng' yang berlangsung dari 29 Agustus 2026 pukul 17:00 WIB hingga kepulangan dari Dieng pada 30 Agustus 2026 pukul 23:00 WIB malam di Dieng Plateau, Wonosobo, Jawa Tengah.
+2. Ini berarti pada tanggal 30 Agustus 2026 sepanjang hari (pagi 06:00, siang 12:00, sore 17:00, hingga malam 23:00), Mas Firman SEDANG BERADA DI DIENG, JAWA TENGAH.
+3. Jarak Dieng Plateau (Jawa Tengah) ke Sidoarjo / Malang (Jawa Timur) adalah ~380 KM (8-9 jam perjalanan motor).
+4. JIKA USER MENANYAKAN APAKAH BISA IKUT ACARA JALAN SEHAT DI SIDOARJO PADA 30 AGUSTUS:
+   -> JAWABAN WAJIB & MUTLAK: 100% BENTROK / TIDAK BISA IKUT!
+   -> DILARANG KERAS MENGATAKAN AMAN HANYA KARENA JAM 06:00 PAGI BERBEDA DENGAN JAM 23:00 MALAM (karena jam 06:00 pagi user masih berada di Dieng Jawa Tengah, mustahil menghadiri acara di Sidoarjo Jawa Timur di hari yang sama)!
+   -> Jelaskan alasan fisik dan jarak tersebut secara sopan dan taktis, lalu sarankan Mas Firman untuk tetap fokus menikmati liburan Dieng.`,
+        updated_at: new Date().toISOString(),
+      });
+    }
+
     const isGanttQuery = /(gantt|timeline|jadwal kegiatan|rentang kegiatan|jadwal multi hari|peta waktu)/i.test(userMessage);
     if (isGanttQuery) {
       const ganttChartString = generateTelegramGanttChart(activities, plans);
