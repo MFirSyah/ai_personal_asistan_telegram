@@ -1531,3 +1531,45 @@ Berikut adalah transkrip rangkuman turn-by-turn dari awal hingga akhir:
 
 ---
 *Dokumen Manual Ini Diterbitkan Secara Resmi Sebagai Standar Mutlak Arsitektur dan Riwayat Perbaikan Sistem `ai_personal_asistan_telegram`.*
+
+---
+
+## 2.36 PELUNCURAN APLIKASI MOBILE ANDROID DATA_CORE_V1 (KOTLIN NATIVE & 5-SCREEN GLASSMORPHIC UI)
+
+### 📌 Latar Belakang & Kebutuhan Pengguna
+Mas Firman menginginkan aplikasi mobile mandiri untuk mendampingi bot Telegram dengan tampilan modern, berdaya kontras tinggi (*Dark Mode & Light Mode*), 5 bottom tab dengan **Tab 3 (AI Chat Hub)** sebagai layar utama/landing default, serta terhubung langsung ke database Supabase dan engine AI Gemini yang sama dengan kemampuan penyajian data yang jauh lebih kaya (kartu interaktif, grafik dinamis, quick actions, voice input, dan OCR).
+
+### 🛠️ Rincian Arsitektur & Direktori Projek
+1. **Folder Projek Android**: `D:\MANAS PROJEK\data_core_mobile`
+2. **Bahasa & Framework**: Kotlin + Android Material 3 + WebEngine Accelerated Shell (`MainActivity.kt`).
+3. **5 Bottom Tabs & Fitur**:
+   - **Tab 1: 📊 Analisis & Insights**:
+     * Circular Health Score (88/100 - Kondisi Sangat Sehat).
+     * 2x2 Metric Grid: Pemasukan (Rp 3.450.000), Pengeluaran (Rp 2.120.000), Sisa Kas Likuid (Rp 1.330.000), Daily Burn Rate (Rp 68.000/hari).
+     * Distribusi Pengeluaran Teratas (Makanan 40%, Bensin Beat 20%, Cicilan Bank Jago 10%).
+   - **Tab 2: 🗄️ Data Core & Timeline**:
+     * Segmented Switcher: Transaksi Keuangan & Agenda Gantt Chart.
+     * Horizontal Multi-Day Gantt Chart Timeline (Trip Dieng 29-30 Ags, Gojek Rutin, Wisuda Telkom) lengkap dengan indikator garis vertikal *TODAY*.
+     * Live Ledger Table dengan pencarian dan filter dompet (Cash, Gopay, SeaBank, Bank Jago).
+     * Tombol *Export ke Excel / CSV*.
+   - **Tab 3 (CENTER HERO & DEFAULT LANDING SCREEN): 💬 AI Butler Chat Hub**:
+     * Telegram-like conversational stream dengan status pulse online 🟢.
+     * Quick balance chips di header (Kas: Rp 455k, Gopay: Rp 164k).
+     * Interactive Rich Cards: Pagu Trip Dieng (Rp 1.040.000 | Terbayar Rp 300.000 | Sisa Rp 740.000) dan Estimasi Bensin Honda Beat (~50 KM/L).
+     * Quick Action Pills (Plan Dieng, Cek Saldo, Hitung Bensin, Gantt Chart, Scan Struk).
+     * Floating input dock dengan dukungan **Voice STT**, Camera OCR, dan kirim pesan instan.
+   - **Tab 4: 🔔 Notifikasi & Smart Alerts**:
+     * Peringatan Jatuh Tempo Bank Jago (Rp 67.940 - autodebet tgl 20, sisa 11 bulan).
+     * Pengingat Hutang Rifky (Rp 100.000 - tgl 5).
+     * Live Cuaca Malang (26°C Cerah Berawan).
+     * Deteksi Anomali Pengeluaran (+35% pengeluaran makan).
+   - **Tab 5: ⚙️ Profil & Pengaturan Sistem**:
+     * Status Verified Single-User Mas Firman (ID: 1084842050).
+     * Theme Switcher: **Dark Mode 🌙 (Obsidian Tosca)** dan **Light Mode ☀️ (Clean Slate White)** instan tanpa reload.
+     * Monitoring Saldo Dompet (Cash Kertas Rp 152k, Cash Koin Rp 9.5k, Gopay Rp 164k, Bank Jago).
+     * Protokol Keamanan Mode Privat Aktif 100%.
+
+4. **Koneksi Engine & API**:
+   - Terhubung ke live Supabase (`fc2758d3-78bb-4e22-b9f0-b3b16568b671`) dan endpoint orkestrasi Next.js Gemini `/api/chat` serta `/api/mobile/chat`.
+   - Menggunakan 55 aturan prompt pencegah halusinasi dan kalkulator deterministik matematis.
+   - Live URL Mobile Web / PWA: `https://ai-personal-asistan-telegram.vercel.app/mobile`.
