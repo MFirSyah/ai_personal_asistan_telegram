@@ -385,6 +385,15 @@ Katalog **300 Poin Master Audit** ini menjadi dokumen panduan mutlak (*Ultimate 
 
 
 
+
+
+### 2.22 Kustomisasi Indikator Animasi Status Mengetik Chat
+- **Permintaan Pengguna:**
+  - *"Bisa ngga, teks untuk ketika ai nya mengetik itu tulisnnya diganti 'Raphael sedang mengetik ...'"*
+- **Solusi Rekayasa:**
+  - Mengubah teks status *loading placeholder* saat user mengirim pesan chat dari sebelumnya `"Raphael sedang memproses analisis..."` menjadi **`"Raphael sedang mengetik ..."`** lengkap dengan ikon robot dan animasi denyut hijau neon (*lime animate-pulse*).
+
+
 ### 2.21 Koreksi & Rekonsiliasi Data Tagihan Hutang Rifky (Rp 150.000)
 - **Pertanyaan / Temuan Pengguna:**
   - *"oh ya, pada data saya, seingat saya saya belum bayar ke rifky, kok ini datanya jadi 100, padahal kan harusnya 150 ribu, dimana salahnya"*
