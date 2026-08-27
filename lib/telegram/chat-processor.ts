@@ -7,6 +7,7 @@ import {
   optimizeTripBudget,
   calculateLoanRisk,
   calculateRealtimeLedger,
+  calculatePlanProgress,
 } from '@/lib/analytics/calculators';
 
 import {
@@ -193,6 +194,19 @@ export async function processChatRespondDirect(
           value: ledger.summaryString,
           updated_at: new Date().toISOString(),
         });
+
+        // Proactive Grounding: Calculate Full Plan / Trip Progress
+        const isPlanOrTripQuery = /(dieng|trip|wisata|liburan|tiket|cicil|nyicil|sisa bayar|kurang bayar|sudah bayar)/i.test(userMessage);
+        if (isPlanOrTripQuery) {
+          const diengProgress = calculatePlanProgress('dieng', allActiveTxs, 1040000);
+          runtimePrefs.push({
+            id: 'dieng-plan-progress',
+            user_id: userId,
+            key: 'REKAP RESMI PROGRES CICILAN TIKET & TRIP DIENG (DATABASE SUPABASE)',
+            value: diengProgress.summaryString,
+            updated_at: new Date().toISOString(),
+          });
+        }
       } catch (lErr) {
         console.warn('Realtime ledger aggregation skipped:', lErr);
       }

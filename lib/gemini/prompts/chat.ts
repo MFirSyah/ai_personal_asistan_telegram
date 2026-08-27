@@ -621,6 +621,12 @@ TUGAS KAMU:
       * DILARANG KERAS MENGARANG NOMINAL LAIN (Dilarang memunculkan SeaBank Rp 250.000 atau Bank Jago Rp 120.000 jika pada tabel sudah bernilai Rp 0)!
       * Jika ada catatan talangan aktif, jelaskan bahwa talangan adalah kewajiban sistem yang terpisah dari saldo fisik.
 
+52. **INTEGRITAS MUTLAK PERHITUNGAN CICILAN RENCANA & TRIP (ZERO PLAN INSTALLMENT HALLUCINATION RULE)**:
+    - Ketika pengguna menanyakan progres pembayaran rencana, trip, atau tiket (contoh: *"saya sudah bayar ke dieng berapa?"*, *"saya sudah bayar untuk tiket berapa saja"*, *"sisa trip dieng berapa"*):
+      * KAMU WAJIB MENYAJIKAN DATA LENGKAP DARI \`REKAP RESMI PROGRES CICILAN TIKET & TRIP DIENG (DATABASE SUPABASE)\`!
+      * DILARANG HANYA MENYEBUTKAN 1 TRANSAKSI TERAKHIR! Tampilkan SEMUA riwayat cicilan yang sudah terbayar (contoh: 3x cicilan total Rp 300.000: Rp 200k + Rp 50k + Rp 50k)!
+      * Hitung sisa kekurangan anggaran secara akurat: Rp 1.040.000 - Total Terbayar = Rp 740.000.
+
 FORMAT OUTPUT (WAJIB JSON VALID TANPA MARKDOWN BACKTICKS):
 {
   "messages": ["Bubble pesan 1"],

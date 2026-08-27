@@ -945,3 +945,80 @@ export function calculateRealtimeLedger(transactions: any[]): RealtimeLedgerResu
     summaryString,
   };
 }
+
+export interface PlanProgressResult {
+  planKeyword: string;
+  totalBudget: number;
+  totalPaid: number;
+  remainingBudget: number;
+  paidTransactions: {
+    id: string;
+    full_id: string;
+    date: string;
+    amount: number;
+    payment_method: string;
+    description: string;
+  }[];
+  summaryString: string;
+}
+
+export function calculatePlanProgress(
+  planKeyword: string,
+  transactions: any[],
+  totalBudget: number = 1040000
+): PlanProgressResult {
+  const kw = planKeyword.toLowerCase();
+  const paidTransactions: any[] = [];
+  let totalPaid = 0;
+
+  for (const t of transactions) {
+    if (t.deleted_at) continue;
+    const desc = String(t.description || '').toLowerCase();
+    const merchant = String(t.merchant || '').toLowerCase();
+    const category = String(t.category || '').toLowerCase();
+    const tags = Array.isArray(t.tags) ? t.tags.join(' ').toLowerCase() : String(t.tags || '').toLowerCase();
+    const isExpense = String(t.type || '').toLowerCase() === 'expense';
+
+    const isMatch = (desc.includes(kw) || merchant.includes(kw) || category.includes(kw) || tags.includes(kw)) &&
+                    (desc.includes('tiket') || desc.includes('cicil') || desc.includes('trip') || desc.includes('dieng') || merchant.includes('dieng') || tags.includes('dieng'));
+
+    if (isExpense && isMatch) {
+      const amt = Number(t.amount || 0);
+      if (amt > 0) {
+        totalPaid += amt;
+        const shortId = t.id ? `TX-${String(t.id).replace(/-/g, '').substring(0, 6).toUpperCase()}` : 'TX-AUTO';
+        paidTransactions.push({
+          id: shortId,
+          full_id: t.id,
+          date: t.occurred_at ? t.occurred_at.split('T')[0] : 'N/A',
+          amount: amt,
+          payment_method: t.payment_method || 'Unspecified',
+          description: t.description || 'Cicilan rencana',
+        });
+      }
+    }
+  }
+
+  const remainingBudget = Math.max(0, totalBudget - totalPaid);
+
+  const txDetails = paidTransactions.map((tx, idx) => 
+    `  ${idx + 1}. [${tx.id}] Rp ${tx.amount.toLocaleString('id-ID')} via ${tx.payment_method} (${tx.date}) - ${tx.description}`
+  ).join('\n');
+
+  const summaryString = [
+    `📊 REKAP RESMI PEMBAYARAN RENCANA (${planKeyword.toUpperCase()}):`,
+    `• Total Anggaran Pagu: Rp ${totalBudget.toLocaleString('id-ID')}`,
+    `• Total Cicilan/Pembayaran Terbayar: Rp ${totalPaid.toLocaleString('id-ID')} (${paidTransactions.length} kali pembayaran)`,
+    `• Sisa Kekurangan Anggaran yang Belum Terbayar: Rp ${remainingBudget.toLocaleString('id-ID')}`,
+    `• Rincian Semua Transaksi Terbayar:\n${txDetails || '  (Belum ada transaksi terbayar)'}`
+  ].join('\n');
+
+  return {
+    planKeyword,
+    totalBudget,
+    totalPaid,
+    remainingBudget,
+    paidTransactions,
+    summaryString,
+  };
+}
