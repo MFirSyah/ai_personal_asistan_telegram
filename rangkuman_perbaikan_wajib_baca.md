@@ -369,3 +369,22 @@
 Katalog **300 Poin Master Audit** ini menjadi dokumen panduan mutlak (*Ultimate Single Source of Truth*) pengembangan ekosistem Raphael Mobile. Setiap perbaikan di masa depan akan merujuk langsung ke nomor poin audit ini dan diuji ketat untuk menjamin kestabilan, kecepatan, dan akurasi 100%.
 
 *Terakhir divalidasi & disinkronisasi ke seluruh repositori: 27 Agustus 2026.*
+
+
+### 2.14 Implementasi Master Dynamic Entities Hub (8 Aspek Dinamis & 300 Audit Hardening)
+- **Kebutuhan Pengguna:** Membuat seluruh entitas sistem (dompet & rekening, target menabung sinking fund, daftar tagihan cicilan, kategori belanja, tombol pintasan chat, fakta personal AI, dan batasan guardrails) menjadi 100% dinamis tanpa ada batasan kaku (*Zero-Code Dynamic Extensibility*). Pengguna bebas menambah, mengubah, dan menghapus entitas kapan saja langsung lewat antarmuka aplikasi.
+- **Arsitektur Solusi:**
+  1. **Dynamic Hub Backend (`/api/mobile/dynamic`):**
+     - Endpoint sinkronisasi 2 arah untuk membaca dan menyimpan array `DYNAMIC_WALLETS`, `DYNAMIC_GOALS`, `DYNAMIC_BILLS`, dan `DYNAMIC_QUICK_PILLS` ke Supabase `user_preferences`.
+     - Action `pay_bill` yang otomatis mencatat pembayaran tagihan ke tabel `transactions` dan memotong saldo dompet yang dipilih pengguna.
+  2. **Dynamic UI & Cross-Tab Binding:**
+     - **Top Header Bar**: Saldo kas likuid dihitung secara dinamis dari akumulasi seluruh dompet bertipe kas.
+     - **Tab 1 (Analisis)**: Kartu *Dynamic Goals & Sinking Funds* merender seluruh target (Trip Dieng, Ganti Ban Beat, Pajak STNK, dll.) dengan progress bar persentase dan sisa kekurangan nominal.
+     - **Tab 2 (Database)**: Dropdown pilihan dompet pada modal transaksi dan tombol filter dompet otomatis terisi sesuai daftar dompet aktif.
+     - **Tab 3 (Chat Hub)**: Baris tombol pintasan cepat (*quick action pills*) merender tombol kustom pengguna dan mengeksekusi query AI dengan 1-ketukan.
+     - **Tab 4 (Notifikasi)**: Menampilkan seluruh tagihan dan angsuran aktif dengan badge tanggal jatuh tempo dan tombol `[Bayar Sekarang]`.
+     - **Tab 5 (Profil)**: Kartu Master **`[⚙️ KELOLA ENTITAS DINAMIS]`** membuka modal 5 sub-tab untuk manajemen mandiri seluruh dompet, target, tagihan, dan pintasan.
+  3. **Penerapan 300 Audit Proteksi**:
+     - *Memory Leak Canvas Prevention*: Fungsi `safelyDestroyChart()` memanggil `chart.destroy()` sebelum merender canvas baru.
+     - *Graceful Degradation*: Jika data baru belum diisi, sistem otomatis memakai fallback default tanpa crash.
+     - *Fast Local Synchronization*: Memperbarui UI seketika pasca mutasi.
