@@ -375,6 +375,24 @@ Katalog **300 Poin Master Audit** ini menjadi dokumen panduan mutlak (*Ultimate 
 
 
 
+
+
+### 2.17 Implementasi Manajemen Multi-Motor Dinamis & Emergency SOS Long-Press 3 Detik
+- **Kebutuhan Pengguna:**
+  1. Pengguna memiliki beberapa unit motor yang digunakan bergantian untuk narik Gojek maupun aktivitas harian, sehingga memerlukan kemampuan menambah, mengubah, dan mengganti motor aktif agar kalkulasi konsumsi BBM (KM/L), ROI, dan odometer servis berkala selalu presisi.
+  2. Menghapus fitur TTS (Voice Butler) dan STT (Voice Input Mic) agar antarmuka chat tetap ramping dan fokus.
+  3. Menyediakan pengaturan data profil darurat (Emergency ICE) di Tab 5 (Profil), dan mengubah cara aktivasi SOS agar hanya terpicu melalui chat (*"sos" / "darurat"*) atau dengan **menekan dan menahan tombol robot chat di navigasi bawah selama 3 detik** (dengan getaran haptic feedback).
+- **Arsitektur Solusi:**
+  1. **Dynamic Multi-Motor Fleet (`DYNAMIC_VEHICLES`):**
+     - Sub-tab baru **`[🛵 Motor]`** di Dynamic Hub yang memungkinkan pengguna mendaftarkan motor baru (Nama, Plat, KM/L, Odometer KM), menghapus motor, dan memilih motor aktif (`setActiveVehicle`).
+     - Motor aktif langsung disinkronkan ke widget chat di Tab 3, perhitungan bensin trip Dieng, dan logbook servis berkala.
+  2. **Pembersihan Total TTS & STT:**
+     - Menghapus fungsi `speakText` dan `startVoiceSTT` beserta seluruh elemen tombol mikrofon dan speaker dari aplikasi.
+  3. **Pengaturan ICE & Trigger SOS 3 Detik:**
+     - Form konfigurasi lengkap di Tab Profil: Nama Lengkap, Domisili, Golongan Darah, No BPJS, Kontak Darurat Keluarga, dan Catatan Medis.
+     - Event listener `touchstart` / `mousedown` pada tombol robot `#nav-btn-chat` yang menghitung durasi 3.000 ms sebelum membuka modal darurat secara otomatis.
+
+
 ### 2.16 Implementasi Master Super Capabilities Chat Hub (Split Bill, Pelunasan Jago, Interactive Checklists, Voice TTS & Emergency ICE)
 - **Kebutuhan Pengguna:** Memasang seluruh ekosistem fitur super interaktif ke dalam Chat Hub untuk mendongkrak produktivitas, efisiensi operasional Gojek, persiapan ekspedisi Dieng 2026, percepatan bimbingan skripsi, serta proteksi keamanan fisik/medis.
 - **Arsitektur Solusi:**
