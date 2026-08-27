@@ -9,6 +9,7 @@ const HTML_SOURCE = `<!DOCTYPE html>
   <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover"/>
   <title>Raphael</title>
   <script src="https://cdn.tailwindcss.com?plugins=forms"></script>
+  <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
   <link href="https://fonts.googleapis.com/css2?family=Montserrat:wght@500;600;700;800;900&family=Inter:wght@400;500;600;700&family=JetBrains+Mono:wght@500;600;700&display=swap" rel="stylesheet"/>
   <link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&display=swap" rel="stylesheet"/>
   <script>
@@ -66,13 +67,10 @@ const HTML_SOURCE = `<!DOCTYPE html>
       width: 100%;
       height: 100%;
       overflow-y: auto;
-      padding-bottom: 120px;
+      padding-bottom: 70px;
     }
     #tab-chat {
-      padding-bottom: 210px !important;
-    }
-    .gantt-track {
-      background: repeating-linear-gradient(90deg, transparent, transparent 39px, rgba(40, 50, 62, 0.4) 40px);
+      padding-bottom: 150px !important;
     }
     .modal-overlay {
       display: none;
@@ -183,7 +181,7 @@ const HTML_SOURCE = `<!DOCTYPE html>
         </div>
       </div>
 
-      <!-- DYNAMIC COMPACT GANTT TIMELINE -->
+      <!-- GANTT TIMELINE CARD -->
       <div class="bg-surface rounded-xl p-3 border border-border space-y-2 shadow-md">
         <div class="flex justify-between items-center text-[10px] font-mono border-b border-border/50 pb-1.5">
           <span class="font-bold text-text-primary flex items-center gap-1">
@@ -194,9 +192,7 @@ const HTML_SOURCE = `<!DOCTYPE html>
           </span>
         </div>
 
-        <!-- Compact Gantt Visual Rows -->
         <div class="space-y-2 font-mono text-[10px]">
-          <!-- Row 1: Trip Dieng -->
           <div class="p-2 rounded-lg bg-surface-elevated space-y-1">
             <div class="flex justify-between items-center">
               <span class="font-bold text-text-primary flex items-center gap-1">
@@ -204,7 +200,7 @@ const HTML_SOURCE = `<!DOCTYPE html>
               </span>
               <span class="text-tosca font-bold text-[9px]">50% Prep (Sisa Rp 740k)</span>
             </div>
-            <div class="w-full h-3 bg-surface rounded-full overflow-hidden relative">
+            <div class="w-full h-2.5 bg-surface rounded-full overflow-hidden relative">
               <div class="h-full bg-gradient-to-r from-tosca to-primary rounded-full" style="width: 50%"></div>
             </div>
             <div class="flex justify-between text-[8px] text-text-secondary">
@@ -213,7 +209,6 @@ const HTML_SOURCE = `<!DOCTYPE html>
             </div>
           </div>
 
-          <!-- Row 2: Narik Gojek -->
           <div class="p-2 rounded-lg bg-surface-elevated space-y-1">
             <div class="flex justify-between items-center">
               <span class="font-bold text-text-primary flex items-center gap-1">
@@ -221,7 +216,7 @@ const HTML_SOURCE = `<!DOCTYPE html>
               </span>
               <span class="text-amber font-bold text-[9px]">Aktif Harian (Rp 150k/hr)</span>
             </div>
-            <div class="w-full h-3 bg-surface rounded-full overflow-hidden relative">
+            <div class="w-full h-2.5 bg-surface rounded-full overflow-hidden relative">
               <div class="h-full bg-amber rounded-full" style="width: 75%"></div>
             </div>
             <div class="flex justify-between text-[8px] text-text-secondary">
@@ -230,7 +225,6 @@ const HTML_SOURCE = `<!DOCTYPE html>
             </div>
           </div>
 
-          <!-- Row 3: Wisuda Telkom -->
           <div class="p-2 rounded-lg bg-surface-elevated space-y-1">
             <div class="flex justify-between items-center">
               <span class="font-bold text-text-primary flex items-center gap-1">
@@ -238,7 +232,7 @@ const HTML_SOURCE = `<!DOCTYPE html>
               </span>
               <span class="text-emerald font-bold text-[9px]">100% Sukses Selesai</span>
             </div>
-            <div class="w-full h-3 bg-surface rounded-full overflow-hidden relative">
+            <div class="w-full h-2.5 bg-surface rounded-full overflow-hidden relative">
               <div class="h-full bg-emerald rounded-full" style="width: 100%"></div>
             </div>
             <div class="flex justify-between text-[8px] text-text-secondary">
@@ -276,33 +270,60 @@ const HTML_SOURCE = `<!DOCTYPE html>
     </div>
 
     <!-- ======================================================================= -->
-    <!-- 🗄️ TAB 2: DATA CORE & TRANSACTIONS DATABASE -->
+    <!-- 🗄️ TAB 2: DATABASE DATA CORE (DUAL VIEW: TRANSAKSI & AKTIVITAS WITH FULL EDIT) -->
     <!-- ======================================================================= -->
     <div id="tab-data" class="tab-pane px-3.5 py-2.5 space-y-2.5">
-      <div class="flex justify-between items-center">
-        <h2 class="font-headline font-bold text-sm text-text-primary">Database Transaksi Keuangan</h2>
-        <div class="flex gap-1.5">
-          <button onclick="openAddModal()" class="px-2.5 py-1 bg-lime text-black font-mono font-bold text-[10px] rounded-lg flex items-center gap-1 shadow-md active:scale-95">
-            <span class="material-symbols-outlined text-[13px]">add</span> Tambah
-          </button>
-          <button onclick="exportToExcel()" class="px-2 py-1 bg-primary/20 border border-primary text-primary text-[10px] font-mono font-bold rounded-lg flex items-center gap-1 active:scale-95">
-            <span class="material-symbols-outlined text-[11px]">download</span> Excel
-          </button>
+      
+      <!-- Top Segmented Switcher -->
+      <div class="flex bg-surface-elevated p-1 rounded-xl border border-border">
+        <button id="data-sub-tx-btn" onclick="switchDataSubTab('tx')" class="flex-1 py-1.5 rounded-lg text-[10px] font-mono font-bold bg-primary text-black transition-all">
+          💳 Transaksi Keuangan
+        </button>
+        <button id="data-sub-act-btn" onclick="switchDataSubTab('act')" class="flex-1 py-1.5 rounded-lg text-[10px] font-mono font-bold text-text-secondary transition-all">
+          📋 Agenda & Aktivitas
+        </button>
+      </div>
+
+      <!-- Sub-view 1: Transaksi Keuangan -->
+      <div id="data-sub-tx-view" class="space-y-2">
+        <div class="flex justify-between items-center">
+          <span class="text-xs font-bold text-text-primary">Daftar Transaksi Kas</span>
+          <div class="flex gap-1">
+            <button onclick="openAddTxModal()" class="px-2.5 py-1 bg-lime text-black font-mono font-bold text-[10px] rounded-lg flex items-center gap-1 shadow-md active:scale-95">
+              <span class="material-symbols-outlined text-[13px]">add</span> Tambah
+            </button>
+            <button onclick="exportToExcel()" class="px-2 py-1 bg-primary/20 border border-primary text-primary text-[10px] font-mono font-bold rounded-lg flex items-center gap-1 active:scale-95">
+              <span class="material-symbols-outlined text-[11px]">download</span> Excel
+            </button>
+          </div>
+        </div>
+
+        <div class="flex gap-1.5 overflow-x-auto hide-scrollbar text-[10px] font-mono py-0.5">
+          <button onclick="filterWallet('all')" class="px-2.5 py-1 bg-primary text-black font-bold rounded-full shrink-0">Semua</button>
+          <button onclick="filterWallet('Cash')" class="px-2.5 py-1 bg-surface-elevated text-text-secondary rounded-full border border-border shrink-0">Cash</button>
+          <button onclick="filterWallet('Gopay')" class="px-2.5 py-1 bg-surface-elevated text-text-secondary rounded-full border border-border shrink-0">Gopay</button>
+          <button onclick="filterWallet('Jago')" class="px-2.5 py-1 bg-surface-elevated text-text-secondary rounded-full border border-border shrink-0">Bank Jago</button>
+        </div>
+
+        <div id="ledger-list-container" class="space-y-1.5">
+          <!-- Live txs will load here -->
         </div>
       </div>
 
-      <!-- Filter Buttons -->
-      <div class="flex gap-1.5 overflow-x-auto hide-scrollbar text-[10px] font-mono py-0.5">
-        <button onclick="filterWallet('all')" class="px-2.5 py-1 bg-primary text-black font-bold rounded-full shrink-0">Semua</button>
-        <button onclick="filterWallet('Cash')" class="px-2.5 py-1 bg-surface-elevated text-text-secondary rounded-full border border-border shrink-0">Cash</button>
-        <button onclick="filterWallet('Gopay')" class="px-2.5 py-1 bg-surface-elevated text-text-secondary rounded-full border border-border shrink-0">Gopay</button>
-        <button onclick="filterWallet('Jago')" class="px-2.5 py-1 bg-surface-elevated text-text-secondary rounded-full border border-border shrink-0">Bank Jago</button>
+      <!-- Sub-view 2: Agenda & Aktivitas -->
+      <div id="data-sub-act-view" class="space-y-2" style="display: none;">
+        <div class="flex justify-between items-center">
+          <span class="text-xs font-bold text-text-primary">Daftar Agenda & Kegiatan</span>
+          <button onclick="openAddActModal()" class="px-2.5 py-1 bg-lime text-black font-mono font-bold text-[10px] rounded-lg flex items-center gap-1 shadow-md active:scale-95">
+            <span class="material-symbols-outlined text-[13px]">add</span> Tambah Agenda
+          </button>
+        </div>
+
+        <div id="activity-list-container" class="space-y-1.5">
+          <!-- Live activities will load here -->
+        </div>
       </div>
 
-      <!-- Transaction List Container -->
-      <div id="ledger-list-container" class="space-y-1.5">
-        <!-- Live items will load here -->
-      </div>
     </div>
 
     <!-- ======================================================================= -->
@@ -326,7 +347,7 @@ const HTML_SOURCE = `<!DOCTYPE html>
           </div>
           <div class="bg-surface rounded-xl rounded-tl-sm p-3 max-w-[92%] border border-border shadow-lg space-y-2 text-text-primary text-[11px] leading-relaxed">
             <p>
-              Selamat datang, <b>Mas Firman</b>. Asisten <b>Raphael</b> siap mendampingi pencatatan keuangan, progres sinking fund, analisis narik Gojek, dan timeline agenda Anda.
+              Selamat datang, <b>Mas Firman</b>. Asisten <b>Raphael</b> siap mendampingi pencatatan keuangan, progres sinking fund, analisis narik Gojek, pembuatan chart visual, dan peta navigasi agenda Anda.
             </p>
 
             <!-- Dieng Progress Card Widget -->
@@ -488,18 +509,18 @@ const HTML_SOURCE = `<!DOCTYPE html>
   <!-- ========================================================================= -->
   <!-- 💬 CHAT INPUT DOCK (HANYA MUNCUL DI TAB 3) -->
   <!-- ========================================================================= -->
-  <div id="chat-input-wrapper" class="fixed bottom-16 left-0 right-0 z-30 px-3 max-w-lg mx-auto space-y-1.5">
+  <div id="chat-input-wrapper" class="fixed bottom-14 left-0 right-0 z-30 px-3 max-w-lg mx-auto space-y-1.5">
     
     <!-- Quick Action Pills -->
     <div class="flex gap-1.5 overflow-x-auto hide-scrollbar py-0.5">
-      <button onclick="sendQuickAction('rincian plan trip dieng dan sisa cicilan tiketku')" class="shrink-0 bg-surface-elevated hover:bg-surface-high border border-border px-2.5 py-1 rounded-full text-[10px] font-mono flex items-center gap-1 text-tosca active:scale-95">
+      <button onclick="sendQuickAction('buatkan chart analisis perbandingan pemasukan vs pengeluaran')" class="shrink-0 bg-surface-elevated hover:bg-surface-high border border-border px-2.5 py-1 rounded-full text-[10px] font-mono flex items-center gap-1 text-lime active:scale-95">
+        <span class="material-symbols-outlined text-[12px]">bar_chart</span> Buat Chart Keuangan
+      </button>
+      <button onclick="sendQuickAction('tampilkan rute dan peta lokasi trip ke Dieng')" class="shrink-0 bg-surface-elevated hover:bg-surface-high border border-border px-2.5 py-1 rounded-full text-[10px] font-mono flex items-center gap-1 text-tosca active:scale-95">
+        <span class="material-symbols-outlined text-[12px]">map</span> Peta & Rute Dieng
+      </button>
+      <button onclick="sendQuickAction('rincian plan trip dieng dan sisa cicilan tiketku')" class="shrink-0 bg-surface-elevated hover:bg-surface-high border border-border px-2.5 py-1 rounded-full text-[10px] font-mono flex items-center gap-1 text-amber active:scale-95">
         <span class="material-symbols-outlined text-[12px]">landscape</span> Plan Dieng
-      </button>
-      <button onclick="sendQuickAction('cek saldo realtime seluruh dompetku')" class="shrink-0 bg-surface-elevated hover:bg-surface-high border border-border px-2.5 py-1 rounded-full text-[10px] font-mono flex items-center gap-1 text-lime active:scale-95">
-        <span class="material-symbols-outlined text-[12px]">account_balance_wallet</span> Cek Saldo
-      </button>
-      <button onclick="sendQuickAction('hitung estimasi bensin honda beat')" class="shrink-0 bg-surface-elevated hover:bg-surface-high border border-border px-2.5 py-1 rounded-full text-[10px] font-mono flex items-center gap-1 text-amber active:scale-95">
-        <span class="material-symbols-outlined text-[12px]">local_gas_station</span> Hitung Bensin
       </button>
       <button onclick="sendQuickAction('tampilkan visual gantt chart')" class="shrink-0 bg-surface-elevated hover:bg-surface-high border border-border px-2.5 py-1 rounded-full text-[10px] font-mono flex items-center gap-1 text-primary active:scale-95">
         <span class="material-symbols-outlined text-[12px]">calendar_month</span> Gantt Chart
@@ -508,7 +529,7 @@ const HTML_SOURCE = `<!DOCTYPE html>
 
     <!-- Floating Input Bar -->
     <div class="glass-panel rounded-full p-1 pl-3 pr-1 flex items-center gap-1.5 border border-border focus-within:border-primary tosca-bloom">
-      <input id="chat-input-text" type="text" placeholder="Tanya Raphael atau catat pengeluaran..." class="flex-1 bg-transparent border-none focus:ring-0 text-[11px] font-body text-text-primary placeholder:text-text-secondary/50 h-8 outline-none" onkeydown="if(event.key==='Enter') sendMessage()"/>
+      <input id="chat-input-text" type="text" placeholder="Tanya Raphael atau minta chart..." class="flex-1 bg-transparent border-none focus:ring-0 text-[11px] font-body text-text-primary placeholder:text-text-secondary/50 h-8 outline-none" onkeydown="if(event.key==='Enter') sendMessage()"/>
       <button onclick="startVoiceSTT()" class="text-text-secondary hover:text-lime p-1 active:scale-95">
         <span class="material-symbols-outlined text-[18px]">mic</span>
       </button>
@@ -519,9 +540,9 @@ const HTML_SOURCE = `<!DOCTYPE html>
   </div>
 
   <!-- ========================================================================= -->
-  <!-- 🧭 BOTTOM NAVIGATION BAR (5 TABS - CENTER HERO IS TAB 3) -->
+  <!-- 🧭 SOLID DOCKED BOTTOM NAVIGATION BAR (MENEMPEL RAPAT DI BAWAH) -->
   <!-- ========================================================================= -->
-  <nav class="fixed bottom-2 left-1/2 -translate-x-1/2 w-[94%] max-w-md h-14 rounded-full glass-panel border border-border/80 shadow-2xl z-50 flex justify-around items-center px-2">
+  <nav class="fixed bottom-0 left-0 right-0 w-full h-14 bg-surface border-t border-border/80 shadow-2xl z-50 flex justify-around items-center px-2">
     
     <!-- Tab 1: Analytics -->
     <button onclick="switchTab('analytics')" id="nav-btn-analytics" class="p-2 text-text-secondary hover:text-primary transition-colors flex flex-col items-center active:scale-90">
@@ -534,8 +555,8 @@ const HTML_SOURCE = `<!DOCTYPE html>
     </button>
 
     <!-- Tab 3 (CENTER HERO / DEFAULT): Raphael Chat Hub -->
-    <button onclick="switchTab('chat')" id="nav-btn-chat" class="w-11 h-11 rounded-full bg-lime text-black flex items-center justify-center lime-glow -translate-y-2 border-2 border-background shadow-lg transition-transform scale-105 active:scale-95">
-      <span class="material-symbols-outlined text-[22px]" style="font-variation-settings: 'FILL' 1;">smart_toy</span>
+    <button onclick="switchTab('chat')" id="nav-btn-chat" class="w-10 h-10 rounded-full bg-lime text-black flex items-center justify-center lime-glow border-2 border-background shadow-lg transition-transform active:scale-95">
+      <span class="material-symbols-outlined text-[20px]" style="font-variation-settings: 'FILL' 1;">smart_toy</span>
     </button>
 
     <!-- Tab 4: Notifications -->
@@ -551,7 +572,7 @@ const HTML_SOURCE = `<!DOCTYPE html>
   </nav>
 
   <!-- ========================================================================= -->
-  <!-- 🤖 MODAL DIALOG: PENGATURAN PREFERENSI AI & AUTO-SUMMARIZER ENGINE -->
+  <!-- 🤖 MODAL DIALOG: PENGATURAN PREFERENSI AI & AUTO-SUMMARIZER -->
   <!-- ========================================================================= -->
   <div id="modal-ai-settings" class="modal-overlay">
     <div class="bg-surface border border-border rounded-2xl p-4 w-full max-w-sm space-y-3 font-mono max-h-[90vh] overflow-y-auto hide-scrollbar">
@@ -563,7 +584,6 @@ const HTML_SOURCE = `<!DOCTYPE html>
         <button onclick="closeAiSettingsModal()" class="text-text-secondary hover:text-text-primary text-sm font-bold active:scale-90">✕</button>
       </div>
 
-      <!-- Segmented Mode Switcher for AI Preferences -->
       <div class="flex bg-surface-elevated p-1 rounded-xl border border-border">
         <button id="ai-mode-desc-btn" onclick="switchAiMode('desc')" class="flex-1 py-1.5 rounded-lg text-[10px] font-bold bg-primary text-black transition-all">
           📝 Deskripsi Bebas
@@ -573,13 +593,11 @@ const HTML_SOURCE = `<!DOCTYPE html>
         </button>
       </div>
 
-      <!-- Mode 1: Deskripsi Bebas -->
       <div id="ai-mode-desc-view" class="space-y-1.5">
         <label class="text-[10px] text-text-secondary uppercase">Instruksi Deskripsi Personal</label>
         <textarea id="ai-pref-desc-input" rows="4" placeholder="Contoh: Saya sedang menabung untuk trip Dieng dan bayar cicilan Bank Jago. Jika saya tanya pengeluaran, selalu ingatkan sisa kas likuid dan hitung efisiensi bensin Honda Beat." class="w-full bg-surface-elevated border border-border rounded-lg p-2 text-text-primary text-xs outline-none resize-none font-body leading-relaxed"></textarea>
       </div>
 
-      <!-- Mode 2: Bullet Points -->
       <div id="ai-mode-bullet-view" class="space-y-1.5" style="display: none;">
         <label class="text-[10px] text-text-secondary uppercase">Instruksi Poin-Poin (Per Baris)</label>
         <textarea id="ai-pref-bullet-input" rows="4" placeholder="- Prioritaskan sinking fund Trip Dieng (Rp 1.040.000)&#10;- Selalu hitung konsumsi bensin Beat 50km/liter&#10;- Ingatkan jatuh tempo Bank Jago tgl 20&#10;- Bersikap sopan dan panggil Mas Firman" class="w-full bg-surface-elevated border border-border rounded-lg p-2 text-text-primary text-xs outline-none resize-none font-body leading-relaxed"></textarea>
@@ -589,7 +607,6 @@ const HTML_SOURCE = `<!DOCTYPE html>
         <span class="material-symbols-outlined text-[14px]">save</span> Simpan Preferensi AI
       </button>
 
-      <!-- Auto-Summarizer Section -->
       <div class="border-t border-border/50 pt-2.5 space-y-2">
         <div class="flex justify-between items-center">
           <span class="font-headline font-bold text-xs text-text-primary flex items-center gap-1">
@@ -619,14 +636,16 @@ const HTML_SOURCE = `<!DOCTYPE html>
   </div>
 
   <!-- ========================================================================= -->
-  <!-- 📝 MODAL DIALOG: TAMBAH DATA (TRANSAKSI) -->
+  <!-- 📝 MODAL DIALOG: TAMBAH / EDIT TRANSAKSI -->
   <!-- ========================================================================= -->
-  <div id="modal-add" class="modal-overlay">
+  <div id="modal-tx" class="modal-overlay">
     <div class="bg-surface border border-border rounded-2xl p-4 w-full max-w-sm space-y-3 font-mono">
       <div class="flex justify-between items-center border-b border-border/50 pb-2">
-        <h3 class="font-headline font-bold text-sm text-text-primary" id="modal-title">Tambah Transaksi Baru</h3>
-        <button onclick="closeModal()" class="text-text-secondary hover:text-text-primary text-sm font-bold active:scale-90">✕</button>
+        <h3 class="font-headline font-bold text-sm text-text-primary" id="modal-tx-title">Tambah Transaksi Baru</h3>
+        <button onclick="closeTxModal()" class="text-text-secondary hover:text-text-primary text-sm font-bold active:scale-90">✕</button>
       </div>
+
+      <input type="hidden" id="modal-tx-id" value=""/>
 
       <div class="space-y-2 text-xs">
         <div>
@@ -644,6 +663,7 @@ const HTML_SOURCE = `<!DOCTYPE html>
           <label class="text-[10px] text-text-secondary uppercase">Dompet / Sumber Dana</label>
           <select id="modal-tx-wallet" class="w-full bg-surface-elevated border border-border rounded-lg p-2 text-text-primary outline-none mt-0.5">
             <option value="Cash Kertas">Cash Kertas</option>
+            <option value="Cash Koin">Cash Koin</option>
             <option value="Gopay">Gopay</option>
             <option value="Bank Jago">Bank Jago</option>
             <option value="SeaBank">SeaBank</option>
@@ -656,13 +676,59 @@ const HTML_SOURCE = `<!DOCTYPE html>
       </div>
 
       <div class="flex gap-2 pt-2">
-        <button onclick="closeModal()" class="flex-1 py-2 bg-surface-elevated text-text-secondary font-bold rounded-lg border border-border text-xs active:scale-95">Batal</button>
-        <button onclick="submitNewData()" class="flex-1 py-2 bg-lime text-black font-bold rounded-lg text-xs shadow-md active:scale-95">Simpan Data</button>
+        <button onclick="closeTxModal()" class="flex-1 py-2 bg-surface-elevated text-text-secondary font-bold rounded-lg border border-border text-xs active:scale-95">Batal</button>
+        <button onclick="submitTxData()" class="flex-1 py-2 bg-lime text-black font-bold rounded-lg text-xs shadow-md active:scale-95">Simpan Data</button>
       </div>
     </div>
   </div>
 
-  <!-- ⚡ SCRIPT -->
+  <!-- ========================================================================= -->
+  <!-- 📋 MODAL DIALOG: TAMBAH / EDIT AGENDA AKTIVITAS -->
+  <!-- ========================================================================= -->
+  <div id="modal-act" class="modal-overlay">
+    <div class="bg-surface border border-border rounded-2xl p-4 w-full max-w-sm space-y-3 font-mono">
+      <div class="flex justify-between items-center border-b border-border/50 pb-2">
+        <h3 class="font-headline font-bold text-sm text-text-primary" id="modal-act-title">Tambah Agenda Baru</h3>
+        <button onclick="closeActModal()" class="text-text-secondary hover:text-text-primary text-sm font-bold active:scale-90">✕</button>
+      </div>
+
+      <input type="hidden" id="modal-act-id" value=""/>
+
+      <div class="space-y-2 text-xs">
+        <div>
+          <label class="text-[10px] text-text-secondary uppercase">Judul Kegiatan</label>
+          <input id="modal-act-name" type="text" placeholder="Contoh: Trip Dieng 2026" class="w-full bg-surface-elevated border border-border rounded-lg p-2 text-text-primary outline-none mt-0.5"/>
+        </div>
+        <div>
+          <label class="text-[10px] text-text-secondary uppercase">Status</label>
+          <select id="modal-act-status" class="w-full bg-surface-elevated border border-border rounded-lg p-2 text-text-primary outline-none mt-0.5">
+            <option value="pending">Terjadwal (Pending)</option>
+            <option value="in_progress">Sedang Berjalan (In Progress)</option>
+            <option value="completed">Selesai (Completed)</option>
+          </select>
+        </div>
+        <div>
+          <label class="text-[10px] text-text-secondary uppercase">Prioritas</label>
+          <select id="modal-act-priority" class="w-full bg-surface-elevated border border-border rounded-lg p-2 text-text-primary outline-none mt-0.5">
+            <option value="high">Tinggi (High)</option>
+            <option value="medium">Sedang (Medium)</option>
+            <option value="low">Rendah (Low)</option>
+          </select>
+        </div>
+        <div>
+          <label class="text-[10px] text-text-secondary uppercase">Tanggal / Waktu</label>
+          <input id="modal-act-time" type="date" class="w-full bg-surface-elevated border border-border rounded-lg p-2 text-text-primary outline-none mt-0.5"/>
+        </div>
+      </div>
+
+      <div class="flex gap-2 pt-2">
+        <button onclick="closeActModal()" class="flex-1 py-2 bg-surface-elevated text-text-secondary font-bold rounded-lg border border-border text-xs active:scale-95">Batal</button>
+        <button onclick="submitActData()" class="flex-1 py-2 bg-lime text-black font-bold rounded-lg text-xs shadow-md active:scale-95">Simpan Agenda</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- ⚡ PURE SCRIPT -->
   <script src="app.js"></script>
 </body>
 </html>

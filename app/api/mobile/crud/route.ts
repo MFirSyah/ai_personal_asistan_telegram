@@ -99,6 +99,59 @@ export async function POST(req: NextRequest) {
       return NextResponse.json({ ok: true }, { headers: corsHeaders });
     }
 
+    // --- ACTIVITIES CRUD ---
+    if (action === 'create_activity') {
+      const { title, description, status, priority, start_time, end_time } = payload;
+      const { data, error } = await supabaseAdmin
+        .from('activities')
+        .insert({
+          user_id: safeUserId,
+          title,
+          description: description || '',
+          status: status || 'pending',
+          priority: priority || 'medium',
+          start_time: start_time || new Date().toISOString(),
+          end_time: end_time || null,
+        })
+        .select()
+        .single();
+
+      if (error) return NextResponse.json({ error: error.message }, { status: 500, headers: corsHeaders });
+      return NextResponse.json({ ok: true, data }, { headers: corsHeaders });
+    }
+
+    if (action === 'update_activity') {
+      const { id, title, description, status, priority, start_time, end_time } = payload;
+      const { data, error } = await supabaseAdmin
+        .from('activities')
+        .update({
+          title,
+          description,
+          status,
+          priority,
+          start_time,
+          end_time,
+          updated_at: new Date().toISOString(),
+        })
+        .eq('id', id)
+        .select()
+        .single();
+
+      if (error) return NextResponse.json({ error: error.message }, { status: 500, headers: corsHeaders });
+      return NextResponse.json({ ok: true, data }, { headers: corsHeaders });
+    }
+
+    if (action === 'delete_activity') {
+      const { id } = payload;
+      const { error } = await supabaseAdmin
+        .from('activities')
+        .update({ deleted_at: new Date().toISOString() })
+        .eq('id', id);
+
+      if (error) return NextResponse.json({ error: error.message }, { status: 500, headers: corsHeaders });
+      return NextResponse.json({ ok: true }, { headers: corsHeaders });
+    }
+
     // --- PREFERENCES & AI SETTINGS CRUD ---
     if (action === 'save_preference' || action === 'update_preference') {
       const { key, value } = payload;
@@ -106,7 +159,6 @@ export async function POST(req: NextRequest) {
         return NextResponse.json({ error: 'key and value are required' }, { status: 400, headers: corsHeaders });
       }
 
-      // Check if exists
       const { data: existing } = await supabaseAdmin
         .from('user_preferences')
         .select('id')
@@ -167,15 +219,20 @@ export async function POST(req: NextRequest) {
       const netCashflow = income - expense;
       const avgExpense = Math.round(expense / (days || 1));
 
-      const summaryText = `[Rangkuman Otomatis ${days} Hari Terakhir]\n` +
-        `• Periode Analisis: ${days} Hari Terakhir\n` +
-        `• Total Pemasukan: Rp ${income.toLocaleString('id-ID')}\n` +
-        `• Total Pengeluaran: Rp ${expense.toLocaleString('id-ID')}\n` +
-        `• Net Cashflow: Rp ${netCashflow.toLocaleString('id-ID')}\n` +
-        `• Rata-rata Burn Rate Harian: Rp ${avgExpense.toLocaleString('id-ID')}/hari\n` +
+      const summaryText = `[Rangkuman Otomatis ${days} Hari Terakhir]
+` +
+        `• Periode Analisis: ${days} Hari Terakhir
+` +
+        `• Total Pemasukan: Rp ${income.toLocaleString('id-ID')}
+` +
+        `• Total Pengeluaran: Rp ${expense.toLocaleString('id-ID')}
+` +
+        `• Net Cashflow: Rp ${netCashflow.toLocaleString('id-ID')}
+` +
+        `• Rata-rata Burn Rate Harian: Rp ${avgExpense.toLocaleString('id-ID')}/hari
+` +
         `• Status Agenda Aktif: ${acts.length} agenda terdaftar.`;
 
-      // Save as active preference
       await supabaseAdmin.from('user_preferences').upsert({
         user_id: safeUserId,
         key: `RANGKUMAN_OTOMATIS_${days}_HARI`,
