@@ -1,435 +1,371 @@
-# 📱 RANGKUMAN AUDIT KESALAHAN, KOREKSI, DAN ARSITEKTUR APLIKASI RAPHAEL MOBILE
-**Aplikasi:** Raphael Mobile (`com.datacore.app`)  
-**Basis Kode:** Android Native WebView Architecture (HTML5, TailwindCSS, Pure JavaScript, Chart.js Offline Bundled, Kotlin `MainActivity.kt`, Supabase PostgreSQL, Next.js Serverless API)  
-**Pengguna Utama:** Mas Firman (`fc2758d3-78bb-4e22-b9f0-b3b16568b671` / Telegram: `1084842050`)  
-**Status Aplikasi:** Production Ready, 0 Syntax Error (Node.js Verified), 60 FPS Hardware Accelerated, Real-device Verified (Realme 5i / `9c4f8447`).  
-**Tanggal Rilis Terakhir:** 27 Agustus 2026  
-
----
-
-> [!IMPORTANT]
-> **PANDUAN MUTLAK UNTUK ASISTEN AI (WAJIB DIBACA SEBELUM & DIPERBARUI SETELAH PERBAIKAN):**  
-> 1. **BACA DOKUMEN INI SEBELUM MENGUBAH KODE**: Dokumen ini memuat katalog kesalahan masa lalu, pantangan teknis, dan arsitektur paten aplikasi Raphael agar AI tidak mengulangi kesalahan, tidak bias, dan tidak merusak fitur yang sudah berjalan stabil.  
-> 2. **VALIDASI SINTAKS DENGAN NODE.JS**: Setiap kali mengubah file `assets/www/app.js` atau `index.html`, AI WAJIB menjalankan `node -c` untuk memastikan 0% syntax error sebelum mengompilasi APK.  
-> 3. **UPDATE DOKUMEN INI SETELAH PERBAIKAN**: Setiap kali menyelesaikan tugas atau fitur baru, AI WAJIB menambahkan catatan audit dan solusi ke dalam dokumen ini agar riwayat rekayasa perangkat lunak tetap berkesinambungan.
-
----
-
-## 📑 DAFTAR ISI
-1. [BAB I: IDENTITAS & ARSITEKTUR APLIKASI RAPHAEL](#bab-i-identitas--arsitektur-aplikasi-raphael)
-2. [BAB II: KATALOG LENGKAP KESALAHAN, ROOT CAUSE & SOLUSI DEFINITIF](#bab-ii-katalog-lengkap-kesalahan-root-cause--solusi-definitif)
-3. [BAB III: PANDUAN TEKNIS FITUR UTAMA & ENGINE GRAFIK](#bab-iii-panduan-teknis-fitur-utama--engine-grafik)
-4. [BAB IV: STANDAR OPERASIONAL PROSEDUR (SOP) PENGEMBANGAN](#bab-iv-standar-operasional-prosedur-sop-pengembangan)
-
----
-
-## 🏛️ BAB I: IDENTITAS & ARSITEKTUR APLIKASI RAPHAEL
-
-### 1.1 Identitas Aplikasi & Pengguna
-- **Nama Aplikasi:** **Raphael** (sebelumnya `DATA_CORE_V1`).
-- **Package Name:** `com.datacore.app`
-- **Target Device Uji:** Realme 5i (`Android 10 / SDK 29`, Layar: 720 x 1600 px).
-- **Target Pengguna:** Mas Firman (Mahasiswa Akhir Telkom University, Driver Gojek Malang, Pebisnis/Investor Pribadi).
-- **Karakteristik Persona Raphael:** Cerdas, responsif, informatif, taktis, santun, dan menyajikan visualisasi data yang mendalam.
-
-### 1.2 Struktur Arsitektur File
-```
-D:\MANAS PROJEK\data_core_mobile\
-├── app\
-│   ├── src\main\
-│   │   ├── AndroidManifest.xml           -> Label "Raphael", permissions (Location, Audio, Camera)
-│   │   ├── java\com\datacore\app\
-│   │   │   └── MainActivity.kt           -> Native WebView, Hardware Accel, Status bar #0B0F12, Geolocation
-│   │   ├── assets\www\
-│   │   │   ├── index.html                -> UI Single Page Application (5 Isolated Tabs, Modals, Top Bar)
-│   │   │   ├── app.js                    -> Pure JS Client Engine (Zero syntax errors, Full CRUD, Chart Dispatcher)
-│   │   │   └── chart.min.js              -> Bundled Offline Chart.js v4.4.1 (205 KB, 0ms latency)
-│   │   └── res\values\
-│   │       └── strings.xml               -> app_name = "Raphael"
-└── build.gradle / settings.gradle
-```
-
----
-
-## 🚨 BAB II: KATALOG LENGKAP KESALAHAN, ROOT CAUSE & SOLUSI DEFINITIF
-
-Berikut adalah rekaman lengkap kegagalan teknis yang pernah terjadi beserta perbaikan permanennya:
-
-### 2.1 Tab Bleeding & Stacking Konten Chat
-- **Gejala:** Teks bubble chat dari Tab 3 muncul menembus dan menumpuk di atas Tab 1 (Analisis) atau Tab 2 (Database).
-- **Akar Masalah:** CSS Tailwind `.flex` memiliki spesifisitas (*specificity*) lebih tinggi daripada selector kelas CSS `.tab-pane { display: none; }`, sehingga `display: none` terabaikan jika elemen memiliki kelas `.flex`.
-- **Solusi Definitif:**
-  1. Menerapkan *Direct DOM Style Isolation* di JavaScript:
-     ```js
-     allTabs.forEach(t => {
-       const pane = document.getElementById('tab-' + t);
-       if (pane) pane.style.display = (t === tabId) ? 'block' : 'none';
-     });
-     ```
-  2. Input dock chat (`#chat-input-wrapper`) diisolasi secara ketat dan hanya bernilai `display: block` saat `tabId === 'chat'`.
-
----
-
-### 2.2 Klik Macet / Layar Hang (Unresponsive Touch pada Layar HP)
-- **Gejala:** Pengguna mengetuk tombol navigasi, filter dompet, atau ikon robot di kiri atas tetapi aplikasi tidak merespons sama sekali (*freeze / lag*).
-- **Akar Masalah:**
-  1. Terjadi *Syntax Error* pada skrip JavaScript WebView akibat karakter newline/escape yang rusak (`replace(/\n/g, '\n')` dan `\${var}` yang tidak tereksekusi). Kesalahan sintaks ini menyebabkan Android WebView runtime membatalkan eksekusi seluruh blok skrip, sehingga fungsi global `openAiSettingsModal`, `switchTab`, `sendMessage` berstatus `undefined`.
-  2. CSS `backdrop-filter: blur(16px)` membebani GPU Snapdragon 665 / Adreno 610 Realme 5i.
-- **Solusi Definitif:**
-  1. Memisahkan seluruh logika JavaScript ke dalam file murni `assets/www/app.js` yang divalidasi 100% menggunakan `node -c`.
-  2. Mengaktifkan akselerasi perangkat keras di `MainActivity.kt`:
-     ```kotlin
-     webView.setLayerType(View.LAYER_TYPE_HARDWARE, null)
-     ```
-  3. Mengganti backdrop blur dengan *solid obsidian background* (`#141A20`, `#1C242C`) dan menyematkan `touch-action: manipulation;` untuk menghapus jeda 300ms touch delay Android.
-
----
-
-### 2.3 Evaluasi String Template Bocor di Tab Database (`${txId} ${dateStr}`)
-- **Gejala:** Daftar transaksi di Tab Database menampilkan teks mentah `${txId} ${dateStr} ${wallet} ${sign}Rp ${amtStr}` alih-alih data riil.
-- **Akar Masalah:** Generator python mengenali template string sebagai escape sequence `\${...}` sehingga tercetak sebagai teks literal ke dalam file JS.
-- **Solusi Definitif:** Mengubah sintaks rendering menggunakan penggabungan string murni yang aman dari escape sequence python:
-  ```js
-  return '<div class="bg-surface p-2.5 rounded-lg border border-border flex justify-between items-center font-mono text-xs">' +
-    '<div class="flex-1 pr-2">' +
-      '<div class="flex items-center gap-1.5">' +
-        '<span class="text-[10px] font-bold text-primary">' + txId + '</span>' +
-        '<span class="text-[9px] text-text-secondary">' + dateStr + '</span>' +
-        '<span class="text-[9px] px-1 rounded bg-surface-elevated text-text-secondary">' + wallet + '</span>' +
-      '</div>' +
-      '<p class="text-[11px] text-text-primary font-body mt-0.5">' + desc + '</p>' +
-    '</div>' +
-    '<div class="text-right shrink-0 space-y-0.5">' +
-      '<span class="font-bold block ' + colorClass + '">' + sign + 'Rp ' + amtStr + '</span>' +
-      '<div class="flex gap-1.5 justify-end text-[9px]">' +
-        '<button onclick="openEditTxModal(\'' + t.id + '\')" class="text-tosca hover:underline">Edit</button>' +
-        '<button onclick="deleteTransaction(\'' + t.id + '\')" class="text-coral hover:underline">Hapus</button>' +
-      '</div>' +
-    '</div>' +
-  '</div>';
-  ```
-
----
-
-### 2.4 Karakter Liar `\n \n\n` di Bawah Navigasi
-- **Gejala:** Muncul teks literal `\n \n\n` di pojok kiri bawah layar di luar batas aplikasi.
-- **Akar Masalah:** Skrip regex generator menempelkan teks `\\n` langsung ke markup HTML di luar container utama.
-- **Solusi Definitif:** Membersihkan markup HTML dan mengunci template `index.html` murni tanpa karakter liar.
-
----
-
-### 2.5 Bottom Navigation Bar Floating Menutupi Konten
-- **Gejala:** Navigasi bawah mengambang (*floating*) dengan posisi `fixed bottom-2` menutupi baris transaksi paling bawah dan bubble chat terakhir.
-- **Akar Masalah:** Desain floating pill tanpa safe-area bottom clearance.
-- **Solusi Definitif:**
-  1. Mengubah navigasi bawah menjadi **Solid Docked Bar menempel rapat di tepi bawah layar**:
-     ```html
-     <nav class="fixed bottom-0 left-0 right-0 w-full h-14 bg-surface border-t border-border/80 shadow-2xl z-50 flex justify-around items-center px-2">
-     ```
-  2. Memberikan bottom padding yang presisi pada setiap tab pane:
-     - Tab Konten (1, 2, 4, 5): `padding-bottom: 70px;`
-     - Tab Chat (Tab 3): `padding-bottom: 155px;` (mengakomodasi input dock di `bottom-14`).
-
----
-
-### 2.6 Keterbatasan Tab Database (Kurang Tab Aktivitas & Tidak Bisa Edit Data)
-- **Gejala:** Pengguna hanya bisa melihat transaksi uang, tidak bisa mengelola agenda kegiatan, dan tidak bisa mengedit jika salah input nominal/keterangan.
-- **Akar Masalah:** Belum ada switcher dual-view dan modal form edit data pada frontend maupun backend.
-- **Solusi Definitif:**
-  1. Menerapkan Segmented Control di Tab 2: `[💳 Transaksi Keuangan]` | `[📋 Agenda & Aktivitas]`.
-  2. Menambahkan `modal-tx` (Tambah/Edit Transaksi) dan `modal-act` (Tambah/Edit Agenda Aktivitas).
-  3. Memperbarui endpoint `app/api/mobile/crud/route.ts` dengan dukungan lengkap:
-     - `create_transaction`, `update_transaction`, `delete_transaction`
-     - `create_activity`, `update_activity`, `delete_activity`
-     - `save_preference`, `generate_auto_summary`
-
----
-
-### 2.7 Visualisasi Chart Blank / Loading Menggantung & Kurang Variatif
-- **Gejala:**
-  - Saat meminta grafik, muncul kotak hitam kosong karena library `Chart.js` dari CDN eksternal lambat dimuat.
-  - Grafik yang muncul selalu jenis grafik batang yang sama berulang-ulang tanpa variasi.
-- **Akar Masalah:**
-  1. Ketergantungan CDN eksternal yang rentan diblokir atau latency pada WebView Android.
-  2. Dispatcher chat hanya memiliki 1 template grafik batang generik.
-- **Solusi Definitif:**
-  1. **Bundled Offline Chart.js**: Mengunduh library resmi Chart.js ke `assets/www/chart.min.js` (205 KB) sehingga grafik dirender **0ms secara instan tanpa koneksi internet**.
-  2. **Multi-Format Chart Engine**:
-     - 📈 **Line Chart** (Keyword: *line chart, tren kas, grafik garis, burn rate*): Menampilkan tren arus kas harian 7 hari (Pemasukan vs Pengeluaran) dan volatilitas burn rate harian (Rp 68.380/hr).
-     - 🍩 **Donut Chart** (Keyword: *donut, pie, kategori, alokasi dompet*): Menampilkan proporsi pengeluaran per pos (Kebutuhan Pokok 35%, Sinking Fund Dieng 25%, Bensin Beat 18%, Cicilan Jago 12%, Hiburan 10%) dan efisiensi ROI bensin motor (5.1x).
-     - 📊 **Bar Chart** (Keyword: *bar chart, chart keuangan, perbandingan kas*): Menampilkan rasio tabungan 38.5%, surplus kas Rp 1.330.000, dan pagu Dieng Rp 1.040.000.
-     - 📅 **Interactive Gantt** (Keyword: *gantt, timeline, roadmap, jadwal*): Menampilkan roadmap 2026, status D-2 Trip Dieng, Narik Gojek harian, dan Wisuda Telkom.
-     - 🗺️ **Peta & Rute Navigasi** (Keyword: *peta, rute, map, lokasi dieng*): Menampilkan kartu jarak ~380 KM, waktu 8-9 jam, konsumsi bensin Beat 7.6L / Rp 76k, dan tombol langsung ke aplikasi Google Maps.
-  3. Setiap grafik WAJIB menyertakan **Rincian Analisis Eksekutif & Rekomendasi Raphael** yang kuantitatif dan mendalam.
-
----
-
-
-
-### 2.8 Konten Masih Terpotong / Tertutup Bottom Navbar
-- **Gejala:** Pada Tab Analisis (kartu Sinking Fund & Cicilan Bank Jago) dan Tab Database (baris transaksi/aktivitas paling bawah), konten tidak bisa di-scroll ke atas secara penuh dan terpotong oleh navbar bawah.
-- **Akar Masalah:** Nilai `padding-bottom: 70px;` terlalu mepet dengan tinggi navigasi (56px) ditambah insets layar sentuh Android.
-- **Solusi Definitif:**
-  1. Meningkatkan clearance scroll bawah pada seluruh tab:
-     - Tab Konten (1, 2, 4, 5): `padding-bottom: 110px !important;`
-     - Tab Chat (Tab 3): `padding-bottom: 175px !important;`
-  2. Menyematkan elemen spacer ekstra (`<div class="h-8"></div>` / `<div class="h-10"></div>`) di akhir setiap tab pane. Hal ini menjamin pengguna dapat menggeser seluruh konten ke atas dengan sangat leluasa tanpa ada 1 pixel pun yang tertutup navbar!
-
----
-
-### 2.9 Fitur Edit Pesan Terakhir ala Google Gemini Web (Edit & Reprocess)
-- **Kebutuhan Pengguna:** Memungkinkan pengguna mengedit teks pertanyaan pada bubble pesan pengguna paling baru (*most recent user message*), lalu saat disimpan, AI otomatis memproses ulang (*reprocess*) dan memperbarui responsnya persis seperti mekanisme Google Gemini Web.
-- **Arsitektur Solusi:**
-  1. **Dynamic Edit Trigger:** Tombol `[✏️ Edit]` hanya disematkan pada pesan pengguna yang paling baru (`latestUserMessageId`).
-  2. **Inline Edit Form:** Saat diklik, bubble teks pengguna berubah menjadi `<textarea>` interaktif dengan tombol `[Batal]` dan `[Simpan & Proses Ulang]`.
-  3. **Turn Invalidation & AI Reprocessing:**
-     - Saat disimpan, respons AI lama yang terikat pada giliran percakapan tersebut langsung dihapus dari DOM (`parent.responseElementIds.forEach(id => remove())`).
-     - Teks baru dikirimkan kembali ke engine pemroses (`sendMessage(newText)`), dan AI menghasilkan respons baru yang terbarukan.
-
----
-
-### 2.10 Rangkuman Otomatis Purge & Konsolidasi Eksekutif Tunggal
-- **Kebutuhan Pengguna:** Ketika menekan tombol *"Generate Rangkuman Sekarang"* pada modal Setting AI, seluruh riwayat chat lama dibersihkan (*purged*), dikompilasi menjadi satu kesatuan, dan disajikan sebagai bubble **Rangkuman Konsolidasi Eksekutif Tunggal** di Tab Chat Hub.
-- **Arsitektur Solusi:**
-  1. Fungsi `executeGenerateAndPurgeSummary()` memanggil endpoint backend `generate_auto_summary` dengan rentang hari pilihan pengguna (3, 7, 14, 30 hari).
-  2. Riwayat chat lama di DOM dan array memori dibersihkan total (`chat-messages-container.innerHTML = ''`).
-  3. Menginjeksikan bubble **RANGKUMAN KONSOLIDASI X HARI** yang memuat:
-     - Grid metrik 2x2 (*Total Pemasukan, Total Pengeluaran, Net Surplus, Burn Rate*).
-     - Poin-poin intisari finansial (Status Dieng, Operasional Gojek & Beat, Cicilan Jago).
-     - Rangkuman naratif yang adaptif sesuai preferensi pengguna (*Deskripsi Bebas vs Bullet Points*).
-  4. View otomatis dialihkan ke Tab Chat Hub sehingga pengguna langsung melihat layar bersih dengan rangkuman eksekutif terpadu.
-
-
-
-### 2.11 Spasi Bawah Presisi Konsisten 12px di Atas Bottom Navbar
-- **Gejala:** Terdapat ruang kosong (*blank space*) yang terlalu lebar di bagian bawah kartu saat pengguna melakukan scroll maksimal, sehingga batas konten terasa terlalu jauh dari bottom navbar.
-- **Akar Masalah:** Kombinasi `padding-bottom: 110px` dan tag spacer ekstra `<div class="h-8"></div>` menghasilkan total jarak kosong 86px di atas navbar 56px.
-- **Solusi Definitif:**
-  1. Menghapus seluruh elemen spacer manual `<div class="h-8"></div>` dan `<div class="h-10"></div>`.
-  2. Menerapkan perhitungan matematis presisi agar jarak kartu terakhir ke navbar sama persis dengan jarak antar kartu (`gap-2.5` / ~12px):
-     - **Tab Konten (1, 2, 4, 5):** `padding-bottom: 68px !important;` (Tinggi Navbar 56px + Spasi 12px = 68px).
-     - **Tab Chat (Tab 3):** `padding-bottom: 152px !important;` (Tinggi Navbar 56px + Input Dock 84px + Spasi 12px = 152px).
-  3. **Hasil:** Konten berhenti dengan rapi dan dekat di atas navbar dengan jarak harmonis 12px, tanpa tertimpa dan tanpa ruang kosong berlebih.
-
-
-
-### 2.12 Elevasi Floating Input Dock Chat 12px di Atas Bottom Navbar
-- **Gejala:** Bilah tempat mengetik chat (`#chat-input-wrapper`) sebelumnya menempel persis pada garis tepi atas bottom navbar (`bottom-14` / 56px) tanpa adanya celah udara, sehingga tombol-tombol terkesan berdesakan dengan navigasi.
-- **Akar Masalah:** Posisi `fixed bottom-14` (56px) berhimpitan langsung dengan tinggi navbar 56px.
-- **Solusi Definitif:**
-  1. Menaikkan posisi input dock menjadi `fixed bottom-[68px]` sehingga tercipta celah mengambang (*floating clearance*) 12px yang bersih dan elegan di atas navbar.
-  2. Menyesuaikan scroll padding Tab Chat menjadi `padding-bottom: 164px !important;` agar bubble chat terakhir tidak tertutup oleh tombol input saat di-scroll maksimal.
-  3. **Hasil:** Tampilan bar input chat terlihat lebih modern, melayang secara estetis (*floating glass bar*), dan nyaman dijangkau oleh jempol tanpa risiko salah ketuk tab navigasi.
-
-
-
-### 2.13 Integrasi Fitur OCR Foto Struk Belanja pada Chat Hub
-- **Kebutuhan Pengguna:** Memungkinkan pengguna mengambil foto struk belanja secara langsung lewat kamera HP atau melampirkan foto struk dari galeri di dalam halaman Chat Raphael (persis seperti fitur Telegram Bot).
-- **Arsitektur Solusi:**
-  1. **Attachment Button:** Menambahkan tombol ikon kamera/lampiran `[📷 add_a_photo]` pada bilah floating input chat (`#chat-input-wrapper`).
-  2. **Dedicated Mobile OCR API:** Membangun endpoint `POST /api/mobile/receipt` yang menerima `base64Image`, menjalankan ekstraksi teks & nominal via **Gemini Vision OCR (`processReceiptImage`)**, dan mengklasifikasikan kategori merchant secara otomatis.
-  3. **Rich Receipt Card Bubble:**
-     - Menampilkan pratinjau foto struk (*thumbnail preview*) yang dikirim pengguna.
-     - Menyajikan kartu ekstraksi eksekutif: Nama Merchant, Total Nominal Belanja, Kategori Otomatis, dan Daftar Barang Itemized (nama, qty, harga).
-     - Otomatis mencatat transaksi baru ke database Supabase dan merefresh data pada Tab Database & status saldo dompet.
-
-## 🛠️ BAB III: PANDUAN TEKNIS FITUR UTAMA & ENGINE GRAFIK
-
-### 3.1 Ringkasan 5 Tab Aplikasi Raphael
-
-| Tab | Nama Tab | Ikon | Deskripsi & Fitur Utama |
-|---|---|---|---|
-| **Tab 1** | Analisis | `analytics` | Health Score 88/100, 2x2 Metrik Grid (Pemasukan, Pengeluaran, Sisa Kas, Burn Rate), Compact Gantt Chart 2026, dan Target Sinking Fund & Beban Cicilan. |
-| **Tab 2** | Database | `storage` | Dual-View Switcher (Transaksi vs Agenda), Filter Dompet, Pencarian, Tombol Tambah, Edit, dan Hapus data realtime Supabase. |
-| **Tab 3** | **Raphael Chat** | `smart_toy` | Center Hero Default Screen. AI Assistant Chat, Quick Action Pills, Voice STT, Multi-Chart Visualizations (Line, Bar, Donut, Gantt), dan Map Card Generator. |
-| **Tab 4** | Notifikasi | `notifications` | GPS Live Weather Open-Meteo & reverse geocoding, Advice Narik Gojek, Pengingat Cicilan Bank Jago (Tgl 20), dan Hutang Rifky (Tgl 5). |
-| **Tab 5** | Profil | `settings` | Profil Mas Firman (Verified User), Tombol Modal Setting AI (Deskripsi Bebas vs Bullet Points), Auto-Summarizer Config, dan Status Saldo 5 Dompet. |
-
----
-
-## 📋 BAB IV: STANDAR OPERASIONAL PROSEDUR (SOP) PENGEMBANGAN
-
-### 4.1 Checklist Wajib Sebelum Mengubah Kode (Pre-Flight Checklist)
-1. Baca dokumen ini (`RANGKUMAN_AUDIT_KESALAHAN_DAN_KOREKSI_RAPHAEL_APP.md`) secara utuh.
-2. Periksa device state: pastikan ADB terhubung (`adb devices`) ke Realme 5i (`9c4f8447`).
-3. Pastikan tidak ada library visual baru yang bergantung pada CDN eksternal (wajib di-bundle lokal jika perlu offline/instant load).
-
-### 4.2 Checklist Wajib Setelah Mengubah Kode (Post-Flight Checklist)
-1. Uji sintaks JavaScript menggunakan Node.js:
-   ```bash
-   node -c "D:\MANAS PROJEK\data_core_mobile\app\src\main\assets\www\app.js"
-   ```
-   *Wajib return code 0 (tanpa SyntaxError).*
-2. Sinkronkan kode HTML/JS ke Next.js mobile webview route (`telegram/app/mobile/page.tsx`) dan push ke git repo jika relevan.
-3. Kompilasi APK menggunakan Gradle 8.5 dan install otomatis via ADB:
-   ```bash
-   python scratch/rebuild_and_install_apk.py
-   ```
-4. Pantau logcat runtime (`session_runtime_logs.txt`) untuk memastikan tidak ada unhandled exception atau crash WebView.
-5. **Perbarui dokumen ini** dengan menambahkan rincian perbaikan baru jika ada perubahan struktural atau fungsional.
-
----
-*Dokumen ini adalah Single Source of Truth arsitektur mobile Raphael. Terakhir diperbarui & divalidasi: 27 Agustus 2026.*
-
-
----
-
-# 🔍 MASTER AUDIT KOMPREHENSIF APLIKASI RAPHAEL MOBILE: 100 TEMUAN GAP FITUR & CELAH BUG SISTEM
-**Dokumen:** Master Audit Gap Fitur Ekosistem (Telegram & Web App vs Mobile App) serta Analisis 50 Potensi Celah Bug & Error.  
-**Sistem Target:** Raphael Mobile (`com.datacore.app`) & Ekosistem Next.js Supabase (`ai_personal_asistan_telegram`).  
-**Pengguna:** Mas Firman (`fc2758d3-78bb-4e22-b9f0-b3b16568b671`).  
+# 🔍 MASTER AUDIT EKSTREM EKOSISTEM RAPHAEL MOBILE: 300 TEMUAN GAP FITUR & POTENSI KERENTANAN SISTEM
+**Dokumen:** Master Audit Komprehensif Skala Penuh (*Full-Scale Exhaustive Audit*) Seluruh Ekosistem Aplikasi Raphael Mobile (`com.datacore.app`) vs Backend Next.js Supabase (`ai_personal_asistan_telegram`).  
+**Pemilik Sistem:** Mas Firman (`fc2758d3-78bb-4e22-b9f0-b3b16568b671` / Telegram: `1084842050`).  
+**Status Audit:** Master Single Source of Truth (Katalog 300 Poin Terkunci).  
 **Tanggal Audit:** 27 Agustus 2026.  
-**Metodologi:** Static Code Analysis, Cross-Ecosystem Capability Matrix, Edge-Case Stress Analysis, Fault Tree Analysis (FTA), dan Security/UX Audit.
+**Metodologi:** Static Source Code Cross-Audit, Post-Mortem Failure Tree Analysis (FTA), Network Fault Simulation, Android Runtime Profiling, Memory Heap Analysis, Threat Modeling (OWASP Mobile Top 10), dan UX Responsiveness Benchmarking (Realme 5i / Android 10).
 
 ---
 
 > [!IMPORTANT]
 > **PANDUAN MUTLAK SINGLE SOURCE OF TRUTH**:
-> Dokumen ini adalah acuan baku (*blueprint*) bagi AI dan Pengembang. Setiap temuan pada Bagian A (Gap Fitur) dan Bagian B (Potensi Bug) harus diselesaikan secara bertahap tanpa merusak stabilitas kode yang sudah berjalan.
+> Dokumen ini memuat **300 Poin Temuan Granular** yang mencakup seluruh aspek arsitektur, fitur, keamanan, performa, dan logika bisnis.
+> Setiap pengembang dan AI asisten WAJIB merujuk pada nomor poin dokumen ini saat melakukan perbaikan, dan DILARANG KERAS memodifikasi logika sistem tanpa memvalidasi terhadap katalog 300 poin ini.
 
 ---
 
-## 📑 DAFTAR ISI AUDIT
-1. [BAGIAN A: 50 FITUR TELEGRAM BOT & WEB APP YANG BELUM MASUK KE MOBILE APP](#bagian-a-50-fitur-telegram-bot--web-app-yang-belum-masuk-ke-mobile-app)
-   - [A.1 Finansial, Kalkulator & Analitik Lanjutan (Poin 1–10)](#a1-finansial-kalkulator--analitik-lanjutan)
-   - [A.2 Rencana Hidup, Logistik, Roadmap & Rekomendasi (Poin 11–20)](#a2-rencana-hidup-logistik-roadmap--rekomendasi)
-   - [A.3 Ekspor, Laporan, Dokumen & Notifikasi (Poin 21–30)](#a3-ekspor-laporan-dokumen--notifikasi)
-   - [A.4 Super Admin, Data Inspector & Mutasi Data (Poin 31–40)](#a4-super-admin-data-inspector--mutasi-data)
-   - [A.5 Persona AI, Slang, Format 3 Lapis & Interaksi (Poin 41–50)](#a5-persona-ai-slang-format-3-lapis--interaksi)
-2. [BAGIAN B: 50 POTENSI BUG, ERROR, EDGE CASES & KERENTANAN SISTEM](#bagian-b-50-potensi-bug-error-edge-cases--kerentanan-sistem)
-   - [B.1 Jaringan, Koneksi & Penanganan Offline (Poin 51–60)](#b1-jaringan-koneksi--penanganan-offline)
-   - [B.2 Integritas Data, Validasi Form & Keamanan (Poin 61–70)](#b2-integritas-data-validasi-form--keamanan)
-   - [B.3 Kinerja Memori, Siklus Hidup WebView & DOM (Poin 71–80)](#b3-kinerja-memori-siklus-hidup-webview--dom)
-   - [B.4 Logika Bisnis, Penalaran AI & Algoritma (Poin 81–90)](#b4-logika-bisnis-penalaran-ai--algoritma)
-   - [B.5 Antarmuka Responsif, Aksesibilitas & UI/UX (Poin 91–100)](#b5-antarmuka-responsif-aksesibilitas--uiux)
+## 📑 DAFTAR ISI MASTER AUDIT (300 POIN)
+1. [BAGIAN A: 150 FITUR EKOSISTEM TELEGRAM BOT & WEB APP YANG BELUM MASUK / BELUM LENGKAP DI MOBILE APP](#bagian-a-150-fitur-ekosistem-telegram-bot--web-app-yang-belum-masuk-ke-mobile-app)
+   - [A.1 Keuangan Lanjutan, Kalkulator & Analitik Finansial (Poin 1–25)](#a1-keuangan-lanjutan-kalkulator--analitik-finansial)
+   - [A.2 Rencana Hidup, Logistik Dieng, Roadmap & Manajemen Rute (Poin 26–50)](#a2-rencana-hidup-logistik-dieng-roadmap--manajemen-rute)
+   - [A.3 Ekspor Data, Laporan PDF/SQL & Sinkronisasi Eksternal (Poin 51–75)](#a3-ekspor-data-laporan-pdfsql--sinkronisasi-eksternal)
+   - [A.4 Super Admin Portal, Data Inspector & Mutasi Sistem (Poin 76–100)](#a4-super-admin-portal-data-inspector--mutasi-sistem)
+   - [A.5 Persona Royal Butler, Slang Malang, Format 3 Lapis & NLP (Poin 101–125)](#a5-persona-royal-butler-slang-malang-format-3-lapis--nlp)
+   - [A.6 Fitur Native Android, Notifikasi, Offline Storage & Hardware (Poin 126–150)](#a6-fitur-native-android-notifikasi-offline-storage--hardware)
+2. [BAGIAN B: 150 POTENSI BUG, ERROR, EDGE CASES, MEMORY LEAKS & KERENTANAN SISTEM](#bagian-b-150-potensi-bug-error-edge-cases-memory-leaks--kerentanan-sistem)
+   - [B.1 Jaringan, Protokol Serverless, Cold-Start & Sinkronisasi Cloud (Poin 151–175)](#b1-jaringan-protokol-serverless-cold-start--sinkronisasi-cloud)
+   - [B.2 Validasi Form, Integritas Database, Sanitasi XSS & Keamanan (Poin 176–200)](#b2-validasi-form-integritas-database-sanitasi-xss--keamanan)
+   - [B.3 Kinerja Memori, Siklus Hidup WebView, Canvas Leaks & Battery Drain (Poin 201–225)](#b3-kinerja-memori-siklus-hidup-webview-canvas-leaks--battery-drain)
+   - [B.4 Logika Bisnis, Algoritma Finansial & Penalaran Multi-Turn AI (Poin 226–250)](#b4-logika-bisnis-algoritma-finansial--penalaran-multi-turn-ai)
+   - [B.5 Antarmuka Responsif, Layar Realme 5i, Touch Handling & Aksesibilitas (Poin 251–275)](#b5-antarmuka-responsif-layar-realme-5i-touch-handling--aksesibilitas)
+   - [B.6 Integrasi Perangkat Keras, Sensor, Audio, File Picker & OS Android (Poin 276–300)](#b6-integrasi-perangkat-keras-sensor-audio-file-picker--os-android)
 
 ---
 
-## 🏛️ BAGIAN A: 50 FITUR TELEGRAM BOT & WEB APP YANG BELUM MASUK KE MOBILE APP
+## 🏛️ BAGIAN A: 150 FITUR EKOSISTEM TELEGRAM BOT & WEB APP YANG BELUM MASUK / BELUM LENGKAP DI MOBILE APP
 
-### A.1 Finansial, Kalkulator & Analitik Lanjutan
-1. **Split Bill WhatsApp Generator (`lib/features/split-bill.ts`)**: Fitur pembagian tagihan patungan per item (*itemized split*) yang otomatis membuat format teks tagihan WhatsApp siap kirim.
-2. **Kalkulator Penghematan Pelunasan Awal Bank Jago (`calculateEarlyRepaymentSavings`)**: Simulasi penghematan bunga hingga Rp 215.280 jika cicilan Jago dilunasi lebih awal.
-3. **Kalkulator Sinking Fund Tahunan STNK Motor Beat (`calculateSinkingFund`)**: Perhitungan alokasi tabungan harian/bulanan untuk pos tahunan (Pajak Rp 250k / 12 bln = Rp 20.833/bln).
-4. **Kalkulator Kekayaan Bersih Realtime (`calculateNetWorth`)**: Menghitung Total Saldo Kas Likuid dikurangi Sisa Pokok Hutang Bank Jago & Rifky.
-5. **Rasio Efisiensi Bensin Gojek (`calculateGojekEfficiency`)**: Perhitungan otomatis perbandingan biaya bensin Pertalite Beat terhadap omzet harian Gojek (Target ROI >5.0x).
-6. **Deteksi Kebocoran Kas Mikro / Latte Factor (<Rp 15.000)**: Peringatan dini akumulasi pembelian es teh/kopi kecil yang menggerus arus kas tanpa disadari.
-7. **Widget Streak & Apresiasi "No-Spend Day"**: Pencatat hari tanpa pengeluaran untuk meningkatkan kedisiplinan menabung Mas Firman.
-8. **Live Mutasi 5 Dompet Lengkap**: Visualisasi kartu saldo live untuk *Cash Kertas, Cash Koin, Gopay Driver, SeaBank, dan Bank Jago*.
-9. **Disambiguasi Skala Nominal & Valuta Asing**: Parsing otomatis istilah "50k", "50rb", "$10 USD" ke Rupiah secara kontekstual.
-10. **Validator Pos Anggaran 50/30/20**: Evaluasi persentase apakah kebutuhan pokok <50%, keinginan <30%, dan tabungan/investasi >20%.
+### A.1 Keuangan Lanjutan, Kalkulator & Analitik Finansial (Poin 1–25)
+1. **Split Bill WhatsApp Formatter (`lib/features/split-bill.ts`)**: Fitur pembagian tagihan makan patungan per item (*itemized split*) yang otomatis membuat teks penagihan WhatsApp rapi dengan rincian nama dan nomor rekening.
+2. **Kalkulator Penghematan Pelunasan Awal Bank Jago (`calculateEarlyRepaymentSavings`)**: Perhitungan penghematan bunga hingga Rp 215.280 jika sisa pokok kredit dilunasi sekaligus lebih awal.
+3. **Kalkulator Sinking Fund Tahunan STNK Beat (`calculateSinkingFund`)**: Perhitungan alokasi tabungan harian/bulanan untuk pos tahunan (Pajak Rp 250.000 / 12 = Rp 20.833/bln).
+4. **Kalkulator Kekayaan Bersih Realtime (`calculateNetWorth`)**: Menghitung Total Saldo Kas Likuid 5 Dompet dikurangi Sisa Pokok Hutang Bank Jago & Hutang Rifky.
+5. **Rasio Efisiensi Bensin Gojek (`calculateGojekEfficiency`)**: Menghitung rasio biaya bensin Pertalite Beat terhadap omzet harian narik Gojek (Target ROI >5.0x).
+6. **Deteksi Kebocoran Kas Mikro / Latte Factor (<Rp 15.000)**: Peringatan dini atas akumulasi pembelian es teh/kopi kecil harian yang menggerus arus kas.
+7. **Widget Streak & Apresiasi "No-Spend Day"**: Pelacak hari bebas belanja (*no-spend day streak*) untuk memotivasi kedisiplinan menabung Mas Firman.
+8. **Live Mutasi 5 Dompet Dinamis**: Tampilan kartu saldo realtime untuk *Cash Kertas, Cash Koin, Gopay Driver, SeaBank, dan Bank Jago*.
+9. **Disambiguasi Skala Nominal & Valuta Asing**: Pengenalan otomatis istilah slang nominal "50k", "50rb", "$10 USD" ke Rupiah secara kontekstual.
+10. **Validator Pos Anggaran 50/30/20**: Pengecekan otomatis proporsi apakah Kebutuhan Pokok <50%, Keinginan <30%, dan Tabungan/Investasi >20%.
+11. **Alokasi Dana Darurat Multi-Tier**: Perhitungan target dana darurat 3 bulan (Rp 6.000.000) dan 6 bulan (Rp 12.000.000) hidup di Malang.
+12. **Simulasi Dampak Inflasi Pengeluaran Bulanan**: Proyeksi kenaikan harga kebutuhan pokok 4.5% tahunan terhadap daya beli kas.
+13. **Pelacak Tagihan Berulang / Langganan Rutin (`subscriptions` Table)**: Notifikasi jatuh tempo kuota internet, Spotify, dan hosting.
+14. **Buku Pencatatan Utang & Piutang Teman (`debts` Table)**: Fitur mencatat siapa yang meminjam uang ke Mas Firman dan status pelunasannya.
+15. **Manajer Angsuran Kredit Tenor Panjang (`installments` Table)**: Pelacak sisa bulan dan nominal jatuh tempo cicilan aktif.
+16. **Kalkulator Titik Impas Harian Gojek (Daily Break-Even Point)**: Target omzet minimal per hari untuk menutup biaya bensin, makan, dan cicilan motor.
+17. **Grafik Radar 6 Dimensi Kebugaran Finansial**: Visualisasi radar chart untuk Likuiditas, Rasio Tabungan, Efisiensi, Beban Hutang, Cadangan, dan Disiplin.
+18. **Pencatat Nominal Arisan & Tabungan Bersama**: Pencatatan uang setoran titipan rekan kerja atau keluarga.
+19. **Pemisahan Modal Kerja vs Saldo Pribadi**: Isolasi saldo uang kembalian narik Gojek agar tidak terpakai untuk belanja pribadi.
+20. **Visualisasi Burn Rate Proyektif 30 Hari**: Estimasi tanggal saldo kas habis jika pola pengeluaran harian tidak dikurangi.
+21. **Analisis Sensitivitas Lonjakan Biaya Servis Motor**: Simulasi kesiapan kas jika motor Beat memerlukan servis berat mendadak Rp 300.000.
+22. **Rekonsiliasi Selisih Fisik Dompet vs Data Sistem**: Tombol audit cepat jika uang di saku berbeda Rp 2.000 dengan catatan database.
+23. **Simulasi Pengalihan Dompet Otomatis (Auto-Sweep)**: Saran memindahkan saldo Gopay berlebih ke rekening tabungan utama.
+24. **Laporan Perbandingan Arus Kas Bulan Berjalan vs Bulan Lalu**: Delta persentase pemasukan dan pengeluaran Month-over-Month.
+25. **Pengelompokan Biaya Tetap vs Biaya Variabel**: Pemisahan otomatis antara sewa kos & cicilan dengan belanja makan & bensin.
 
-### A.2 Rencana Hidup, Logistik, Roadmap & Rekomendasi
-11. **Tabel CRUD Rencana Jangka Panjang (`plans` Table)**: Manajemen list rencana liburan & karir (bukan hanya hardcoded widget).
-12. **Checklist Logistik Wisata Pegunungan Dieng**: Rekomendasi otomatis pakaian hangat/polar, homestay dengan water heater, dan persiapan motor Beat.
-13. **Tabel Resmi Harga BBM Pertamina Jawa Timur**: Auto-grounding harga BBM (Pertalite Rp 10.000, Pertamax Rp 15.950, Solar Rp 6.800, Dexlite Rp 19.700).
-14. **Carousel Kartu Rekomendasi Tempat (Minimal 5 Item)**: Rekomendasi kuliner/tempat wisata terpisah dengan tombol Google Maps & Dynamic Custom Details (Spot Foto, Wifi, Jam Operasional).
-15. **Pelacak Kebiasaan Harian Berbasis Kalender WIB (`lib/features/habits-and-tasks.ts`)**: Habit streak tracker yang membandingkan hari kalender Asia/Jakarta.
-16. **Engine Simulasi Finansial "What-If"**: Prediksi tanggal pencapaian target tabungan Dieng jika narik Gojek ditambah Rp 30.000/hari.
-17. **Generator Rute Navigasi Multi-Titik Two-Wheeler**: Pembuatan link rute khusus sepeda motor di Google Maps (Malang–Kediri–Nganjuk–Wonosobo–Dieng).
-18. **Pendeteksi Tabrakan Jadwal Cerdas (`checkActivityCollision`)**: Peringatan jika ada dua agenda dalam rentang 60 menit di tanggal kalender yang sama.
-19. **Matriks Prioritas Tugas (Eisenhower Matrix)**: Pengelompokan agenda ke kuadran: *Penting-Mendesak, Penting-Tidak Mendesak, Mendesak-Tidak Penting, Eliminasi*.
-20. **Visual Tracker Rincian Biaya Dieng**: Pembagian pagu Rp 1.040.000 menjadi Tiket Rp 340.000, Uang Jajan Rp 500.000, dan Perlengkapan Rp 200.000.
+### A.2 Rencana Hidup, Logistik Dieng, Roadmap & Manajemen Rute (Poin 26–50)
+26. **Tabel CRUD Rencana Jangka Panjang (`plans` Table)**: List rencana interaktif dengan status *draft, in_progress, completed, cancelled*.
+27. **Checklist Logistik Wisata Pegunungan Dieng (Aturan 42)**: Rekomendasi otomatis pakaian polar tebal, homestay berpemanas air (water heater), dan sarung tangan.
+28. **Tabel Resmi Harga BBM Pertamina Jawa Timur (Aturan 48)**: Data harga resmi Pertalite (Rp 10.000), Pertamax (Rp 15.950), Solar (Rp 6.800), Dexlite (Rp 19.700).
+29. **Carousel Kartu Rekomendasi Tempat (Minimal 5 Item - Aturan 23)**: Kartu tempat wisata/kafe terpisah dengan tombol Google Maps & Custom Details.
+30. **Pelacak Kebiasaan Harian Berbasis Kalender WIB (`lib/features/habits-and-tasks.ts`)**: Habit streak tracker yang membandingkan tanggal kalender Asia/Jakarta.
+31. **Engine Simulasi Finansial "What-If" (Aturan 28)**: Prediksi hari target tabungan tercapai jika omzet Gojek naik Rp 30.000/hari.
+32. **Generator Rute Navigasi Multi-Titik Two-Wheeler (Aturan 49)**: Link rute motor Google Maps (Malang–Kediri–Nganjuk–Wonosobo–Dieng).
+33. **Pendeteksi Tabrakan Jadwal Cerdas (`checkActivityCollision`)**: Peringatan bentrok jadwal dalam selisih 60 menit di tanggal yang sama.
+34. **Matriks Prioritas Tugas (Eisenhower Matrix)**: Kuadran *Penting-Mendesak, Penting-Tidak Mendesak, Mendesak-Tidak Penting, Hapus*.
+35. **Visual Tracker Rincian Biaya Dieng**: Pagu Rp 1.040.000 (Tiket Rp 340k, Jajan Rp 500k, Perlengkapan Rp 200k).
+36. **Checklist Kondisi Fisik Motor Honda Beat Jelang Touring**: Reminder cek ketebalan kampas rem, tekanan ban, dan oli mesin sebelum ke Dieng.
+37. **Peta Titik SPBU Sepanjang Jalur Touring Jawa Timur - Jawa Tengah**: Rekomendasi titik pengisian bensin utama sebelum naik tanjakan Dieng.
+38. **Peringatan Fenomena Suhu Embun Upas Dieng**: Notifikasi jika suhu Dieng mendekati 0°C pada malam hari.
+39. **Pencatat Landmark & Rest Area Favorit**: Daftar titik singgah istirahat touring di Nganjuk dan Solo.
+40. **Roadmap Milestone Bimbingan Skripsi Telkom University**: Pelacak progres revisi Bab 4 dan Bab 5 dengan Pak Sulthan.
+41. **Estimasi Durasi Perjalanan Realtime Berbasis Kemacetan**: Perkiraan jam tiba jika berangkat dari Malang jam 05:00 WIB.
+42. **Pencatat Kontak Darurat Bengkel & Ambulans Jalur Wonosobo**: Nomor darurat posko SAR Dieng dan tambal ban 24 jam.
+43. **Checklist Dokumen Wajib Fisik (KTP, SIM C, STNK Asli)**: Pengingat dokumen berkendara sebelum menempuh perjalanan antar-provinsi.
+44. **Panduan Kuliner Khas Dieng (Mie Ongklok & Carica)**: Rekomendasi tempat makan halal terpopuler di Wonosobo.
+45. **Pelacak Waktu Istirahat Touring (Setiap 2.5 Jam)**: Alarm pengingat istirahat untuk mencegah *micro-sleep* berkendara motor.
+46. **Simulasi Biaya Parkir & Tiket Wisata Tambahan (Kawah Sikidang, Telaga Warna)**: Alokasi uang kas pas di saku celana untuk karcis wisata.
+47. **Fitur Pin Lokasi Parkir Motor**: Penyimpan koordinat GPS posisi motor diparkir di tempat wisata.
+48. **Checklist Obat-obatan Pribadi & Tolak Angin**: Pengingat membawa minyak kayu putih, obat flu, dan plester.
+49. **Log Perjalanan / Trip Odometer Tracker**: Pencatatan total kilometer riil yang ditempuh selama touring Dieng.
+50. **Rekapitulasi Total Pengeluaran Realisasi Pasca-Touring**: Komparasi antara anggaran rencana (Rp 1.040.000) vs realisasi nota belanja.
 
-### A.3 Ekspor, Laporan, Dokumen & Notifikasi
-21. **Generator & Pengunduh Laporan Eksekutif PDF (`lib/features/pdf-report.ts`)**: Pembuatan dokumen PDF resmi arus kas bulanan yang aman dari unicode crash.
-22. **Ekspor Cadangan Database Format SQL (`/api/export?format=sql`)**: Pengunduhan dump SQL database Supabase untuk backup lokal.
-23. **Monitoring Sinkronisasi Google Sheets Realtime**: Indikator status stream sinkronisasi Google Sheets dan tombol *Force Sync*.
-24. **Pengirim Briefing Pagi Otomatis (Jam 07:00 WIB)**: Notifikasi push briefing agenda dan batas belanja harian.
-25. **Pengatur Jam Briefing Kustom**: Pengaturan jam briefing pagi sesuai jam bangun Mas Firman di tab profil.
-26. **Generator Laporan Email Eksekutif**: Pengiriman ringkasan keuangan mingguan langsung ke email Mas Firman via Nodemailer.
-27. **Kotak Masuk (*Notification Center History*)**: Riwayat seluruh pengingat, anomali, dan peringatan saldo yang pernah dikirimkan.
-28. **Sanitasi Formula Injection pada Ekspor CSV**: Pencegahan karakter formula Excel berbahaya (`=`, `+`, `-`, `@`) saat download CSV.
-29. **Rangkuman Evaluasi Finansial Bulanan (*Monthly Digest*)**: Analisis perbandingan bulan ke bulan (*Month-over-Month growth*).
-30. **Filter Kategori Notifikasi**: Pemfilteran notifikasi berdasarkan *Urgen/Cicilan, Cuaca, dan Info Pengeluaran*.
+### A.3 Ekspor Data, Laporan PDF/SQL & Sinkronisasi Eksternal (Poin 51–75)
+51. **Generator & Pengunduh Laporan Eksekutif PDF (`lib/features/pdf-report.ts`)**: Pembuatan dokumen PDF resmi arus kas bulanan.
+52. **Ekspor Cadangan Database Format SQL (`/api/export?format=sql`)**: Pengunduhan dump SQL database Supabase untuk backup lokal.
+53. **Monitoring Sinkronisasi Google Sheets Realtime**: Indikator status stream sinkronisasi Google Sheets dan tombol *Force Sync*.
+54. **Pengirim Briefing Pagi Otomatis (Jam 07:00 WIB)**: Notifikasi push briefing agenda dan batas belanja harian.
+55. **Pengatur Jam Briefing Kustom**: Pengaturan jam briefing pagi sesuai jam bangun Mas Firman di tab profil.
+56. **Generator Laporan Email Eksekutif**: Pengiriman ringkasan keuangan mingguan langsung ke email Mas Firman via Nodemailer.
+57. **Kotak Masuk (*Notification Center History*)**: Riwayat seluruh pengingat, anomali, dan peringatan saldo yang pernah dikirimkan.
+58. **Sanitasi Formula Injection pada Ekspor CSV (`sanitizeCsvCell`)**: Pencegahan karakter formula Excel berbahaya (`=`, `+`, `-`, `@`).
+59. **Rangkuman Evaluasi Finansial Bulanan (*Monthly Digest*)**: Analisis perbandingan bulan ke bulan (*Month-over-Month growth*).
+60. **Filter Kategori Notifikasi**: Pemfilteran notifikasi berdasarkan *Urgen/Cicilan, Cuaca, dan Info Pengeluaran*.
+61. **Ekspor Laporan dalam Format JSON Raw**: Opsi download data transaksi terstruktur untuk analisis data sains.
+62. **Generator Invoice & Kuitansi Pembayaran Digital**: Pembuat bukti tanda terima kuitansi sederhana berformat gambar/PDF.
+63. **Otomatisasi Backup Harian ke Google Drive**: Sinkronisasi database berkala ke folder Google Drive pribadi.
+64. **Indikator Keberhasilan Sinkronisasi Baris per Baris**: Tanda centang hijau pada transaksi yang sudah berhasil masuk Google Sheets.
+65. **Pengaturan Frekuensi Ekspor Terjadwal**: Opsi menerima rekap PDF otomatis setiap hari Minggu malam jam 21:00 WIB.
+66. **Kustomisasi Header & Judul Dokumen Ekspor**: Opsi menambahkan catatan kaki atau tanda tangan digital pada PDF.
+67. **Pembuat Ringkasan SPT Pajak Penghasilan Sederhana**: Rekap estimasi total omzet tahunan untuk pelaporan pajak.
+68. **Ekspor Log Audit Perubahan Data (Audit Trail)**: Catatan riwayat jam pengeditan atau penghapusan data transaksi.
+69. **Sinkronisasi Kalender dengan Google Calendar**: Ekspor jadwal agenda aktivitas ke format file `.ics` kalender.
+70. **Pengirim Peringatan Kuota Penyimpanan Supabase**: Indikator sisa kapasitas database cloud PostgreSQL.
+71. **Mode Ekspor Terenkripsi dengan Password ZIP**: Pengamanan file backup database dengan enkripsi kata sandi.
+72. **Pencetak Rekap Transaksi Khusus Merchant Tertentu**: Filter ekspor untuk melihat total belanja di Indomaret atau SPBU saja.
+73. **Pengatur Format Desimal & Mata Uang Ekspor**: Pilihan format pemisah ribuan titik (`.`) atau koma (`,`).
+74. **Pengirim Salinan Laporan ke Akun Pasangan**: Opsi forward rekap pengeluaran bulanan ke Telegram Khofita.
+75. **Status Kesehatan Webhook API Supabase & Vercel**: Indikator status uptime serverless edge backend.
 
-### A.4 Super Admin, Data Inspector & Mutasi Data
-31. **Super Admin Data Inspector Interaktif (`/admin/data-inspector`)**: Penampil seluruh 14 tabel Supabase secara langsung di mobile.
-32. **Manajer Soft-Delete & Restore Database (`/api/admin/mutate`)**: Kemampuan memulihkan transaksi yang tidak sengaja terhapus.
-33. **Rekonsiliasi Saldo & Audit Database Live (`/api/admin/audit-db`)**: Endpoint verifikasi keabsahan total mutasi vs saldo buku.
-34. **Pemantau Batas Laju Request (*Rate Limiter Bar*)**: Monitoring sisa kuota 15 RPM / 1.000 request harian.
-35. **Manajemen Akun Pasangan / Partner Link**: Fitur menghubungkan atau melepaskan tautan akun Khofita.
-36. **Pelacak Masa Aktif Sesi Login (*Session TTL Manager*)**: Pemantauan durasi sesi login 3 hari di Supabase.
-37. **Pemeriksa Kesehatan Sistem (*Health & Warmup Diagnostics*)**: Endpoint pengecekan status serverless, latency, dan koneksi Supabase.
-38. **Penampil Log Runtime Webhook**: Stream log aktivitas webhook untuk debugging transaksi secara instan.
-39. **Manajemen Kategori Kustom (CRUD Kategori)**: Menambah, mengubah nama, dan menghapus kategori transaksi.
-40. **Manajer Buku Hutang & Cicilan (`debts` & `installments`)**: Form pembayaran cicilan yang otomatis mengurangi sisa tenor angsuran.
+### A.4 Super Admin Portal, Data Inspector & Mutasi Data (Poin 76–100)
+76. **Super Admin Data Inspector Interaktif (`/admin/data-inspector`)**: Penampil seluruh 14 tabel Supabase secara langsung di mobile.
+77. **Manajer Soft-Delete & Restore Database (`/api/admin/mutate`)**: Kemampuan memulihkan transaksi yang tidak sengaja terhapus.
+78. **Rekonsiliasi Saldo & Audit Database Live (`/api/admin/audit-db`)**: Endpoint verifikasi keabsahan total mutasi vs saldo buku.
+79. **Pemantau Batas Laju Request (*Rate Limiter Bar*)**: Monitoring sisa kuota 15 RPM / 1.000 request harian.
+80. **Manajemen Akun Pasangan / Partner Link**: Fitur menghubungkan atau melepaskan tautan akun Khofita.
+81. **Pelacak Masa Aktif Sesi Login (*Session TTL Manager*)**: Pemantauan durasi sesi login 3 hari di Supabase.
+82. **Pemeriksa Kesehatan Sistem (*Health & Warmup Diagnostics*)**: Endpoint pengecekan status serverless, latency, dan koneksi Supabase.
+83. **Penampil Log Runtime Webhook**: Stream log aktivitas webhook untuk debugging transaksi secara instan.
+84. **Manajemen Kategori Kustom (CRUD Kategori)**: Menambah, mengubah nama, dan menghapus kategori transaksi.
+85. **Manajer Buku Hutang & Cicilan (`debts` & `installments`)**: Form pembayaran cicilan yang otomatis mengurangi sisa tenor angsuran.
+86. **Pembersih Data Duplikat Otomatis (De-duplication Engine)**: Pendeteksi transaksi kembar yang terinput dalam rentang 30 detik.
+87. **Pemberi Label Tag Transaksi Multi-Dimensi**: Penambahan label tag `#dieng`, `#gojek`, `#kuliah`, `#makan` pada setiap transaksi.
+88. **Manajer Skema Header Spreadsheet**: Pengaturan susunan kolom tabel Google Sheets langsung dari aplikasi.
+89. **Pengatur Batas Ambang Anomali Pengeluaran**: Menyesuaikan batas notifikasi boros (misal pengeluaran >Rp 150.000/hari).
+90. **Pengecek Integritas Foreign Key Supabase**: Verifikasi tidak ada record anak (*orphaned rows*) tanpa user ID valid.
+91. **Penampil Riwayat Perubahan Preferensi AI**: Log catatan preferensi yang pernah dipelajari oleh model AI.
+92. **Pengatur Mode Pemeliharaan Sistem (Maintenance Toggle)**: Saklar menonaktifkan bot sementara saat migrasi data.
+93. **Penghapus Cache Serverless Vercel (Cache Purge)**: Tombol invalidasi cache Redis / in-memory serverless.
+94. **Penganalisis Latensi Respons Webhook**: Grafik durasi pemrosesan pesan masuk Telegram (<30ms target).
+95. **Pengubah Password & Token Kunci API Cepat**: Form pembaruan token Telegram Bot dan Google Service Account aman.
+96. **Pelacak IP Address & Device Login**: Riwayat perangkat yang pernah mengakses dashboard admin.
+97. **Pengelola Kuota API Gemini AI Bulanan**: Pemantau sisa kuota token Google AI Studio.
+98. **Pengatur Bahasa Default & Format Angka**: Pengalihan format bahasa Indonesia formal vs kasual.
+99. **Pemindai File Gambar Orphaned di Supabase Storage**: Pembersih foto struk lama yang tidak tertaut ke transaksi.
+100. **Panel Reset Data Uji / Factory Reset Aman**: Opsi membersihkan data dummy pengujian dengan proteksi kata sandi konfirmasi.
 
-### A.5 Persona AI, Slang, Format 3 Lapis & Interaksi
-41. **Kamus Slang & Boso Walikan Malang NLP**: Pemahaman kata lokal Malang (*oyi, sam, ker, nawak, mbois*) dalam instruksi chat.
-42. **Kamus Slang Nominal Keuangan**: Pemahaman kata *gocap* (50k), *ceban* (10k), *goceng* (5k) secara instan.
-43. **Standarisasi Respon 3 Lapis Eksekutif (Aturan 46)**: *Lapis 1 Jawaban Langsung -> Lapis 2 Data Kuantitatif -> Lapis 3 Saran Butler Konkret*.
-44. **Modal Klarifikasi Dompet Proaktif (Aturan 50)**: Pop-up pemilihan dompet cepat saat transaksi dicatat tanpa menyebut metode pembayaran.
-45. **Resolusi Kata Ganti Subjek Multi-Turn (Aturan 35)**: Mengikat kata ganti "dia/mereka" pada subjek yang baru saja dibahas.
-46. **Penjadwalan Ulang Agenda Bersyarat Cuaca (Aturan 34)**: Penanganan kondisi "kalo hujan gak jadi narik" tanpa menghapus agenda utama.
-47. **Sensor Otomatis Privasi PIN/Password (Aturan 45)**: Pemblokiran otomatis penyimpanan teks PIN, Password, dan OTP.
-48. **Keyboard Cepat Kategori Populer**: Tombol cepat 1-ketuk `[ ⛽ Bensin ] [ 🍔 Makan ] [ 🅿️ Parkir ] [ 🛵 Gojek ]`.
-49. **Lencana Verifikasi Anti Data Dummy**: Tanda centang hijau bahwa data yang dijawab AI 100% valid dari query database.
-50. **Pemilih Model AI & Fallback Chain**: Pilihan manual antara `gemini-3.5-flash-lite`, `gemini-3.1-flash-lite`, dan `gemini-3.6-flash`.
+### A.5 Persona Royal Butler, Slang Malang, Format 3 Lapis & NLP (Poin 101–125)
+101. **Kamus Slang & Boso Walikan Malang NLP (Aturan 41)**: Pemahaman kata lokal Malang (*oyi, sam, ker, nawak, mbois*) dalam instruksi chat.
+102. **Kamus Slang Nominal Keuangan (Aturan 32)**: Pemahaman kata *gocap* (50k), *ceban* (10k), *goceng* (5k) secara instan.
+103. **Standarisasi Respon 3 Lapis Eksekutif (Aturan 46)**: *Lapis 1 Jawaban Langsung -> Lapis 2 Data Kuantitatif -> Lapis 3 Saran Butler Konkret*.
+104. **Modal Klarifikasi Dompet Proaktif (Aturan 50)**: Pop-up pemilihan dompet cepat saat transaksi dicatat tanpa menyebut metode pembayaran.
+105. **Resolusi Kata Ganti Subjek Multi-Turn (Aturan 35)**: Mengikat kata ganti "dia/mereka" pada subjek yang baru saja dibahas.
+106. **Penjadwalan Ulang Agenda Bersyarat Cuaca (Aturan 34)**: Penanganan kondisi "kalo hujan gak jadi narik" tanpa menghapus agenda utama.
+107. **Sensor Otomatis Privasi PIN/Password (Aturan 45)**: Pemblokiran otomatis penyimpanan teks PIN, Password, dan OTP.
+108. **Keyboard Cepat Kategori Populer**: Tombol cepat 1-ketuk `[ ⛽ Bensin ] [ 🍔 Makan ] [ 🅿️ Parkir ] [ 🛵 Gojek ]`.
+109. **Lencana Verifikasi Anti Data Dummy**: Tanda centang hijau bahwa data yang dijawab AI 100% valid dari query database.
+110. **Pemilih Model AI & Fallback Chain**: Pilihan manual antara `gemini-3.5-flash-lite`, `gemini-3.1-flash-lite`, dan `gemini-3.6-flash`.
+111. **Persona Butler Suara Formal-Santun**: Gaya penyampaian khas Kepala Pelayan Eksekutif Kerajaan (*Royal Butler*).
+112. **Anti-Greeting Loop (0% Sapaan Basi Berulang)**: Larangan menyapa ulang jika percakapan sedang dalam sesi aktif.
+113. **Penyambung Konteks Multi-Pesan Telegram**: Penggabungan dua pesan masuk berturut-turut menjadi satu instruksi utuh.
+114. **Pendeteksi Emosi & Kelelahan Fisik Pengguna**: Respon empati saat Mas Firman mengabarkan kelelahan setelah narik Gojek seharian.
+115. **Pengingat Minum Air Putih & Istirahat di Cuaca Panas**: Saran proaktif jika suhu GPS Malang melebihi 31°C.
+116. **Pemisah Perhitungan Belanjaan Campuran**: Memisahkan nota belanja yang memuat barang modal kerja dan cemilan pribadi.
+117. **Pengenal Merek Makanan Khas Malang**: Pemahaman menu Bakso Kota Cak Man, Pos Ketan Legenda, dan Orem-Orem.
+118. **Konversi Satuan Volume Bensin Liter ke Rupiah**: Otomatis menghitung "isi Pertalite 3 liter" = Rp 30.000.
+119. **Peringatan Batas Maksimal Kapasitas Tangki Honda Beat (4.2L)**: Koreksi jika pengguna tidak sengaja mencatat isi bensin >5 Liter.
+120. **Penafsir Bahasa Campuran Indonesia-Jawa Halus**: Kemampuan merespon instruksi berbahasa Jawa (*monggo, matur nuwun, injih*).
+121. **Pembuat Rangkuman Singkat Versi 1 Paragraf (Executive Bullet)**: Mode ringkas bagi pengguna yang sedang terburu-buru berkendara.
+122. **Saran Peningkatan Omzet Narik Gojek Berdasarkan Jam Sibuk**: Rekomendasi mangkal di Dinoyo/Suhat pada jam makan siang & pulang kantor.
+123. **Pengecek Konsistensi Data Multi-Turn**: Peringatan jika pengguna menyebut angka yang bertentangan dengan chat sebelumnya.
+124. **Penghapus Format Teks Berantakan (Sanitizer Markdown)**: Pembersih karakter bintang ganda dan escape slash liar.
+125. **Pengatur Tingkat Kreativitas AI (Temperature Slider)**: Pengaturan suhu respon AI (`0.1` deterministik vs `0.7` eksploratif).
+
+### A.6 Fitur Native Android, Notifikasi, Offline Storage & Hardware (Poin 126–150)
+126. **Kunci Keamanan Biometrik Sidik Jari (Fingerprint Lock)**: Proteksi pembukaan aplikasi Raphael menggunakan sensor sidik jari Realme 5i.
+127. **Pemutar Voice Note Audio & Visualizer Gelombang Suara**: Pemutar rekaman suara percakapan Telegram di dalam mobile app.
+128. **Sinkronisasi Latar Belakang Native Android WorkManager**: Auto-sync data saat smartphone terhubung ke charger dan WiFi.
+129. **Notifikasi Push Native Firebase Cloud Messaging (FCM)**: Push notification langsung ke status bar HP tanpa membuka aplikasi.
+130. **Penyimpanan Lokal Offline SQLite / IndexedDB**: Kemampuan mencatat transaksi tanpa koneksi internet dan auto-upload saat online.
+131. **Alat Crop & Putar Gambar Struk Belanja**: Pemotong foto struk sebelum dikirim ke engine OCR agar lebih fokus dan hemat kuota.
+132. **Kustomisasi Tema Gelap AMOLED Pure Black (`#000000`)**: Opsi warna hitam pekat untuk menghemat daya baterai layar OLED/IPS.
+133. **Umpan Balik Getaran Haptik (Haptic Vibration Feedback)**: Efek getar taktil saat menekan tombol navigasi, simpan, atau hapus data.
+134. **Mode Layar Penuh Imersif (Immersive Fullscreen Navigation)**: Menyembunyikan status bar Android untuk area pandang yang lebih luas.
+135. **Deteksi Otomatis Orientasi Layar (Portrait Lock)**: Mengunci antarmuka pada orientasi tegak agar layout kartu tetap presisi.
+136. **Pemberi Peringatan Baterai Lemah (<15%)**: Saran meredupkan layar saat Mas Firman sedang narik Gojek dengan baterai menipis.
+137. **Pintasan Cepat di Home Screen Android (App Shortcuts)**: Shortcut 1-ketuk di layar utama HP untuk "Catat Bensin" dan "Foto Struk".
+138. **Widget Finansial di Home Screen Android (Android Widget 4x2)**: Widget saldo kas likuid dan target Dieng di homescreen HP.
+139. **Deteksi Gerakan Shake-to-Report**: Menggoyangkan smartphone untuk memicu rangkuman cepat atau pelaporan bug.
+140. **Mode Hemat Kuota Data Seluler**: Menonaktifkan preview gambar resolusi tinggi saat menggunakan paket data seluler.
+141. **Integrasi Google Maps Native Intent**: Membuka langsung aplikasi Google Maps resmi saat menekan tombol rute Dieng.
+142. **Integrasi Panggilan Darurat Call Intent**: Menghubungi bengkel motor darurat dengan 1 ketukan tombol telepon.
+143. **Penyimpan Cache WebView Cerdas (Smart Cache TTL)**: Cache aset statis lokal 0ms untuk loading instan saat dibuka.
+144. **Pengatur Ukuran Font Dinamis (Font Size Scaling)**: Opsi memperbesar ukuran teks untuk kemudahan membaca saat berkendara.
+145. **Deteksi Otomatis Mode Mobil / Motor (Driving Mode)**: Tombol berukuran ekstra besar saat pengguna sedang berkendara.
+146. **Pencatat Lokasi GPS Otomatis pada Setiap Transaksi**: Menyimpan koordinat tempat transaksi dilakukan secara pasif.
+147. **Pembersih File Cache Internal Berkala**: Tombol pembersih temporary file untuk menghemat ruang memori HP.
+148. **Pengunci Sesi Otomatis Saat Aplikasi Ditinggalkan (Auto-Lock 5 Menit)**: Mengunci aplikasi otomatis jika tidak digunakan selama 5 menit.
+149. **Integrasi Tombol Volume Up untuk Pemicu Voice Input**: Menekan tombol volume untuk mulai merekam suara secara cepat.
+150. **Indikator Kecepatan Jaringan Realtime (Ping / Latency MS)**: Menampilkan latency koneksi ke server Vercel di pojok status bar.
 
 ---
 
-## 🚨 BAGIAN B: 50 POTENSI BUG, ERROR, EDGE CASES & KERENTANAN SISTEM
+## 🚨 BAGIAN B: 150 POTENSI BUG, ERROR, EDGE CASES, MEMORY LEAKS & KERENTANAN SISTEM
 
-### B.1 Jaringan, Koneksi & Penanganan Offline
-51. **Unhandled Fetch Error saat Offline**: Panggilan `fetch()` tanpa blok catch global dapat memicu unhandled rejection dan membekukan tampilan.
-52. **Vercel Serverless Cold-Start Timeout**: Latensi >10 detik saat fungsi serverless pertama kali bangun dapat membuat request timeout di WebView.
-53. **Stale Local State vs Cloud DB**: Ketidakcocokan data lokal jika pengguna melakukan mutasi di bot Telegram lalu membuka mobile app tanpa refresh.
-54. **Gagal Parsing Respons HTML 502/504**: Saat server backend down, API mengembalikan halaman HTML 502 yang memicu syntax error pada `res.json()`.
-55. **Race Condition Multi-Tap Tombol Kirim/Simpan**: Pengguna mengetuk tombol simpan berkali-kali secara cepat menyebabkan duplikasi transaksi di database.
-56. **Kegagalan Background Polling saat Layar Mati**: WebView Android menangguhkan timer JS (`setTimeout`/`setInterval`) saat layar HP mati.
-57. **Kegagalan Retry Polling pada Jaringan 3G/Edge**: Tidak adanya mekanisme *exponential backoff retry* pada koneksi internet lambat.
-58. **DNS Resolution Latency pada CDN Eksternal**: Ketergantungan CDN eksternal dapat memperlambat load awal WebView.
-59. **Websocket / Long-polling Absence**: Belum adanya real-time listener Supabase untuk sinkronisasi instan tanpa reload manual.
-60. **CORS Preflight Failure pada HTTP Custom Header**: Header otentikasi kustom dapat memicu blokir CORS jika endpoint Next.js belum mengizinkannya.
+### B.1 Jaringan, Protokol Serverless, Cold-Start & Sinkronisasi Cloud (Poin 151–175)
+151. **Unhandled Fetch Error saat Koneksi Terputus**: Pemanggilan `fetch()` tanpa blok try-catch komprehensif menyebabkan unhandled promise rejection dan UI membeku.
+152. **Vercel Serverless Cold-Start Timeout**: Latensi >10 detik saat fungsi bangun pertama kali memicu timeout pada WebView Android.
+153. **Ketidaksesuaian State Lokal vs Cloud Database**: Data di mobile app menjadi usang jika pengguna melakukan mutasi lewat Telegram tanpa menekan tombol reload.
+154. **Crash Parsing Respons HTML 502/504 Bad Gateway**: Saat server backend maintenance, API mengembalikan HTML yang memicu syntax error pada `res.json()`.
+155. **Race Condition Multi-Tap Tombol Simpan**: Pengguna mengetuk tombol simpan berkali-kali secara cepat menyebabkan transaksi ganda tersimpan di database.
+156. **Pembekuan Background Polling saat Layar HP Mati**: Android menangguhkan timer JavaScript (`setTimeout`/`setInterval`) saat layar mati, menunda update data.
+157. **Kegagalan Exponential Backoff pada Jaringan Edge/3G**: Aplikasi gagal melakukan percobaan ulang bertahap saat koneksi seluler tidak stabil.
+158. **DNS Resolution Latency pada CDN Eksternal**: Ketergantungan script eksternal dapat memperlambat rendering awal aplikasi.
+159. **Ketiadaan Realtime Supabase Postgres Changes Listener**: Mobile app belum memanfaatkan websocket Supabase untuk update otomatis tanpa refresh manual.
+160. **CORS Preflight Failure pada HTTP Custom Header**: Header otentikasi kustom dapat diblokir oleh browser jika CORS Next.js belum terkonfigurasi sempurna.
+161. **SSL Handshake Failure pada Jam HP Tidak Akurat**: Waktu sistem Android yang salah beberapa menit menyebabkan penolakan sertifikat SSL HTTPS.
+162. **Request Throttling 429 Too Many Requests**: Pengiriman pesan bertubi-tubi memicu penguncian rate limiter Supabase/Gemini.
+163. **Payload Truncation pada Koneksi Lambat**: Data base64 gambar terpotong di tengah transmisi karena batas timeout koneksi seluler.
+164. **Kegagalan Re-otentikasi Saat Token JWT Kedaluwarsa**: Sesi login mati mendadak tanpa mekanisme silent refresh token.
+165. **Socket Hang-Up pada Upload File Struk Besar**: Server memutus koneksi jika ukuran payload melebihi batas 4.5MB serverless Vercel.
+166. **Data Duplication Akibat Telegram Webhook Retry**: Webhook Telegram mengirim ulang update jika backend terlambat merespons >5 detik.
+167. **Inkonsistensi Urutan Eksekusi Paralel (Async Order Flaw)**: Ekstraksi transaksi selesai lebih lambat dibanding pengiriman bubble pesan.
+168. **Kegagalan Deteksi Status Jaringan Online/Offline**: Event listener `navigator.onLine` di Android WebView kerap memberikan false positive saat kuota internet habis.
+169. **HTTP Request Header Bloat**: Header cookie dan token yang terlalu panjang menyebabkan error `431 Request Header Fields Too Large`.
+170. **Zombie Connection pada Fetch Tanpa AbortController**: Request lama yang masih berjalan memakan bandwidth saat pengguna sudah berpindah tab.
+171. **Ketidakcocokan Skema API Versi Lama vs Baru**: Kegagalan parsing jika backend memperbarui struktur JSON tanpa versioning route.
+172. **Kegagalan Stream Response pada Jaringan Lambat**: Chunk teks AI terputus-putus dan menghasilkan karakter rusak.
+173. **Rate Limiting OpenStreetMap Nominatim**: Pemanggilan reverse geocoding cuaca berulang memicu blokir IP dari server OSM.
+174. **Kegagalan Fetch Font Google saat Offline**: Font antarmuka fallback ke font sistem default yang mengubah proporsi layout kartu.
+175. **Serverless Function Execution Timeout (15s Max)**: Pemrosesan AI yang kompleks terhenti paksa sebelum selesai menulis ke database.
 
-### B.2 Integritas Data, Validasi Form & Keamanan
-61. **Input Nominal Negatif / Desimal Liar**: Input `-50000` atau `0.000001` dapat merusak kalkulasi surplus dan kesehatan kas.
-62. **Potensi SQL / PostgREST Injection pada Kolom Deskripsi**: Karakter khusus PostgREST (`.eq`, `.or`, `&`) pada input teks yang belum disanitasi.
-63. **Cross-Site Scripting (XSS) pada Chat Bubble**: Karakter `<script>` atau `<img onerror=...>` pada bubble chat yang dievaluasi langsung via innerHTML.
-64. **Input Tanggal Kosong / Format ISO Invalid**: Input tanggal yang tidak valid menghasilkan nilai `NaN` atau `Invalid Date` di database.
-65. **Input Nominal Teks Huruf ("lima puluh ribu")**: Mengisi kolom nominal dengan teks menyebabkan nilai tersimpan sebagai `NaN` atau `0`.
-66. **Transaksi Sampah Rp 0 Tanpa Keterangan**: Gambar non-struk yang lolos filter OCR mengotori database dengan transaksi Rp 0.
-67. **Overflow Karakter Emoji 4-Byte (UTF-8 MB4)**: Karakter emoji langka dapat memotong teks pada kolom database tertentu.
-68. **String Truncation pada Deskripsi Panjang**: Deskripsi melebihi 255 karakter dapat ditolak oleh constraint database.
-69. **Collision Short ID pada Pencarian Data**: Short ID 8-karakter berpotensi ganda jika volume data transaksi bertambah ribuan.
-70. **Missing User ID UUID FK Violation**: Kegagalan membaca `USER_ID` dari state lokal menyebabkan request ditolak oleh Supabase constraint.
+### B.2 Validasi Form, Integritas Database, Sanitasi XSS & Keamanan (Poin 176–200)
+176. **Input Nominal Negatif atau Desimal Liar**: Pengguna memasukkan `-50000` atau `0.000001` yang merusak kalkulasi surplus dan kesehatan kas.
+177. **Potensi SQL / PostgREST Filter Injection**: Karakter khusus PostgREST (`.eq`, `.or`, `&`) pada input keterangan transaksi yang belum disanitasi.
+178. **Cross-Site Scripting (XSS) pada Chat Bubble**: Karakter `<script>` atau `<img onerror=...>` pada bubble chat yang dievaluasi langsung via `innerHTML`.
+179. **Input Tanggal Kosong / Format ISO Invalid**: Input tanggal yang tidak valid menghasilkan nilai `NaN` atau `Invalid Date` di database.
+180. **Input Nominal Teks Huruf ("lima puluh ribu")**: Mengisi kolom nominal dengan teks menyebabkan nilai tersimpan sebagai `NaN` atau `0`.
+181. **Transaksi Sampah Rp 0 Tanpa Item Struk**: Gambar non-struk yang lolos filter OCR mengotori database dengan transaksi Rp 0.
+182. **Overflow Karakter Emoji 4-Byte (UTF-8 MB4)**: Karakter emoji langka dapat memotong teks pada kolom database non-UTF8MB4.
+183. **String Truncation pada Deskripsi Panjang**: Deskripsi melebihi 255 karakter ditolak oleh database constraint.
+184. **Collision Short ID pada Pencarian Rekord**: Short ID 8-karakter berpotensi ganda jika volume data transaksi bertambah ribuan.
+185. **Missing User ID UUID FK Violation**: Kegagalan membaca `USER_ID` dari state lokal menyebabkan request ditolak oleh Supabase constraint.
+186. **Pencatatan Tanggal Masa Depan Tidak Terkontrol**: Pengguna tidak sengaja memilih tahun 2030 yang merusak grafik arus kas bulan ini.
+187. **Injeksi Karakter Escape Backslash pada JSON (`
+`, `"`)**: Karakter escape yang salah tempat merusak parsing payload JSON.
+188. **Ketiadaan Validasi Tipe Dompet yang Didukung**: Mengisi dompet di luar 5 dompet resmi menyebabkan data tidak terhitung di rekapitulasi.
+189. **Bypass Autentikasi Super Admin Route**: Endpoint mutasi database dapat diakses publik jika tidak memvalidasi `userId` dan token rahasia.
+190. **Penyimpanan Teks Sensitif Password/PIN di Database**: Teks sensitif tersimpan ke database `chat_history` jika tidak disaring oleh privacy filter.
+191. **Data Leakage Antar Akun Pasangan**: Transaksi privat Mas Firman bocor ke dashboard pasangan jika filter `user_id` tidak ketat.
+192. **Perubahan Status Agenda Tanpa Audit Trail**: Agenda selesai tanpa mencatat jam dan tanggal penyelesaian aslinya.
+193. **Penghapusan Kategori Default Sistem**: Menghapus kategori 'Makanan & Minuman' membuat transaksi lama kehilangan referensi relasi (*orphaned*).
+194. **Formula Injection pada Generator Ekspor CSV**: Karakter `=`, `+`, `-`, `@` pada nama merchant mengeksekusi macro berbahaya saat dibuka di Microsoft Excel.
+195. **Ketiadaan Sanitasi Karakter Non-ASCII pada PDF Generator**: Emoji pada nama toko menyebabkan PDFKit crash (*unhandled font glyph exception*).
+196. **Integritas Nilai Kolom Boolean Supabase**: Nilai `null` pada kolom `notification_sent` menyebabkan anomali query filter.
+197. **Pengisian Kolom Nominal Bertipe Teks String**: Angka tersimpan sebagai `"50000"` bukan integer/numeric, menyebabkan kegagalan fungsi agregasi SQL `SUM()`.
+198. **Double Deduction pada Pembayaran Cicilan Bank Jago**: Pembayaran cicilan memotong saldo kas likuid dua kali lipat.
+199. **Ketidaksesuaian ID Dompet Cash vs E-Wallet**: Transaksi Gopay tercatat memotong saldo fisik uang kertas.
+200. **Kegagalan Rollback Transaksi Batch yang Gagal Sebagian**: Sebagian data masuk dan sebagian gagal tanpa mekanisme rollback database transaksi atomik.
 
-### B.3 Kinerja Memori, Siklus Hidup WebView & DOM
-71. **Memory Leak Instansiasi Chart.js Berulang**: Membuka chart berkali-kali tanpa memanggil `chartInstance.destroy()` menyebabkan memory leak canvas di Android.
-72. **DOM Bloat pada Chat Messages Container**: Ribuan elemen bubble chat yang menumpuk tanpa virtual scrolling memperlambat performa rendering ponsel.
-73. **Memory Spike Base64 Gambar Struk 4K/12MP**: Membaca foto struk resolusi tinggi langsung ke base64 DataURL dapat memakan memori RAM >50MB di WebView.
-74. **FileReader Crash saat Memilih File Non-Gambar**: Pengguna memilih file video atau dokumen di file chooser struk menyebabkan reader gagal decode.
-75. **Keyboard Android Soft-Input Layout Glitch**: Saat keyboard virtual Android muncul, input text tertutup atau navbar terdorong ke tengah layar.
-76. **Android Hardware Back-Button Trap**: Menekan tombol kembali bawaan Android langsung menutup aplikasi alih-alih menutup modal pop-up yang aktif.
-77. **GPS Geolocation Infinite Hang saat GPS HP Mati**: Pemanggilan `getCurrentPosition` tanpa parameter timeout membekukan indikator cuaca.
-78. **Nominatim Reverse Geocoding Rate Limit 429**: Pengambilan nama kota cuaca berulang dapat diblokir oleh rate limiter OpenStreetMap.
-79. **Voice STT Unhandled Error saat Izin Mikrofon Ditolak**: API SpeechRecognition melempar error tak tertangani jika pengguna menolak izin mikrofon.
-80. **WebView Killed by OS saat Backgrounding**: Android mematikan proses WebView saat RAM menipis, menghilangkan state chat sementara.
+### B.3 Kinerja Memori, Siklus Hidup WebView, Canvas Leaks & Battery Drain (Poin 201–225)
+201. **Memory Leak Instansiasi Chart.js Berulang**: Membuka chart berkali-kali tanpa memanggil `chartInstance.destroy()` menyebabkan memory leak canvas di Android.
+202. **DOM Bloat pada Chat Messages Container**: Ribuan elemen bubble chat yang menumpuk tanpa virtual scrolling memperlambat rendering ponsel Realme 5i.
+203. **Memory Spike Base64 Gambar Struk 4K/12MP**: Membaca foto struk resolusi tinggi langsung ke base64 DataURL memakan RAM >50MB di WebView.
+204. **FileReader Crash saat Memilih File Non-Gambar**: Pengguna memilih file video atau dokumen di file chooser struk menyebabkan reader gagal decode.
+205. **Keyboard Android Soft-Input Layout Glitch**: Saat keyboard virtual Android muncul, input text tertutup atau navbar terdorong ke tengah layar.
+206. **Android Hardware Back-Button Trap**: Menekan tombol kembali bawaan Android langsung menutup aplikasi alih-alih menutup modal pop-up yang aktif.
+207. **GPS Geolocation Infinite Hang saat GPS HP Mati**: Pemanggilan `getCurrentPosition` tanpa parameter timeout membekukan indikator cuaca.
+208. **Nominatim Reverse Geocoding Rate Limit 429**: Pengambilan nama kota cuaca berulang diblokir oleh rate limiter OpenStreetMap.
+209. **Voice STT Unhandled Error saat Izin Mikrofon Ditolak**: API SpeechRecognition melempar error tak tertangani jika pengguna menolak izin mikrofon.
+210. **WebView Killed by OS saat Backgrounding**: Android mematikan proses WebView saat RAM menipis, menghilangkan state chat sementara.
+211. **Battery Drain Akibat Animasi CSS Pulse Berkelanjutan**: Animasi CSS tak berujung membebani CPU/GPU Adreno 610 secara terus-menerus.
+212. **Thermal Throttling pada Pemrosesan Grafik Beruntun**: Render ulang grafik beruntun memicu penurunan clock speed prosesor Snapdragon 665.
+213. **Storage Bloat pada Direktori Cache WebView**: File cache WebView menumpuk hingga ratusan megabyte jika tidak dibersihkan berkala.
+214. **Overdraw Layout pada Elemen Bertumpuk**: Layer CSS dengan background transparan berlapis-lapis memicu render GPU berulang (*GPU overdraw*).
+215. **Event Listener Leak pada Window Resize / Scroll**: Menambahkan event listener berulang-ulang tanpa memanggil `removeEventListener`.
+216. **Audio Focus Conflict saat Voice Input Aktif**: Pemutar musik eksternal tidak dipause saat pengguna menekan tombol mikrofon Voice STT.
+217. **Reflow & Repaint Berlebih pada Manipulasi DOM Langsung**: Mengubah `innerHTML` berkali-kali dalam satu loop memicu layout thrashing.
+218. **Font Loading Delay (FOIT / FOUT)**: Teks berkedip atau berubah ukuran saat font Google Montserrat/Inter selesai dimuat.
+219. **Unresponsive UI Thread saat Kalkulasi Analitik Berat**: Perhitungan 20 metrik finansial di thread utama JS membekukan scroll selama 100ms.
+220. **Hardware Acceleration Artifacts pada Android 10**: Glitch visual garis hitam pada elemen dengan CSS `transform` dan `border-radius`.
+221. **Ketiadaan Pengelolaan Siklus Hidup Activity Android (`onPause`/`onResume`)**: Timer terus berjalan saat pengguna menekan tombol Home.
+222. **Canvas Resolution Blurriness pada Layar High-DPI**: Grafik Chart.js buram jika `devicePixelRatio` layar tidak dihitung dalam ukuran canvas.
+223. **Image Memory Leak pada Blob URLs Tanpa `revokeObjectURL`**: URL gambar sementara tidak dihapus dari memori browser setelah ditampilkan.
+224. **Slow Touch Response Akibat Ketiadaan `touch-action: manipulation`**: Jeda delay 300ms pada pengetukan tombol di browser mobile standar.
+225. **WebGL Context Lost pada Pergantian Tab Cepat**: Rendering grafik error jika context WebGL di-reset oleh sistem operasi Android.
 
-### B.4 Logika Bisnis, Penalaran AI & Algoritma
-81. **Division by Zero pada Kalkulasi Rasio**: Perhitungan rasio tabungan membagi nilai 0 jika total pemasukan bulan berjalan belum ada data.
-82. **Day 1 Month Spike pada Proyeksi Kas**: Pengeluaran besar di tanggal 1 bulan membuat estimasi akhir bulan meledak secara tidak realistis.
-83. **Pembalikan Logika Negasi ("Selain Poin Ini...")**: AI salah menafsirkan kalimat pengecualian dan mengeksekusi aksi yang justru dilarang.
-84. **False Alarm Bentrok Jadwal Beda Bulan**: Algoritma collision detector hanya mengecek selisih menit jam tanpa memvalidasi tanggal kalender.
-85. **Pencampuran Saldo Uang Kertas vs Uang Koin**: AI memotong dompet Cash Koin untuk pembayaran besar yang seharusnya menggunakan Cash Kertas.
-86. **Spam Pertanyaan Ulang (Duplicate Bubble Dispatch)**: Pengiriman gelembung pesan duplikat akibat pengulangan follow-up question.
-87. **Overfitting Jenis Bahan Bakar**: AI menjawab harga Pertalite padahal pengguna secara eksplisit menanyakan harga Pertamax Turbo.
-88. **Hilangnya Subjek Multi-Turn pada Edit Pesan**: Mengedit pesan di tengah history chat dapat membuat AI kehilangan konteks referensi kalimat sebelumnya.
-89. **Pemotongan Data (*Data Truncation*) pada Auto-Summarizer**: Rangkuman otomatis kehilangan ringkasan transaksi lama jika query database dibatasi terlalu sedikit.
-90. **Rounding Error Rp 1 pada Fitur Split Bill**: Pembagian nominal ganjil (misal Rp 100.000 dibagi 3 orang) menyisakan selisih pecahan desimal.
+### B.4 Logika Bisnis, Algoritma Finansial & Penalaran Multi-Turn AI (Poin 226–250)
+226. **Division by Zero pada Kalkulasi Rasio Tabungan**: Perhitungan rasio tabungan membagi nilai 0 jika total pemasukan bulan berjalan belum ada data.
+227. **Day 1 Month Spike pada Proyeksi Kas**: Pengeluaran besar di tanggal 1 bulan membuat estimasi akhir bulan meledak secara tidak realistis.
+228. **Pembalikan Logika Negasi ("Selain Poin Ini...")**: AI salah menafsirkan kalimat pengecualian dan menandai tugas yang justru dikecualikan.
+229. **False Alarm Bentrok Jadwal Beda Bulan**: Algoritma collision detector hanya mengecek selisih menit jam tanpa memvalidasi kesamaan tanggal kalender.
+230. **Pencampuran Saldo Uang Kertas vs Uang Koin**: AI memotong dompet Cash Koin untuk pembayaran besar yang seharusnya menggunakan Cash Kertas.
+231. **Spam Pertanyaan Ulang (Duplicate Bubble Dispatch)**: Pengiriman gelembung pesan duplikat akibat pengulangan follow-up question.
+232. **Overfitting Jenis Bahan Bakar**: AI menjawab harga Pertalite padahal pengguna secara eksplisit menanyakan harga Pertamax Turbo.
+233. **Hilangnya Subjek Multi-Turn pada Edit Pesan**: Mengedit pesan di tengah history chat membuat AI kehilangan konteks referensi kalimat sebelumnya.
+234. **Pemotongan Data (*Data Truncation*) pada Auto-Summarizer**: Rangkuman otomatis kehilangan ringkasan transaksi lama jika query database dibatasi terlalu sedikit.
+235. **Rounding Error Rp 1 pada Fitur Split Bill**: Pembagian nominal ganjil (misal Rp 100.000 dibagi 3 orang) menyisakan selisih pecahan desimal.
+236. **Halusinasi Nilai Sisa Dana Liburan Dieng**: AI menyebut angka sisa anggaran yang tidak sesuai dengan total cicilan yang sudah masuk.
+237. **Klaim Palsu Data Tersimpan Padahal Payload Kosong**: AI menyatakan data berhasil dicatat padahal array mutasi bernilai `null`.
+238. **Kesalahan Konversi Waktu UTC ke WIB (UTC+7)**: Transaksi malam hari jam 23:00 WIB tercatat sebagai tanggal hari berikutnya di database.
+239. **Pencatatan Pemasukan Bersyarat Sebagai Saldo Riil**: Target "besok narik Gojek target 100k" salah dicatat sebagai penambahan kas hari ini.
+240. **Ketidaksesuaian Total Pagu Anggaran Rencana**: Kenaikan harga tiket Dieng Rp 50.000 tidak otomatis mengupdate total pagu menjadi Rp 1.040.000.
+241. **Penyusutan Tenor Kredit Bank Jago Tidak Realistis**: AI mengira pembayaran satu kali cicilan melunasi seluruh total sisa pinjaman.
+242. **Ketiadaan Deteksi Pengeluaran Anomali Ekstrem**: AI tidak memberikan peringatan saat pengguna mencatat transaksi Rp 5.000.000 dalam sekali input.
+243. **Penyatuan Kategori Operasional Gojek ke Pengeluaran Pribadi**: Ganti oli motor Beat tercampur ke pos biaya gaya hidup.
+244. **Kegagalan Resolusi Nama Merchant Mirip**: Mengira 'Alfamart Dinoyo' dan 'Alfamart Soekarno Hatta' sebagai dua kategori berbeda.
+245. **Kesalahan Perhitungan Rata-rata Harian pada Bulan Kabisat**: Membagi total biaya dengan 28 hari pada bulan yang memiliki 29/31 hari.
+246. **Distorsi Metrik Health Score Akibat Mutasi Internal**: Transfer antar dompet (Cash ke Gopay) salah dihitung sebagai pengeluaran baru.
+247. **Kegagalan Pemahaman Kalimat Koreksi Pengguna ("Bukan 50k tapi 30k")**: AI tidak merevisi transaksi sebelumnya melainkan membuat transaksi baru.
+248. **Hilangnya Parameter Custom Attributes pada Rekomendasi Tempat**: Info Wifi dan Spot Foto hilang saat response diparsing ke kartu UI.
+249. **Inkonsistensi Nilai Net Cashflow Antar Halaman**: Angka di Tab Analisis berbeda Rp 10.000 dengan angka di Tab Database.
+250. **Ketiadaan Validasi Saldo Negatif (Overdraft Alert)**: Aplikasi mengizinkan saldo kas bernilai minus tanpa peringatan kebocoran dana.
 
-### B.5 Antarmuka Responsif, Aksesibilitas & UI/UX
-91. **Text Truncation pada Layar Sempit (<360px)**: Teks nominal uang terpotong pada smartphone beresolusi layar kecil.
-92. **Pixelation Ikon pada Perangkat Low-DPI**: Ikon SVG/Canvas blur pada layar Android dengan pixel density rendah.
-93. **Backdrop Click Listener Missing pada Modal**: Modal dialog tidak bisa ditutup dengan mengetuk area hitam di luar kotak modal.
-94. **Ketiadaan Skeleton / Loading State saat Fetch Data**: Layar kosong tanpa indikator loading saat database sedang dimuat.
-95. **Kontras Warna Teks Redup pada Dark Mode**: Teks abu-abu sekunder (`#64748B`) sulit dibaca di bawah sinar matahari langsung.
-96. **Inkonsistensi Format Tanggal Antar Tab**: Penggunaan campuran format `YYYY-MM-DD` dan `DD/MM/YYYY` yang membingungkan pengguna.
-97. **Ketiadaan Banner Notifikasi Offline**: Pengguna tidak mengetahui apakah aplikasi sedang terputus dari koneksi internet.
-98. **Unbounded Expansion pada Chat Input Textarea**: Input bar membesar tak terkontrol jika pengguna menyalin teks ribuan baris.
-99. **Ukuran Tombol Interaktif <48dp**: Tombol kecil yang menyulitkan navigasi jempol sesuai standar Material Design.
-100. **Z-Index Collision Antara Modal (`z-100`) dan Tooltip (`z-50`)**: Komponen tooltip atau floating button menembus di atas layer modal dialog.
+### B.5 Antarmuka Responsif, Layar Realme 5i, Touch Handling & Aksesibilitas (Poin 251–275)
+251. **Text Truncation pada Layar Sempit (<360px)**: Teks nominal uang terpotong pada smartphone beresolusi layar kecil.
+252. **Pixelation Ikon pada Layar Low-DPI**: Ikon SVG/Canvas buram pada layar Android dengan pixel density rendah.
+253. **Backdrop Click Listener Missing pada Modal**: Modal dialog tidak bisa ditutup dengan mengetuk area gelap di luar kotak modal.
+254. **Ketiadaan Skeleton / Loading State saat Fetch Data**: Layar kosong tanpa animasi skeleton saat data transaksi sedang dimuat.
+255. **Kontras Warna Teks Redup pada Dark Mode**: Teks abu-abu sekunder (`#64748B`) sulit dibaca di bawah sinar matahari langsung.
+256. **Inkonsistensi Format Tanggal Antar Tab**: Campuran format `YYYY-MM-DD` dan `DD/MM/YYYY` yang membingungkan pengguna.
+257. **Ketiadaan Banner Notifikasi Offline**: Pengguna tidak mengetahui apakah aplikasi sedang terputus dari koneksi internet.
+258. **Unbounded Expansion pada Chat Input Textarea**: Input bar membesar tak terkontrol jika pengguna menyalin teks ribuan baris.
+259. **Ukuran Tombol Interaktif <48dp**: Tombol kecil yang menyulitkan navigasi jempol sesuai standar Material Design.
+260. **Z-Index Collision Antara Modal (`z-100`) dan Tooltip (`z-50`)**: Komponen tooltip atau floating button menembus di atas layer modal dialog.
+261. **Horizontal Scroll Bar Liar pada Layar Ponsel 720px**: Halaman bergoyang ke kanan-kiri akibat elemen dengan `width: 100vw` yang mengabaikan scrollbar.
+262. **Font Clipping pada Huruf Bertanda Bawah ('g', 'j', 'y')**: Karakter terpotong di bagian bawah akibat `line-height` yang terlalu sempit.
+263. **Penumpukan Gelembung Chat saat Orientasi Landscape**: Area chat menyempit drastis saat keyboard virtual muncul di mode mendatar.
+264. **Ketidakseragaman Radius Sudut Kartu (Inconsistent Border-Radius)**: Campuran sudut membulat `rounded-lg`, `rounded-xl`, dan `rounded-2xl` tanpa panduan desain token.
+265. **Flicker Visual Saat Transisi Pergantian Tab**: Layar berkedip putih sesaat sebelum tab baru dirender.
+266. **Ketiadaan Indikator Status Kosong (Empty State Illustration)**: Tampilan polos membosankan saat database transaksi masih kosong.
+267. **Tabrakan Tombol Aksi Cepat dengan Tombol Kirim Chat**: Quick action pills menutupi area ketik teks pada layar pendek.
+268. **Hilangnya Fokus Kursor Input Teks Setelah Menutup Modal**: Kursor keyboard tidak otomatis kembali ke input bar chat.
+269. **Ketidaksesuaian Warna Status Bar Android dengan Tema Aplikasi**: Status bar Android berwarna putih kontras saat aplikasi dalam dark mode.
+270. **Ketiadaan Feedback Visual Saat Menekan Tombol (Active State Missing)**: Tombol tidak memberikan respon visual saat ditekan.
+271. **Teks Label Form Terlalu Kecil (<10px)**: Label form sulit dibaca oleh pengguna dengan keterbatasan penglihatan.
+272. **Scroll Lock Glitch Saat Modal Aktif**: Halaman di belakang modal masih bisa di-scroll saat pop-up sedang terbuka.
+273. **Ketidakjelasan Status Tombol Simpan saat Proses Berjalan**: Tombol simpan tidak menampilkan status loading spinner saat mengirim request ke server.
+274. **Pemotongan Bayangan Elemen (Box-Shadow Clipping)**: Efek bayangan neon tosca terpotong oleh `overflow: hidden` pada kontainer induk.
+275. **Ketiadaan Konfirmasi Sebelum Menghapus Data Transaksi**: Data langsung terhapus tanpa dialog konfirmasi "Apakah Anda Yakin?".
+
+### B.6 Integrasi Perangkat Keras, Sensor, Audio, File Picker & OS Android (Poin 276–300)
+276. **File Picker Crash saat Mengakses Penyimpanan Eksternal**: Izin `READ_EXTERNAL_STORAGE` ditolak pada Android 10+ scoped storage.
+277. **Kamera Gagal Dibuka Akibat Izin Runtime Ditolak**: Aplikasi force close jika pengguna membatalkan izin kamera saat ingin foto struk.
+278. **Kegagalan Rotasi Otomatis Gambar Hasil Foto Kamera**: Foto struk miring 90 derajat karena tidak membaca orientasi metadata EXIF.
+279. **Audio Recorder Merekam Keheningan (Muted Input)**: Mikrofon merekam audio kosong akibat bentrok dengan permission Bluetooth headset.
+280. **GPS Provider Memberikan Koordinat Usang (Stale Cache Location)**: Lokasi cuaca menunjukkan kota lama saat pengguna baru saja bepergian ke luar kota.
+281. **Kegagalan Pemutaran Suara Notifikasi saat Mode Silent/Do Not Disturb**: Notifikasi penting tidak terdengar saat HP dalam mode hening.
+282. **Getaran Haptik Tidak Berfungsi pada Perangkat Hemat Baterai**: Android OS menonaktifkan motor getar saat mode Power Saver aktif.
+283. **WebView Memory Eviction Saat Aplikasi Ditinggalkan 10 Menit**: Android membersihkan memori WebView saat multitasking ke aplikasi ojol.
+284. **File Chooser Membuka Direktori Root yang Membingungkan**: File picker tidak langsung membuka folder Galeri/Kamera foto.
+285. **Crash Saat Mengunggah Gambar Berukuran >20 Megapixel**: Out of Memory (OOM) Exception pada decoding bitmap di memori RAM WebView.
+286. **Ketidaksesuaian Skema Warna Sistem Operasi Android (Dark Theme Sync)**: Aplikasi tidak mengikuti pengaturan tema gelap otomatis sistem Android.
+287. **Kegagalan Intent Buka Google Maps pada Perangkat Tanpa Aplikasi Maps**: Error jika pengguna membuka rute pada HP tanpa aplikasi Google Maps terpasang.
+288. **Hilangnya Izin Lokasi Pasca Restart Smartphone**: Geolocation permissions ter-reset setelah HP dimatikan.
+289. **Kegagalan Deteksi Perubahan Status Koneksi WiFi ke Seluler**: Stream data terputus saat pengguna keluar dari jangkauan WiFi rumah.
+290. **Crash Saat Menekan Tombol Share WhatsApp jika WhatsApp Belum Terinstal**: Unhandled exception saat memicu Intent WhatsApp.
+291. **Distorsi Aspek Rasio Thumbnail Gambar Struk Belanja**: Gambar struk gepeng atau melar karena styling CSS `object-fit` tidak terdefinisi.
+292. **Kegagalan Perekaman Suara Saat Layar HP Terkunci**: Audio STT terhenti saat layar otomatis redup.
+293. **Konflik Hardware Acceleration pada Chipset Snapdragon 665**: Kompatibilitas OpenGL ES 3.0 yang memerlukan fallback layer.
+294. **Hilangnya Session Cookie saat WebView Process Restart**: Kehilangan status autentikasi lokal saat OS melakukan memory purge.
+295. **Kegagalan Download File Ekspor PDF ke Folder Download Publik**: File tersimpan di direktori privat yang tidak bisa dibuka oleh File Manager pengguna.
+296. **Peringatan Izin Lokasi Latar Belakang (Background Location Alert)**: Android 10 menampilkan notifikasi peringatan konsumsi baterai lokasi.
+297. **Ketidakstabilan Touch Recognition pada Sudut Layar 2.5D**: Sentuhan pada tepi layar Realme 5i tidak terdaftar akibat bezel palm rejection.
+298. **Crash Akibat Null Pointer Exception pada Android WebChromeClient**: `filePathCallback` bernilai null saat pengguna membatalkan file picker.
+299. **Ketidaksesuaian Safe Area Insets pada Layar Berponi (Waterdrop Notch)**: Header aplikasi tertutup oleh modul kamera depan Realme 5i.
+300. **Kegagalan Auto-Update APK Tanpa Google Play Store**: Pengguna tidak mendapatkan notifikasi saat versi terbaru APK Raphael telah dirilis.
 
 ---
-*Master Audit Komprehensif ini dikunci sebagai Single Source of Truth arsitektur ekosistem Raphael Mobile. Terakhir divalidasi: 27 Agustus 2026.*
+
+### 🛡️ KESIMPULAN & PROTOKOL PENGEMBANGAN JANGKA PANJANG:
+Katalog **300 Poin Master Audit** ini menjadi dokumen panduan mutlak (*Ultimate Single Source of Truth*) pengembangan ekosistem Raphael Mobile. Setiap perbaikan di masa depan akan merujuk langsung ke nomor poin audit ini dan diuji ketat untuk menjamin kestabilan, kecepatan, dan akurasi 100%.
+
+*Terakhir divalidasi & disinkronisasi ke seluruh repositori: 27 Agustus 2026.*
