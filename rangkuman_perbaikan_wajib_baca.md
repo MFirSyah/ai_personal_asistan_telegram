@@ -405,6 +405,24 @@ Katalog **300 Poin Master Audit** ini menjadi dokumen panduan mutlak (*Ultimate 
 
 
 
+
+
+### 2.32 Audit & Perbaikan 4 Masalah Kritis Mobile & Rilis Versi 2.5.1
+- **4 Laporan Masalah dari Pengguna:**
+  1. *AI Menjawab Tidak Sesuai*: Jawaban memunculkan ringkasan template usang (saldo Rp 427.500 & hutang talangan Rp 101.000) bukannya merespons pertanyaan secara kontekstual.
+  2. *Pindah Tab Terasa Berat/Lag*: UI mengalami delay saat berpindah tab.
+  3. *History Chat Hilang Saat Tutup Aplikasi*: Chat ter-reset ke pesan awal saat aplikasi dibuka kembali.
+  4. *Tab Chat Terkunci/Tidak Bisa Dibuka*: Dari Tab Database tidak bisa kembali ke Tab Chat.
+- **Akar Masalah & Tindakan Korektif:**
+  1. **Optimasi Tab Switching (*Zero-Jank*)**: Menghapus eksekusi rendering synchronous `render20AnalyticsModels()` dan `renderTabAnalyticsCharts()` dari fungsi `switchTab()`. Grafik kini hanya di-render secara *on-demand* saat Tab Analitik dibuka.
+  2. **Perbaikan Definisi `loadPersistedChatHistory`**: Menyediakan fungsi render riwayat chat yang kuat (`renderUserBubbleFromHistory` & `renderButlerBubbleFromHistory`) yang tersimpan di `getPersistentItem('saved_chat_messages_v2')`.
+  3. **Perbaikan Navigasi Tab Chat**: Menyematkan handler `onclick="switchTab('chat')"` langsung pada elemen HTML `#nav-btn-chat` dan menyederhanakan touch listener SOS agar tidak menelan klik normal.
+  4. **Penyelarasan Prompt AI**: Memperbarui aturan grounding di `chat.ts` agar AI merespons secara langsung dan kontekstual tanpa memaksakan angka-angka finansial lama jika pengguna tidak menanyakannya.
+- **Hasil Kompilasi & Versi Baru:**
+  - `versionCode = 251`, `versionName = "2.5.1"`.
+  - Output File: `D:\MANAS PROJEK\Raphael_App_v2.5.1_Debug.apk` (Ukuran: 5.66 MB).
+
+
 ### 2.31 Retensi Sesi Permanen (Native SharedPreferences Bridge) & Dukungan Tablet (Rilis Versi 2.5.0)
 - **Dua Masalah & Permintaan Pengguna:**
   1. *Masalah Sesi*: Saat keluar aplikasi dan menghapus tab history / recent apps, aplikasi malah kembali menampilkan onboarding dan form login.
