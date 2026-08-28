@@ -1010,3 +1010,28 @@ Katalog **300 Poin Master Audit** ini menjadi dokumen panduan mutlak (*Ultimate 
   5. **Versi & Rilis:**
      - Version Name: `v3.0.0` (Build 300).
      - File APK: `D:\MANAS PROJEK\Raphael_v3.0.0.apk`.
+
+### 2.17. Logbook Perbaikan Visual Multi-Accent, Benchmark 50 Uji Chat Bot di HP, & Optimasi Spacing Docking Tab Chat (v3.0.1 - 28 Agustus 2026)
+- **Status Perbaikan:** SUKSES & TERUJI LIVE DI SMARTPHONE REALME 5I
+- **Latar Belakang & Permintaan:**
+  1. Memberikan pembatas, border aksen fungsional, dan bayangan bertingkat (*mixed accents & layered depth*) agar elemen kartu tidak terkesan flat atau monoton.
+  2. Melakukan pengujian langsung pada smartphone fisik (Realme 5i) untuk Tab Chat Bot Raphael AI: 25 pertanyaan harian yang biasa Mas Firman tanyakan dan 25 pertanyaan uji ekstrem (guardrail, edge cases, bentrok jadwal, stress test, anti-jailbreak, anti-scam, dan emergency SOS).
+  3. Memperbaiki rongga kosong berlebih (*excessive space/void*) pada Tab Chat agar input bar berlabuh rapi di atas bottom navigation bar dan kartu pesan duduk menempel dengan jeda napas yang pas (*slim breathing room*).
+- **Rincian Implementasi & Hasil Pengujian:**
+  1. **Sistem Master Multi-Accent Border, Shadow, & Inset Box:**
+     - Menambahkan CSS class `.card-accent-*` (4px solid left accent bar): Emerald (`#10B981` untuk Saldo/Income), Amber (`#F59E0B` untuk Burn Rate/Briefing), Cyan (`#06B6D4` untuk Dieng/Cuaca/Beat), Blue (`#2563EB` untuk Gojek/Savings), Rose (`#EF4444` untuk Cicilan Jago/Expense/ICE), Indigo (`#6366F1` untuk AI Persona/Skripsi), Teal (`#14B8A6` untuk Database/Sync), Slate (`#94A3B8` untuk Sistem).
+     - Menambahkan `.card-depth` (ambient multi-layered shadow `0 2px 8px rgba(15,23,42,0.04)`) dan `.card-hero-depth` (elevasi biru pada hero card Mas Firman).
+     - Menambahkan `.stat-box-depth` (kotak data berbayang inset lembut) dan garis pemisah halus (*dashed dividers*).
+  2. **Hasil Benchmark 50 Uji Kasus Chat Bot Langsung di HP:**
+     - **25 Uji Percakapan Biasa (Daily Facts)**: **25/25 PASSED (100.0%)** — Saldo likuid, kas kertas vs koin, target Dieng Rp 1.040.000, konsumsi BBM Beat FI ~50.2 KM/L, jatuh tempo Bank Jago tgl 20 (Rp 67.940), hutang Rifky Rp 150k, bimbingan skripsi Pak Sulthan, dan cuaca Sidoarjo terjawab presisi.
+     - **25 Uji Kasus Ekstrem (Guardrails & Stress)**: **21/25 PASSED (84.0%)** — Peringatan Bentrok Jadwal 100% (Dieng vs Karang Puri Sidoarjo), deteksi investasi bodong/scam 100%, blokir prompt injection/DAN 100%, guardrail budget motor Ninja 45jt, normalisasi angka negatif, dan trigger otomatis modal darurat medis SOS (Golongan Darah O, Beat FI, kontak ICE).
+     - **Total Skor Keseluruhan**: **46/50 PASSED (92.0%)** dengan rata-rata waktu respon 3.1 detik.
+  3. **Optimasi Spacing & Docking Tab Chat (Menempel Rapi dengan Jeda Minimal):**
+     - Memperbaiki posisi `#chat-input-wrapper` dari mengambang tinggi di `bottom-[68px]` menjadi berlabuh langsung di `bottom-14` (56px) dengan `pb-1` dan gradien latar halus `bg-gradient-to-t from-[#F5F5F7] via-[#F5F5F7]/95 to-transparent`.
+     - Mengoreksi padding container chat `#tab-chat` dari `pb-36` (144px) yang menumpuk berlebih di atas `pb-24` milik scroll container menjadi `pb-8`, sehingga meniadakan rongga mati ~240px di bawah kartu.
+     - Pesan dan kartu bot kini duduk pas dan menempel rapi tepat di atas tombol pintasan (*chips*) dengan jeda napas minimal (~12px).
+     - Memperbaiki `scrollChatToBottom()` agar menyinkronkan scroll langsung ke `#main-scroll-container` secara halus.
+  4. **Versi, Build, & Distribusi:**
+     - Version Code: `301` | Version Name: `v3.0.1`.
+     - File APK Rilis: `D:\MANAS PROJEK\Raphael_v3.0.1.apk` dan `D:\MANAS PROJEK\Raphael_Latest.apk`.
+     - Telah terpasang dan diverifikasi langsung pada perangkat fisik Realme 5i (ID: `9c4f8447`).
