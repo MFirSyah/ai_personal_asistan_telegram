@@ -858,34 +858,28 @@ const HTML_SOURCE = `<!DOCTYPE html>
         <span class="text-[9px] font-mono px-2 py-0.5 rounded-full bg-primary/20 text-primary font-bold border border-primary/30">Master Config</span>
       </div>
 
-      <!-- 1. USER IDENTITY & AI PREFERENCES CARD -->
-      <div class="bg-surface rounded-xl p-3 border border-border space-y-2.5 tosca-bloom">
-        <div class="flex items-center justify-between border-b border-border/50 pb-2">
+      <!-- 1. USER IDENTITY & AI PREFERENCES CARD (CLEAN WITH PENCIL ICON) -->
+      <div class="bg-surface rounded-xl p-3 border border-border space-y-2 tosca-bloom shadow-md">
+        <div class="flex items-center justify-between">
           <div class="flex items-center gap-2.5">
-            <div class="w-10 h-10 rounded-full bg-primary/20 border-2 border-primary flex items-center justify-center text-primary font-bold text-base shrink-0 font-headline">
+            <div class="w-10 h-10 rounded-full bg-primary/20 border-2 border-primary flex items-center justify-center text-primary font-bold text-sm shrink-0 font-headline" id="profile-avatar-initials">
               MF
             </div>
             <div>
-              <h3 class="font-headline font-bold text-xs text-text-primary" id="profile-display-name">Mas Firman</h3>
-              <p class="text-[9px] font-mono text-lime flex items-center gap-1">
+              <div class="flex items-center gap-1.5">
+                <h3 class="font-headline font-bold text-xs text-text-primary" id="profile-display-name">Mas Firman</h3>
+                <button onclick="openEditProfileNameModal()" class="p-1 rounded bg-surface-elevated text-primary hover:bg-primary/20 active:scale-95 transition-all flex items-center justify-center border border-border" title="Edit Nama Panggilan">
+                  <span class="material-symbols-outlined text-[13px]">edit</span>
+                </button>
+              </div>
+              <p class="text-[9px] font-mono text-lime flex items-center gap-1 mt-0.5">
                 <span class="material-symbols-outlined text-[11px]">verified</span> Terverifikasi (ID: 1084842050)
               </p>
             </div>
           </div>
-          <button onclick="openAiSettingsModal()" class="px-2.5 py-1 bg-primary/20 border border-primary rounded-lg text-primary text-[10px] font-mono font-bold flex items-center gap-1 active:scale-95">
-            <span class="material-symbols-outlined text-[13px]">tune</span> Setting AI
-          </button>
-        </div>
-
-        <!-- Identity Form Inputs -->
-        <div class="space-y-2 font-mono text-[10px]">
-          <div>
-            <label class="text-[8px] text-text-secondary uppercase">Nama Panggilan Pengguna (AI Greeting)</label>
-            <input id="profile-input-name" type="text" value="Mas Firman" placeholder="Nama panggilan Anda..." class="w-full bg-surface-elevated border border-border rounded-lg p-2 text-text-primary text-xs outline-none mt-0.5"/>
-          </div>
           
-          <button onclick="saveUserProfileIdentity()" class="w-full py-2 bg-primary text-black font-bold rounded-lg text-xs font-mono shadow active:scale-95 flex items-center justify-center gap-1">
-            <span class="material-symbols-outlined text-[14px]">save</span> Simpan Identitas Profil
+          <button onclick="openAiSettingsModal()" class="px-2.5 py-1.5 bg-primary/20 border border-primary/60 rounded-lg text-primary text-[10px] font-mono font-bold flex items-center gap-1 active:scale-95 shadow-sm">
+            <span class="material-symbols-outlined text-[13px]">tune</span> Setting AI
           </button>
         </div>
       </div>
@@ -1022,7 +1016,7 @@ const HTML_SOURCE = `<!DOCTYPE html>
           <span class="text-xs font-headline font-bold text-tosca flex items-center gap-1">
             <span class="material-symbols-outlined text-[16px]">info</span> INFORMASI VERSI & SISTEM
           </span>
-          <span class="text-[9px] font-mono px-2 py-0.5 rounded-full bg-tosca/20 text-tosca font-bold" id="profile-app-version-badge">v2.6.4</span>
+          <span class="text-[9px] font-mono px-2 py-0.5 rounded-full bg-tosca/20 text-tosca font-bold" id="profile-app-version-badge">v2.6.5</span>
         </div>
         
         <div class="space-y-1 text-[10px] font-mono text-text-secondary">
@@ -1835,6 +1829,36 @@ const HTML_SOURCE = `<!DOCTYPE html>
   <!-- ⚡ SCRIPT -->
   <script src="app.js"></script>
 </div>
+
+  <!-- ======================================================================= -->
+  <!--  MODAL EDIT NAMA PANGGILAN (INLINE TOP-LAYER MODAL) -->
+  <!-- ======================================================================= -->
+  <div id="modal-edit-profile-name" class="modal-overlay emergency-modal">
+    <div class="modal-card max-w-sm w-[90%] p-4 space-y-3">
+      <div class="flex justify-between items-center border-b border-border/50 pb-2">
+        <h3 class="font-headline font-bold text-xs text-primary flex items-center gap-1.5">
+          <span class="material-symbols-outlined text-[16px]">edit</span> Edit Nama Panggilan
+        </h3>
+        <button onclick="closeEditProfileNameModal()" class="text-text-secondary hover:text-text-primary text-base font-bold">&times;</button>
+      </div>
+
+      <div class="space-y-1.5 font-mono text-[10px]">
+        <label class="text-[8px] text-text-secondary uppercase">Nama Panggilan Baru (AI Greeting & Header)</label>
+        <input id="modal-input-user-name" type="text" placeholder="Masukkan nama panggilan..." class="w-full bg-surface-elevated border border-border rounded-lg p-2.5 text-text-primary text-xs font-mono outline-none focus:border-primary mt-0.5"/>
+        <p class="text-[8px] text-text-secondary">Nama ini akan digunakan oleh asisten Raphael saat menyapa Anda dan di seluruh tampilan aplikasi.</p>
+      </div>
+
+      <div class="flex gap-2 pt-1 font-mono text-[10px]">
+        <button onclick="closeEditProfileNameModal()" class="flex-1 py-2 bg-surface-elevated border border-border text-text-secondary font-bold rounded-lg active:scale-95">
+          Batal
+        </button>
+        <button onclick="saveModalCustomName()" class="flex-1 py-2 bg-primary text-black font-bold rounded-lg shadow active:scale-95 flex items-center justify-center gap-1">
+          <span class="material-symbols-outlined text-[14px]">check</span> Simpan Nama
+        </button>
+      </div>
+    </div>
+  </div>
+
 </body>
 </html>
 `;

@@ -429,6 +429,19 @@ Katalog **300 Poin Master Audit** ini menjadi dokumen panduan mutlak (*Ultimate 
 
 
 
+
+
+### 2.44 Ikon Pensil Edit Nama pada Card Profil & Pembersihan Form Placeholder (Rilis Versi 2.6.5)
+- **Permintaan Pengguna**: Mengganti form input placeholder nama yang terpisah dengan tombol ikon pensil ✏️ tepat di sebelah nama pengguna pada card profil utama.
+- **Tindakan**:
+  1. Menghapus kotak form terpisah *"Nama Panggilan Pengguna (AI Greeting)"* dan tombol *"Simpan Identitas Profil"*.
+  2. Menempatkan tombol ikon pensil ✏️ (`<button onclick="openEditProfileNameModal()">`) tepat di sebelah `#profile-display-name`.
+  3. Membangun modal native `#modal-edit-profile-name` yang muncul saat ikon pensil ditekan untuk mengubah nama secara intuitif, cepat, dan rapi.
+- **Hasil Kompilasi & Versi Baru:**
+  - `versionCode = 265`, `versionName = "2.6.5"`.
+  - Output File: `D:\MANAS PROJEK\Raphael_App_v2.6.5_Debug.apk` (Ukuran: 5.67 MB).
+
+
 ### 2.43 Pembersihan Header Kanan Atas Saldo Kas & Gopay (Rilis Versi 2.6.4)
 - **Permintaan Pengguna**: Menghapus pill informasi saldo *"KAS Rp 162k | GOPAY Rp 164k"* di pojok kanan atas header aplikasi agar header tampil lebih bersih, minimalis, dan lega.
 - **Tindakan**:
