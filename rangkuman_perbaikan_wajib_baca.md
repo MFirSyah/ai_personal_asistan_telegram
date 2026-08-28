@@ -403,6 +403,24 @@ Katalog **300 Poin Master Audit** ini menjadi dokumen panduan mutlak (*Ultimate 
 
 
 
+
+
+### 2.31 Retensi Sesi Permanen (Native SharedPreferences Bridge) & Dukungan Tablet (Rilis Versi 2.5.0)
+- **Dua Masalah & Permintaan Pengguna:**
+  1. *Masalah Sesi*: Saat keluar aplikasi dan menghapus tab history / recent apps, aplikasi malah kembali menampilkan onboarding dan form login.
+  2. *Dukungan Tablet*: Pengguna ingin aplikasi dapat berjalan optimal di smartphone maupun tablet Android (7" - 12").
+- **Akar Masalah & Solusi Rekayasa:**
+  1. **Akar Masalah Sesi**: Android WebView DOM `localStorage` dapat mengalami delay flushing atau reset memori saat proses aplikasi di-kill oleh task manager.
+  2. **Native SharedPreferences Store**: `MainActivity.kt` ditambahkan bridge penyimpanan native `@JavascriptInterface setItem/getItem/removeItem` yang tersimpan langsung di flash storage Android (`SharedPreferences`), sehingga status `is_logged_in` dan `onboarding_completed` **100% KEBAL TERHADAP RECENT APPS CLEAR & REBOOT HP**.
+  3. **Zero-Flicker Inline Auth Check**: Script inline di `<head>` mengecek status autentikasi sebelum halaman selesai dirender, mencegah kedipan layar login.
+  4. **Dukungan Tablet & Layar Lebar Adaptif**:
+     - `AndroidManifest.xml` ditambahkan `<supports-screens>` dan `configChanges` multi-window/tablet.
+     - `index.html` dikemas dalam `#app-container` yang berpusat rapi (`max-w-4xl`) di tablet, dengan floating bottom nav dan modal yang proporsional.
+- **Hasil Kompilasi & Versi Baru:**
+  - `versionCode = 250`, `versionName = "2.5.0"`.
+  - Output File: `D:\MANAS PROJEK\Raphael_App_v2.5.0_Debug.apk` (Ukuran: 5.66 MB).
+
+
 ### 2.30 Integrasi Penuh Modul Riset 13-Dimensi & Rilis Resmi Versi 2.4.0
 - **Evolusi & Penambahan Dimensi Riset:**
   1. *Riset Kampus, Institusi, & Fasilitas Fisik* (Termasuk tautan aktif Google Maps).
