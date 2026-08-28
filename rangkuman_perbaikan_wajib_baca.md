@@ -437,6 +437,21 @@ Katalog **300 Poin Master Audit** ini menjadi dokumen panduan mutlak (*Ultimate 
 
 
 
+
+
+### 2.48 Pemulihan Presisi Bottom Navigation Bar, Chat Input & 100% Modals (Rilis Versi 2.7.5)
+- **Akar Masalah**: Saat penggantian slice kode Tab Profil sebelumnya, elemen penutup `</main>`, bar navigasi bawah (`#app-bottom-nav`), dan dock chat input (`#chat-input-wrapper`) terpotong secara tidak sengaja sehingga tampilan bawah layar ponsel sempat hilang.
+- **Tindakan Pemulihan Total**:
+  1. *Rekonstruksi Penuh `index.html`*:
+     - Menyusun ulang seluruh komponen dari root: Top Header Flat Modern, Main Container 5 Tab lengkap (Analisis 6 Card, Database High-Detail, Chat Persisten, Notifikasi Briefing Card, dan Profil Tile Hub).
+     - Memulihkan `#chat-input-wrapper` lengkap dengan dynamic quick action pills (*Split Bill WA, Pelunasan Jago, Checklist Dieng, dll*) dan floating input bar.
+     - Memulihkan `#app-bottom-nav` dengan 5 tombol tab navigasi + tombol robot SOS long-press 3 detik.
+     - Memastikan seluruh 13 top-layer modal terdaftar lengkap dan aktif tanpa error.
+- **Hasil Kompilasi & Versi Baru:**
+  - `versionCode = 275`, `versionName = "2.7.5"`.
+  - Output File: `D:\MANAS PROJEK\Raphael_App_v2.7.5_Debug.apk` (Ukuran: 5.67 MB).
+
+
 ### 2.47 Penghapusan Total Perizinan Mikrofon & Kamera (Rilis Versi 2.7.2)
 - **Pertanyaan & Masalah Pengguna**: Aplikasi tidak menggunakan Speech-to-Text (STT) maupun Text-to-Speech (TTS), tetapi sebelumnya sistem Android memunculkan dialog permintaan izin mikrofon (`RECORD_AUDIO`) dan kamera (`CAMERA`).
 - **Akar Masalah**: Sisa deklarasi boilerplate template pada `AndroidManifest.xml` dan array `requiredPerms` di `MainActivity.kt`.
