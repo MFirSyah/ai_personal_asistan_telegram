@@ -415,6 +415,25 @@ Katalog **300 Poin Master Audit** ini menjadi dokumen panduan mutlak (*Ultimate 
 
 
 
+
+
+### 2.37 Perbaikan Notifikasi Status Bar Realme 5i & Pembersihan Opsi Email (Rilis Versi 2.5.5)
+- **Laporan Masalah Pengguna:**
+  1. *Opsi Email*: Morning briefing dan profil memuat opsi kirim salinan email yang tidak diperlukan.
+  2. *Notifikasi Tidak Muncul di Realme 5i*: Saat menguji tombol kirim briefing / uji notifikasi, notifikasi tidak muncul di status bar HP Realme 5i.
+- **Akar Masalah & Tindakan Korektif:**
+  1. *Pembersihan Opsi Email*: Seluruh elemen form, input alamat email, dan toggle *"Kirim Salinan Email"* telah dihapus total dari `index.html` dan `page.tsx`.
+  2. *Akar Masalah Notifikasi Realme 5i (Android 9/10/Q)*:
+     - `MainActivity.kt` sebelumnya melakukan pengecekan `ActivityCompat.checkSelfPermission(activity, Manifest.permission.POST_NOTIFICATIONS) == PERMISSION_GRANTED`.
+     - Izin `POST_NOTIFICATIONS` baru diperkenalkan pada Android 13 (API 33). Pada Realme 5i (Android 9/10), pengecekan tersebut selalu mengembalikan `false` / `PERMISSION_DENIED`, sehingga fungsi `manager.notify()` tidak pernah dipanggil.
+  3. *Solusi Rekayasa Kompatibilitas Android 9-14*:
+     - Ditambahkan percabangan versi Android: Untuk Android 9-12 (termasuk Realme 5i / ColorOS), notifikasi **langsung dikirim secara instan tanpa terblokir pengecekan izin Android 13**.
+     - Notifikasi dibungkus dalam `activity.runOnUiThread` dengan prioritas `PRIORITY_MAX`, `VISIBILITY_PUBLIC`, dan channel bergetar aktif.
+- **Hasil Kompilasi & Versi Baru:**
+  - `versionCode = 255`, `versionName = "2.5.5"`.
+  - Output File: `D:\MANAS PROJEK\Raphael_App_v2.5.5_Debug.apk` (Ukuran: 5.67 MB).
+
+
 ### 2.36 Stream Install Langsung via USB ADB & Rilis Versi 2.5.4
 - **Permintaan Pengguna**: Menguji aplikasi langsung di smartphone fisik melalui koneksi USB ADB.
 - **Tindakan yang Berhasil Dijalankan:**
