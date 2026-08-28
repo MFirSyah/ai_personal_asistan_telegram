@@ -387,7 +387,7 @@ const HTML_SOURCE = `<!DOCTYPE html>
     <!-- ======================================================================= -->
     <!--  TAB 1: COCKPIT ANALYTICS & EXECUTIVE INTELLIGENCE CARDS (6 CARDS MANDIRI) -->
     <!-- ======================================================================= -->
-    <div id="tab-analytics" class="tab-pane px-3.5 py-2.5 space-y-3">
+    <div id="tab-analytics" class="tab-pane px-3.5 py-2.5 space-y-3 pb-36">
       
       <!-- Top Title & Timeframe Selector Bar -->
       <div class="space-y-2">
@@ -662,7 +662,7 @@ const HTML_SOURCE = `<!DOCTYPE html>
 
     <!-- ======================================================================= -->
     <!--  TAB 2: DATA & EXPANDED DATABASE -->
-    <div id="tab-data" class="tab-pane px-3.5 py-2.5 space-y-2.5">
+    <div id="tab-data" class="tab-pane px-3.5 py-2.5 space-y-2.5 pb-36">
       
       <div class="flex bg-surface-elevated p-1 rounded-xl border border-border">
         <button id="data-sub-tx-btn" onclick="switchDataSubTab('tx')" class="flex-1 py-1.5 rounded-lg text-[10px] font-mono font-bold bg-primary text-black transition-all">
@@ -713,7 +713,7 @@ const HTML_SOURCE = `<!DOCTYPE html>
 
     <!-- ======================================================================= -->
     <!--  TAB 3: CHAT -->
-    <div id="tab-chat" class="tab-pane px-3.5 py-2.5 space-y-2.5" style="display: block;">
+    <div id="tab-chat" class="tab-pane px-3.5 py-2.5 space-y-2.5 pb-44" style="display: block;">
       
       <div class="text-center my-0.5">
         <span class="text-[9px] font-mono text-text-secondary bg-surface-elevated px-2.5 py-0.5 rounded-full border border-border/50">
@@ -730,7 +730,7 @@ const HTML_SOURCE = `<!DOCTYPE html>
     <!-- ======================================================================= -->
     <!--  TAB 4: NOTIFICATIONS, MORNING BRIEFING & SMART ALERTS -->
     <!-- ======================================================================= -->
-    <div id="tab-notifications" class="tab-pane px-3.5 py-2.5 space-y-2.5">
+    <div id="tab-notifications" class="tab-pane px-3.5 py-2.5 space-y-2.5 pb-36">
       <div class="flex justify-between items-center">
         <h2 class="font-headline font-bold text-sm text-text-primary">Pusat Notifikasi & Pengingat</h2>
         <button onclick="openDynamicHubModal('bills')" class="text-lime text-[9px] font-mono font-bold hover:underline">+ Kelola Tagihan</button>
@@ -809,7 +809,7 @@ const HTML_SOURCE = `<!DOCTYPE html>
     <!-- ======================================================================= -->
     <!--  TAB 5: EXECUTIVE PROFILE & INTERACTIVE SETTINGS HUB (100% CLEAN TILES) -->
     <!-- ======================================================================= -->
-    <div id="tab-profile" class="tab-pane px-3.5 py-2.5 space-y-3 font-mono">
+    <div id="tab-profile" class="tab-pane px-3.5 py-2.5 space-y-3 pb-36 font-mono">
       
       <!-- Top Title Header -->
       <div class="flex justify-between items-center">
@@ -979,7 +979,7 @@ const HTML_SOURCE = `<!DOCTYPE html>
             </div>
           </div>
           <div class="flex items-center gap-1.5">
-            <span class="text-[8px] px-1.5 py-0.5 rounded bg-primary/20 text-primary font-bold" id="profile-app-version-badge">v2.7.6</span>
+            <span class="text-[8px] px-1.5 py-0.5 rounded bg-primary/20 text-primary font-bold" id="profile-app-version-badge">v2.7.7</span>
             <span class="material-symbols-outlined text-text-secondary text-[16px]">chevron_right</span>
           </div>
         </div>
@@ -1001,7 +1001,7 @@ const HTML_SOURCE = `<!DOCTYPE html>
   <!-- ========================================================================= -->
   <!-- 💬 CHAT INPUT DOCK (NO TTS / STT) -->
   <!-- ========================================================================= -->
-  <div id="chat-input-wrapper" class="fixed bottom-[68px] left-0 right-0 z-30 px-3 max-w-lg mx-auto space-y-1.5">
+  <div id="chat-input-wrapper" style="display: none;" class="fixed bottom-[68px] left-0 right-0 z-30 px-3 max-w-lg mx-auto space-y-1.5">
     
     <!-- Dynamic Quick Action Pills -->
     <div id="dynamic-pills-container" class="flex gap-1.5 overflow-x-auto hide-scrollbar py-0.5"></div>

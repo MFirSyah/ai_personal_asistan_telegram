@@ -441,6 +441,18 @@ Katalog **300 Poin Master Audit** ini menjadi dokumen panduan mutlak (*Ultimate 
 
 
 
+
+
+### 2.50 Penyempurnaan Isolasi Dock Input Chat & Jarak Scroll Tab Bawah (Rilis Versi 2.7.7)
+- **Akar Masalah**: Pada Tab 1 (Analisis), terdapat elemen mengambang yang menutupi konten tepat di atas bar navigasi bawah. Hal ini disebabkan oleh bilah input chat (`#chat-input-wrapper`) yang secara default belum tersembunyi (`display: none`) saat membuka tab selain Chat, serta padding bawah container yang kurang longgar.
+- **Tindakan Perbaikan**:
+  1. Menetapkan `style="display: none;"` secara default pada `#chat-input-wrapper` di HTML, dan memastikan fungsi `switchTab` hanya memunculkan dock input ketika tab aktif adalah Tab Chat.
+  2. Memberikan bottom padding clearance yang sangat lega (`pb-36` / 144px) pada Tab Analisis dan seluruh tab lainnya, sehingga semua 6 Card Eksekutif dapat di-scroll ke atas tanpa ada yang tertutup navigasi bawah.
+- **Hasil Kompilasi & Versi Baru:**
+  - `versionCode = 277`, `versionName = "2.7.7"`.
+  - Output File: `D:\MANAS PROJEK\Raphael_App_v2.7.7_Debug.apk` (Ukuran: 5.67 MB).
+
+
 ### 2.49 Pembersihan Bocoran Teks Wrapper React Next.js (Rilis Versi 2.7.6)
 - **Akar Masalah**: Pada screenshot pengguna, terlihat baris teks mentah `'use client'; import React from 'react'; const HTML_SOURCE = \`` di bagian paling atas layar dan `\`; export default function MobileAppPage() ...` di bagian bawah layar. Hal ini terjadi karena file `index.html` lokal di dalam aset Android sempat tersinkronisasi bersama wrapper React TypeScript milik web Next.js (`page.tsx`).
 - **Tindakan Pembersihan Total**:
