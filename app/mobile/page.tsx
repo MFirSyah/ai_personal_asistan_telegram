@@ -18,11 +18,11 @@ const HTML_SOURCE = `<!DOCTYPE html>
       theme: {
         extend: {
           colors: {
-            background: "#0B0F12",
-            surface: "#141A20",
-            "surface-elevated": "#1C242C",
+            background: "#F5F5F7",
+            surface: "#FFFFFF",
+            "surface-elevated": "#F0F1F3",
             "surface-high": "#262A2E",
-            border: "#28323E",
+            border: "#E0E2E6",
             primary: "#00A8A8",
             "primary-dark": "#008080",
             lime: "#D2F000",
@@ -57,7 +57,7 @@ const HTML_SOURCE = `<!DOCTYPE html>
       user-select: text !important;
     }
     html, body {
-      background-color: #0B0F12;
+      background-color: #F5F5F7;
       color: #F8FAFC;
       font-family: 'Inter', sans-serif;
       -webkit-tap-highlight-color: transparent;
@@ -69,7 +69,7 @@ const HTML_SOURCE = `<!DOCTYPE html>
     .hide-scrollbar::-webkit-scrollbar { display: none; }
     .hide-scrollbar { -ms-overflow-style: none; scrollbar-width: none; }
     .glass-panel {
-      background: #141A20;
+      background: #FFFFFF;
       border: 1px solid rgba(40, 50, 62, 0.85);
     }
     .tosca-bloom { box-shadow: 0 0 12px rgba(0, 168, 168, 0.3); }
@@ -143,8 +143,8 @@ const HTML_SOURCE = `<!DOCTYPE html>
       max-width: 900px !important;
       margin-left: auto !important;
       margin-right: auto !important;
-      border-left: 1px solid #1C242C;
-      border-right: 1px solid #1C242C;
+      border-left: 1px solid #F0F1F3;
+      border-right: 1px solid #F0F1F3;
       box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.7);
     }
     .modal-overlay > div {
@@ -156,7 +156,7 @@ const HTML_SOURCE = `<!DOCTYPE html>
       transform: translateX(-50%) !important;
       border-radius: 24px !important;
       margin-bottom: 8px !important;
-      border: 1px solid #28323E !important;
+      border: 1px solid #E0E2E6 !important;
       box-shadow: 0 10px 30px rgba(0, 0, 0, 0.8) !important;
     }
   }
@@ -1872,7 +1872,7 @@ const HTML_SOURCE = `<!DOCTYPE html>
 
 export default function MobileAppPage() {
   return (
-    <div className="fixed inset-0 w-full h-full bg-[#0B0F12] overflow-hidden flex flex-col justify-center items-center">
+    <div className="fixed inset-0 w-full h-full bg-[#F5F5F7] overflow-hidden flex flex-col justify-center items-center">
       <iframe
         srcDoc={HTML_SOURCE}
         className="w-full h-full border-none"
