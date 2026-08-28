@@ -929,7 +929,7 @@ const HTML_SOURCE = `<!DOCTYPE html>
           <span class="text-xs font-headline font-bold text-tosca flex items-center gap-1">
             <span class="material-symbols-outlined text-[16px]">info</span> INFORMASI VERSI & SISTEM
           </span>
-          <span class="text-[9px] font-mono px-2 py-0.5 rounded-full bg-tosca/20 text-tosca font-bold" id="profile-app-version-badge">v2.5.0</span>
+          <span class="text-[9px] font-mono px-2 py-0.5 rounded-full bg-tosca/20 text-tosca font-bold" id="profile-app-version-badge">v2.5.1</span>
         </div>
         
         <div class="space-y-1 text-[10px] font-mono text-text-secondary">
@@ -939,11 +939,11 @@ const HTML_SOURCE = `<!DOCTYPE html>
           </div>
           <div class="flex justify-between">
             <span>Versi Rilis:</span>
-            <span class="text-lime font-bold">v2.5.0 (Tablet & Native Persistence Edition)</span>
+            <span class="text-lime font-bold">v2.5.1 (Performance & Chat Retention Patch)</span>
           </div>
           <div class="flex justify-between">
             <span>Build Date:</span>
-            <span class="text-text-primary">28 Agustus 2026 (Build 250)</span>
+            <span class="text-text-primary">28 Agustus 2026 (Build 251)</span>
           </div>
           <div class="flex justify-between">
             <span>Status Native:</span>
@@ -1052,7 +1052,21 @@ const HTML_SOURCE = `<!DOCTYPE html>
       <!-- Changelog Timeline Feed -->
       <div class="space-y-3 text-[10px]" id="changelog-feed-container">
         
-                        <!-- v2.5.0 -->
+                                <!-- v2.5.1 -->
+        <div class="p-2.5 bg-surface-elevated rounded-xl border border-lime/50 space-y-1.5 shadow">
+          <div class="flex justify-between items-center">
+            <span class="font-bold text-lime text-xs">⚡ Versi 2.5.1 (Performance & Chat Retention Patch)</span>
+            <span class="text-[8px] text-text-secondary">28 Ags 2026</span>
+          </div>
+          <ul class="text-[9px] text-text-secondary space-y-1 list-disc list-inside">
+            <li><strong class="text-text-primary">Optimasi Tab Switching Ringan:</strong> Pindah tab secepat kilat tanpa re-render grafik Chart.js di latar belakang.</li>
+            <li><strong class="text-text-primary">Retensi Chat 100% Persisten:</strong> Riwayat chat tersimpan permanen dan langsung muncul kembali saat aplikasi dibuka.</li>
+            <li><strong class="text-text-primary">Perbaikan Navigasi Tab Chat:</strong> Tombol chat di navbar kini selalu responsif dan langsung membuka layar chat.</li>
+            <li><strong class="text-text-primary">Kontekstual AI Akurat:</strong> AI menjawab tepat sesuai topik pertanyaan pengguna tanpa template usang.</li>
+          </ul>
+        </div>
+
+        <!-- v2.5.0 -->
         <div class="p-2.5 bg-surface-elevated rounded-xl border border-tosca/50 space-y-1.5 shadow">
           <div class="flex justify-between items-center">
             <span class="font-bold text-tosca text-xs">🚀 Versi 2.5.0 (Tablet & Persistent Store)</span>
