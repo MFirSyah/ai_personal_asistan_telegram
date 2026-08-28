@@ -869,6 +869,41 @@ const HTML_SOURCE = `<!DOCTYPE html>
       </div>
 
       
+      
+      <!-- 8. KARTU INFORMASI VERSI APLIKASI & CHANGELOG (TAB PROFIL) -->
+      <div class="bg-surface rounded-xl p-3 border border-border space-y-2 shadow-md">
+        <div class="flex justify-between items-center border-b border-border/50 pb-1.5">
+          <span class="text-xs font-headline font-bold text-tosca flex items-center gap-1">
+            <span class="material-symbols-outlined text-[16px]">info</span> INFORMASI VERSI & SISTEM
+          </span>
+          <span class="text-[9px] font-mono px-2 py-0.5 rounded-full bg-tosca/20 text-tosca font-bold" id="profile-app-version-badge">v2.3.0</span>
+        </div>
+        
+        <div class="space-y-1 text-[10px] font-mono text-text-secondary">
+          <div class="flex justify-between">
+            <span>Edisi Aplikasi:</span>
+            <span class="text-text-primary font-bold">Raphael Cockpit Executive</span>
+          </div>
+          <div class="flex justify-between">
+            <span>Versi Rilis:</span>
+            <span class="text-lime font-bold">v2.3.0 (Major Milestone)</span>
+          </div>
+          <div class="flex justify-between">
+            <span>Build Date:</span>
+            <span class="text-text-primary">28 Agustus 2026 (Build 230)</span>
+          </div>
+          <div class="flex justify-between">
+            <span>Status Native:</span>
+            <span class="text-emerald font-bold">Android 10+ (API 29) Ready</span>
+          </div>
+        </div>
+
+        <button onclick="openChangelogModal()" class="w-full py-2 bg-surface-elevated border border-border hover:border-tosca/50 text-text-primary font-mono font-bold text-[10px] rounded-lg active:scale-95 transition-all flex items-center justify-center gap-1 mt-1">
+          <span class="material-symbols-outlined text-[14px] text-tosca">history_edu</span>
+          <span>Lihat Riwayat Pembaruan (Changelog Log)</span>
+        </button>
+      </div>
+
       <!-- 7. TOMBOL KELUAR / GANTI AKUN (LOGOUT) -->
       <div class="pt-2 pb-6">
         <button onclick="logoutUserSession()" class="w-full py-2.5 bg-coral/15 border-2 border-coral/40 text-coral font-bold rounded-xl text-xs font-mono shadow active:scale-95 flex items-center justify-center gap-2 hover:bg-coral/25 transition-all">
@@ -946,6 +981,73 @@ const HTML_SOURCE = `<!DOCTYPE html>
   <!-- 🚨 EMERGENCY ICE MODAL (PROFIL MEDIS & KONTAK DARURAT) -->
   <!-- ========================================================================= -->
   
+  
+  <!-- 📋 MODAL RIWAYAT PEMBARUAN (CHANGELOG LOG MODAL) -->
+  <div id="modal-changelog" class="modal-overlay child-modal">
+    <div class="bg-surface border-2 border-tosca rounded-2xl p-4 w-full max-w-sm space-y-3 font-mono max-h-[90vh] overflow-y-auto hide-scrollbar shadow-2xl">
+      <div class="flex justify-between items-center border-b border-border/50 pb-2">
+        <div class="flex items-center gap-1.5">
+          <span class="material-symbols-outlined text-tosca text-[20px]">history_edu</span>
+          <div>
+            <h3 class="font-headline font-bold text-sm text-tosca">CATATAN RILIS APLIKASI</h3>
+            <p class="text-[9px] font-mono text-text-secondary">Raphael App Changelog Log</p>
+          </div>
+        </div>
+        <button onclick="closeChangelogModal()" class="text-text-secondary hover:text-text-primary text-base font-bold active:scale-90">✕</button>
+      </div>
+
+      <!-- Changelog Timeline Feed -->
+      <div class="space-y-3 text-[10px]" id="changelog-feed-container">
+        
+        <!-- v2.3.0 -->
+        <div class="p-2.5 bg-surface-elevated rounded-xl border border-lime/40 space-y-1.5 shadow">
+          <div class="flex justify-between items-center">
+            <span class="font-bold text-lime text-xs">🚀 Versi 2.3.0 (Major Milestone)</span>
+            <span class="text-[8px] text-text-secondary">28 Ags 2026</span>
+          </div>
+          <ul class="text-[9px] text-text-secondary space-y-1 list-disc list-inside">
+            <li><strong class="text-text-primary">Notifikasi Lokal Sistem:</strong> Muncul di status bar HP untuk Morning Briefing & pengingat tagihan.</li>
+            <li><strong class="text-text-primary">Pop-up Morning Briefing:</strong> Ringkasan keuangan harian saat aplikasi dibuka + riwayat 7 hari auto-purge.</li>
+            <li><strong class="text-text-primary">Onboarding & Login Eksekutif:</strong> 3 Slide Walkthrough + 1-Tap Quick Access & PIN.</li>
+            <li><strong class="text-text-primary">Form Terpisah & Rinci:</strong> Pemisahan lengkap form Profil SOS & Armada Kendaraan.</li>
+            <li><strong class="text-text-primary">Retensi Chat Persisten:</strong> Riwayat chat tidak terhapus saat update APK.</li>
+            <li><strong class="text-text-primary">Perbaikan SOS:</strong> Eliminasi false trigger saat berpindah tab.</li>
+          </ul>
+        </div>
+
+        <!-- v2.2.0 -->
+        <div class="p-2.5 bg-surface-elevated rounded-xl border border-border space-y-1.5">
+          <div class="flex justify-between items-center">
+            <span class="font-bold text-primary text-xs">✨ Versi 2.2.0</span>
+            <span class="text-[8px] text-text-secondary">27 Ags 2026</span>
+          </div>
+          <ul class="text-[9px] text-text-secondary space-y-1 list-disc list-inside">
+            <li><strong class="text-text-primary">Continuous Presence & Collision Engine:</strong> Deteksi bentrok jadwal geografis multi-hari (Trip Dieng vs Sidoarjo).</li>
+            <li><strong class="text-text-primary">Profil & Integrasi Sesi:</strong> Setting identitas, morning briefing, & live sync Supabase di Tab 5.</li>
+            <li><strong class="text-text-primary">Isolasi Data 100%:</strong> Pembersihan dummy kos & kepatuhan data pengguna.</li>
+          </ul>
+        </div>
+
+        <!-- v2.1.0 -->
+        <div class="p-2.5 bg-surface-elevated rounded-xl border border-border space-y-1.5">
+          <div class="flex justify-between items-center">
+            <span class="font-bold text-text-primary text-xs">📦 Versi 2.1.0</span>
+            <span class="text-[8px] text-text-secondary">25 Ags 2026</span>
+          </div>
+          <ul class="text-[9px] text-text-secondary space-y-1 list-disc list-inside">
+            <li><strong class="text-text-primary">Native In-App Modals:</strong> Mengganti prompt bawaan android dengan modal in-app elegan.</li>
+            <li><strong class="text-text-primary">Gantt Chart & Visual Analytics:</strong> Grafik distribusi dana, arus kas, & timeline proyek.</li>
+          </ul>
+        </div>
+
+      </div>
+
+      <button onclick="closeChangelogModal()" class="w-full py-2 bg-tosca text-black font-headline font-bold text-xs rounded-xl shadow active:scale-95 transition-all">
+        Tutup Catatan Rilis
+      </button>
+    </div>
+  </div>
+
   <!-- ☀️ MODAL MORNING BRIEFING HARIAN (TOP-LAYER POPUP) -->
   <div id="modal-morning-briefing" class="modal-overlay emergency-modal">
     <div class="bg-surface border-2 border-lime rounded-2xl p-4 w-full max-w-sm space-y-3 font-mono max-h-[92vh] overflow-y-auto hide-scrollbar shadow-2xl">
