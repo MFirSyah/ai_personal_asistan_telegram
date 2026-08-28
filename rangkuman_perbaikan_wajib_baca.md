@@ -1053,3 +1053,21 @@ Katalog **300 Poin Master Audit** ini menjadi dokumen panduan mutlak (*Ultimate 
 - **Versi, Build, & Distribusi:**
   - Version Code: `302` | Version Name: `v3.0.2`.
   - File APK: `D:\MANAS PROJEK\Raphael_v3.0.2.apk` dan `D:\MANAS PROJEK\Raphael_Latest.apk`.
+
+### 2.19. Logbook Perapatan Gap Celah Antara Kartu Jawaban AI dan Tombol Pintasan Chips Tab Chat (v3.0.3 - 28 Agustus 2026)
+- **Status Perbaikan:** SUKSES & TERUJI LIVE DI HP REALME 5I
+- **Latar Belakang & Permintaan:**
+  - Memperkecil celah kosong (*gap*) yang masih tampak berlebih di antara bagian bawah kartu jawaban AI (*bubble response/card*) dengan deretan tombol pintasan (*Split Bill WA, Pelunasan Jago, Checklist Dieng*).
+  - Memastikan antarmuka chat tersusun rapat, proporsional, dan nyaman dipandang tanpa adanya dead-space yang mengambang.
+- **Rincian Perubahan Teknis:**
+  1. **Pemadatan Padding Bawah Scroll Container & Chat Pane**:
+     - Mengubah `#main-scroll-container` dari `pb-24` (96px) menjadi `pb-20` (80px).
+     - Mengubah `#tab-chat` dari `pb-8` menjadi `pb-1` (menghapus penumpukan padding ganda).
+  2. **Pemadatan Chat Input Wrapper & Quick Action Pills**:
+     - Mengubah padding atas `#chat-input-wrapper` dari `pt-1.5` menjadi `pt-0.5` dan jarak `space-y-1.5` menjadi `space-y-1`.
+     - Mengubah padding vertikal `#dynamic-pills-container` dari `py-0.5` menjadi `py-0`.
+  3. **Penyelarasan Presisi Auto-Scroll**:
+     - Memperbaiki `scrollChatToBottom()` agar mendaratkan posisi pesan tepat di atas baris chips dengan jarak napas mikro yang sangat pas (~6px–8px).
+- **Versi, Build, & Distribusi:**
+  - Version Code: `303` | Version Name: `v3.0.3`.
+  - File APK: `D:\MANAS PROJEK\Raphael_v3.0.3.apk` dan `D:\MANAS PROJEK\Raphael_Latest.apk`.
