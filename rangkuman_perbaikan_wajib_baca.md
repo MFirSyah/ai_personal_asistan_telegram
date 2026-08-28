@@ -439,6 +439,19 @@ Katalog **300 Poin Master Audit** ini menjadi dokumen panduan mutlak (*Ultimate 
 
 
 
+
+
+### 2.49 Pembersihan Bocoran Teks Wrapper React Next.js (Rilis Versi 2.7.6)
+- **Akar Masalah**: Pada screenshot pengguna, terlihat baris teks mentah `'use client'; import React from 'react'; const HTML_SOURCE = \`` di bagian paling atas layar dan `\`; export default function MobileAppPage() ...` di bagian bawah layar. Hal ini terjadi karena file `index.html` lokal di dalam aset Android sempat tersinkronisasi bersama wrapper React TypeScript milik web Next.js (`page.tsx`).
+- **Tindakan Pembersihan Total**:
+  1. Membersihkan file `index.html` asli di aset Android (`data_core_mobile/app/src/main/assets/www/index.html`) sehingga menjadi **100% Pure Standalone HTML** yang dimulai tepat pada `<!DOCTYPE html>` dan diakhiri `</html>`.
+  2. Menjaga file `telegram/app/mobile/page.tsx` terisolasi dengan pembungkus React iframe tanpa mengotori aset WebView lokal Android.
+  3. Seluruh teks kode React yang bocor di layar smartphone telah **hilang 100%**.
+- **Hasil Kompilasi & Versi Baru:**
+  - `versionCode = 276`, `versionName = "2.7.6"`.
+  - Output File: `D:\MANAS PROJEK\Raphael_App_v2.7.6_Debug.apk` (Ukuran: 5.67 MB).
+
+
 ### 2.48 Pemulihan Presisi Bottom Navigation Bar, Chat Input & 100% Modals (Rilis Versi 2.7.5)
 - **Akar Masalah**: Saat penggantian slice kode Tab Profil sebelumnya, elemen penutup `</main>`, bar navigasi bawah (`#app-bottom-nav`), dan dock chat input (`#chat-input-wrapper`) terpotong secara tidak sengaja sehingga tampilan bawah layar ponsel sempat hilang.
 - **Tindakan Pemulihan Total**:

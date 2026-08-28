@@ -2,11 +2,7 @@
 
 import React from 'react';
 
-const HTML_SOURCE = `'use client';
-
-import React from 'react';
-
-const HTML_SOURCE = \`<!DOCTYPE html>
+const HTML_SOURCE = `<!DOCTYPE html>
 <html lang="id" class="dark">
 <head>
   <meta charset="utf-8"/>
@@ -983,7 +979,7 @@ const HTML_SOURCE = \`<!DOCTYPE html>
             </div>
           </div>
           <div class="flex items-center gap-1.5">
-            <span class="text-[8px] px-1.5 py-0.5 rounded bg-primary/20 text-primary font-bold" id="profile-app-version-badge">v2.7.5</span>
+            <span class="text-[8px] px-1.5 py-0.5 rounded bg-primary/20 text-primary font-bold" id="profile-app-version-badge">v2.7.6</span>
             <span class="material-symbols-outlined text-text-secondary text-[16px]">chevron_right</span>
           </div>
         </div>
@@ -1878,21 +1874,7 @@ const HTML_SOURCE = \`<!DOCTYPE html>
   </div>
 
 </body>
-</html>
-\`;
-
-export default function MobileAppPage() {
-  return (
-    <div className="fixed inset-0 w-full h-full bg-[#0B0F12] overflow-hidden flex flex-col justify-center items-center">
-      <iframe
-        srcDoc={HTML_SOURCE}
-        className="w-full h-full border-none"
-        title="Raphael Mobile"
-      />
-    </div>
-  );
-}
-`;
+</html>`;
 
 export default function MobileAppPage() {
   return (
