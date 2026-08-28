@@ -288,7 +288,7 @@ const HTML_SOURCE = `<!DOCTYPE html>
       <p class="text-[9px] font-mono text-text-secondary flex items-center justify-center gap-1">
         <span class="material-symbols-outlined text-[12px] text-emerald">lock</span> Terenkripsi & Terhubung Langsung ke Supabase
       </p>
-      <p class="text-[8px] font-mono text-text-secondary/60">Raphael AI System v2.26 • Executive Edition</p>
+      <p class="text-[8px] font-mono text-text-secondary/60">Raphael AI System v2.3.1 • Executive Edition</p>
     </div>
   </div>
 
@@ -876,7 +876,7 @@ const HTML_SOURCE = `<!DOCTYPE html>
           <span class="text-xs font-headline font-bold text-tosca flex items-center gap-1">
             <span class="material-symbols-outlined text-[16px]">info</span> INFORMASI VERSI & SISTEM
           </span>
-          <span class="text-[9px] font-mono px-2 py-0.5 rounded-full bg-tosca/20 text-tosca font-bold" id="profile-app-version-badge">v2.3.0</span>
+          <span class="text-[9px] font-mono px-2 py-0.5 rounded-full bg-tosca/20 text-tosca font-bold" id="profile-app-version-badge">v2.4.0</span>
         </div>
         
         <div class="space-y-1 text-[10px] font-mono text-text-secondary">
@@ -886,11 +886,11 @@ const HTML_SOURCE = `<!DOCTYPE html>
           </div>
           <div class="flex justify-between">
             <span>Versi Rilis:</span>
-            <span class="text-lime font-bold">v2.3.0 (Major Milestone)</span>
+            <span class="text-lime font-bold">v2.4.0 (13-Dimension Research Intelligence)</span>
           </div>
           <div class="flex justify-between">
             <span>Build Date:</span>
-            <span class="text-text-primary">28 Agustus 2026 (Build 230)</span>
+            <span class="text-text-primary">28 Agustus 2026 (Build 240)</span>
           </div>
           <div class="flex justify-between">
             <span>Status Native:</span>
@@ -999,6 +999,18 @@ const HTML_SOURCE = `<!DOCTYPE html>
       <!-- Changelog Timeline Feed -->
       <div class="space-y-3 text-[10px]" id="changelog-feed-container">
         
+                <!-- v2.4.0 -->
+        <div class="p-2.5 bg-surface-elevated rounded-xl border border-lime/50 space-y-1.5 shadow">
+          <div class="flex justify-between items-center">
+            <span class="font-bold text-lime text-xs">🚀 Versi 2.4.0 (13-Dimension Research Intelligence)</span>
+            <span class="text-[8px] text-text-secondary">28 Ags 2026</span>
+          </div>
+          <ul class="text-[9px] text-text-secondary space-y-1 list-disc list-inside">
+            <li><strong class="text-text-primary">13-Dimensi Riset Lengkap:</strong> Integrasi riset kampus & maps link, linguistik bahasa (Jepang/Inggris/Jawa), botani, skripsi & metodologi AI, mekanikal Beat, touring Dieng, Gojek, medis P3K, komparasi gadget, administrasi Samsat, resep hemat kos, debug software, & hukum perlindungan konsumen.</li>
+            <li><strong class="text-text-primary">Rich Markdown Link Engine:</strong> Tautan navigasi Google Maps dan portal resmi kini langsung interaktif & dapat diklik.</li>
+          </ul>
+        </div>
+
         <!-- v2.3.0 -->
         <div class="p-2.5 bg-surface-elevated rounded-xl border border-lime/40 space-y-1.5 shadow">
           <div class="flex justify-between items-center">
