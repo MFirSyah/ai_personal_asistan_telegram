@@ -399,6 +399,23 @@ Katalog **300 Poin Master Audit** ini menjadi dokumen panduan mutlak (*Ultimate 
 
 
 
+
+
+### 2.29 Standarisasi Semantic Versioning (v2.3.0 Major Milestone) & In-App Changelog Log
+- **Pedoman & Mandat Pembaruan Versi dari Pengguna:**
+  - *"bantu ingat, jika setelah melakukan pembaruan untuk aplikasi, ubah nomor versi aplikasinya dan buatkan log, besar ubah nomor aplikasinya berdsarakan seberapa besar perubahan, jika kecil ya digit kecil aja dan kalo besar ya besar, pada profil tampilkan versi aplikasi juga"*
+- **Aturan Semantic Versioning yang Ditetapkan:**
+  1. **Major Version (`X.0.0`)**: Perubahan arsitektur masif, migrasi engine, perombakan struktur total.
+  2. **Minor Version (`2.X.0`)**: Penambahan fitur/modul fungsional baru (seperti Onboarding, Login, Local System Notifications, Morning Briefing Popup, Dynamic Hub, & Gantt Chart).
+  3. **Patch Version (`2.3.X`)**: Perbaikan bug (*bugfix*), perbaikan visual, dan optimasi kecil.
+- **Implementasi Fitur Versi & Catatan Rilis:**
+  1. **Badge & Kartu Versi di Tab 5 Profil**: Menampilkan `Raphael Cockpit Executive v2.3.0 (Build 2026.08.28-build230)` dengan badge tosca.
+  2. **Modal In-App Changelog (`modal-changelog`)**: Modal interaktif yang dapat dibuka langsung oleh pengguna dari Tab Profil untuk membaca seluruh rekam jejak evolusi fitur aplikasi dari v1.0.0 hingga v2.3.0.
+  3. **Penyelarasan Gradle**: `app/build.gradle.kts` diselaraskan ke `versionCode = 230` dan `versionName = "2.3.0"`.
+  4. **Output Binary APK Resmi**:
+     `D:\MANAS PROJEK\Raphael_App_v2.3.0_Debug.apk` (Ukuran: 5.66 MB).
+
+
 ### 2.28 Integrasi Notifikasi Lokal Status Bar, Pop-up Morning Briefing, Retensi Chat, & Pemisahan Form Rinci
 - **7 Permintaan & Koreksi Pengguna:**
   1. *Notifikasi Lokal Sistem Android*: Notifikasi mandiri muncul di status bar HP (seperti alarm/jam) untuk briefing dan reminder.
