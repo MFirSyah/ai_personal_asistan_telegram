@@ -411,6 +411,18 @@ Katalog **300 Poin Master Audit** ini menjadi dokumen panduan mutlak (*Ultimate 
 
 
 
+
+
+### 2.35 Perbaikan Respon Sapaan Murni (*Dedicated Pure Greeting Orchestrator*)
+- **Laporan Masalah Pengguna:**
+  - *"Ini kok saya kirim chat 'Halo' atau 'Halo kamu' atau yang sama itu jawabannya malah ngeluarin total saldo dsb, bukan balik jawab sapa"*
+- **Akar Masalah:**
+  Fungsi orkestrasi `runChatOrchestration` di `chat.ts` sebelumnya selalu menyuntikkan seluruh fakta finansial (buku kas/ledger, transaksi, dan hutang) ke dalam prompt utama terlepas dari apakah pengguna hanya mengirim sapaan singkat. Gemini yang menerima data tersebut berasumsi perlu membacakan ringkasan kas jika tidak ada perintah spesifik.
+- **Tindakan Perbaikan:**
+  1. *Klasifikasi Sapaan Cerdas (`classifyIntent`)*: Mendeteksi sapaan murni (*"Halo"*, *"Halo kamu"*, *"Halo Raphael"*, *"Hai"*, *"Selamat sore"*, *"Pagi"*, dsb) yang tidak memuat angka mata uang atau instruksi data.
+  2. *Dedicated Pure Greeting Prompt (`buildGreetingPrompt`)*: Jika pesan terdeteksi sebagai sapaan santai, sistem mengarahkan AI untuk **hanya menyapa balik secara ramah, hangat, dan santun** sesuai waktu WIB (Pagi/Siang/Sore/Malam) dan menanyakan apa yang bisa dibantu, **TANPA MENAMPILKAN SALDO KAS ATAU TABEL FINANSIAL SAMA SEKALI**.
+
+
 ### 2.34 Implementasi Perbaikan Menyeluruh Hasil Audit Ekstrem (Rilis Versi 2.5.3)
 - **Tujuan**: Menerapkan solusi atas seluruh temuan audit mendalam tanpa menambahkan fitur baru.
 - **Rincian Perbaikan yang Diterapkan:**
