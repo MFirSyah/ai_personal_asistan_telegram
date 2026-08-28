@@ -1022,7 +1022,7 @@ const HTML_SOURCE = `<!DOCTYPE html>
             </div>
           </div>
           <div class="flex items-center gap-1.5">
-            <span class="text-[8px] px-1.5 py-0.5 rounded bg-primary/20 text-primary font-bold" id="profile-app-version-badge">v2.7.1</span>
+            <span class="text-[8px] px-1.5 py-0.5 rounded bg-primary/20 text-primary font-bold" id="profile-app-version-badge">v2.7.2</span>
             <span class="material-symbols-outlined text-text-secondary text-[16px]">chevron_right</span>
           </div>
         </div>

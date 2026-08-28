@@ -435,6 +435,20 @@ Katalog **300 Poin Master Audit** ini menjadi dokumen panduan mutlak (*Ultimate 
 
 
 
+
+
+### 2.47 Penghapusan Total Perizinan Mikrofon & Kamera (Rilis Versi 2.7.2)
+- **Pertanyaan & Masalah Pengguna**: Aplikasi tidak menggunakan Speech-to-Text (STT) maupun Text-to-Speech (TTS), tetapi sebelumnya sistem Android memunculkan dialog permintaan izin mikrofon (`RECORD_AUDIO`) dan kamera (`CAMERA`).
+- **Akar Masalah**: Sisa deklarasi boilerplate template pada `AndroidManifest.xml` dan array `requiredPerms` di `MainActivity.kt`.
+- **Tindakan Penyempurnaan**:
+  1. Menghapus izin `android.permission.RECORD_AUDIO` dan `android.permission.CAMERA` dari `AndroidManifest.xml`.
+  2. Menghapus permintaan runtime `RECORD_AUDIO` dan `CAMERA` dari `MainActivity.kt`.
+  3. Aplikasi kini hanya meminta izin esensial: **Notifikasi Status Bar** (Morning Briefing) dan **Lokasi GPS** (Cuaca Malang/Sidoarjo).
+- **Hasil Kompilasi & Versi Baru:**
+  - `versionCode = 272`, `versionName = "2.7.2"`.
+  - Output File: `D:\MANAS PROJEK\Raphael_App_v2.7.2_Debug.apk` (Ukuran: 5.66 MB).
+
+
 ### 2.46 Perbaikan Presisi Border & Estetika Header Top Bar (Rilis Versi 2.7.1)
 - **Akar Masalah**: Class CSS `.glass-panel` yang sebelumnya terpasang pada `<header>` menghasilkan border rounded (24px) dengan garis tepi tebal di sekeliling top bar, menimbulkan tampilan kotak mengambang yang canggung (*awkward border artifact*).
 - **Tindakan Penyempurnaan**:
