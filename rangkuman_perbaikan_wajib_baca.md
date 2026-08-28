@@ -397,6 +397,26 @@ Katalog **300 Poin Master Audit** ini menjadi dokumen panduan mutlak (*Ultimate 
 
 
 
+
+
+### 2.28 Integrasi Notifikasi Lokal Status Bar, Pop-up Morning Briefing, Retensi Chat, & Pemisahan Form Rinci
+- **7 Permintaan & Koreksi Pengguna:**
+  1. *Notifikasi Lokal Sistem Android*: Notifikasi mandiri muncul di status bar HP (seperti alarm/jam) untuk briefing dan reminder.
+  2. *Pop-up Modal Morning Briefing*: Muncul di layer atas saat buka aplikasi dan riwayat tersimpan di Tab Notifikasi (auto-purge >7 hari).
+  3. *Retensi Riwayat Chat Persisten*: Pembaruan APK tidak menghapus chat history lokal.
+  4. *Perbaikan Trigger SOS*: Memperbaiki false-trigger SOS saat berpindah tab chat.
+  5. *Pemisahan Form SOS Rinci*: Memisahkan Nama, Domisili, Kontak, Golongan Darah, BPJS, Alergi, dan Faskes.
+  6. *Pemisahan Form Kendaraan/Armada*: Memisahkan Plat Nomor, Odometer, Tangki, Konsumsi BBM, dan Interval Servis.
+  7. *Audit 100% Data-Driven*: Memastikan AI hanya membaca dan menyimpulkan dari data riil database Supabase tanpa halusinasi.
+- **Arsitektur Solusi & Implementasi:**
+  1. **Native Android Notification Channel (`WebAppInterface`)**: `MainActivity.kt` ditambahkan fungsi `@JavascriptInterface postLocalNotification` yang terhubung ke `NotificationCompat.Builder` berprioritas tinggi (`IMPORTANCE_HIGH`).
+  2. **Modal Pop-up Morning Briefing (`modal-morning-briefing`)**: Otomatis muncul pada pembukaan pertama harian, memuat ringkasan batas belanja aman, sisa kas likuid, dan agenda prioritas.
+  3. **Arsip Briefing 7 Hari di Tab 4**: Riwayat tersimpan di `localStorage` dan dibersihkan otomatis jika lebih dari 7 hari (`Date.now() - 7*86400*1000`).
+  4. **Touch-Exclusive SOS Long-Press Engine**: Menghapus synthetic event `mousedown` ganda pada layar sentuh sehingga tombol chat berpindah tab secara mulus tanpa memicu timer hantu SOS.
+  5. **Form Rinci 100% Terpisah**: Form SOS kini memiliki 9 kolom terpisah, dan Form Kendaraan memiliki 8 kolom terpisah.
+  6. **Data-Driven Guardrails**: Mandat zero-hallucination dikunci di prompt utama AI.
+
+
 ### 2.27 Implementasi Onboarding Carousel 3 Slide & Layar Autentikasi Login Eksekutif
 - **Permintaan Pengguna:**
   - *"ini kan ketika saya perintah kamu build aplikasi nya agar bisa diinstall kan harus ada halaman login, nah buatkan dulu, lalu setelah itu build aplikasi jadi .apk agar bisa saya install di smartphone saya. Oh ya, kasih onboarding yah hehehe"*
