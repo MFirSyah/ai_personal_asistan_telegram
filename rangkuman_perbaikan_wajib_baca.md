@@ -413,6 +413,19 @@ Katalog **300 Poin Master Audit** ini menjadi dokumen panduan mutlak (*Ultimate 
 
 
 
+
+
+### 2.36 Stream Install Langsung via USB ADB & Rilis Versi 2.5.4
+- **Permintaan Pengguna**: Menguji aplikasi langsung di smartphone fisik melalui koneksi USB ADB.
+- **Tindakan yang Berhasil Dijalankan:**
+  1. *Deteksi Perangkat Fisik*: Smartphone fisik terdeteksi aktif pada ID `9c4f8447`.
+  2. *Perbaikan Bridge Notifikasi Native*: Menyelaraskan fungsi `dispatchLocalNotification` di JavaScript dengan interface native `window.Android.postLocalNotification` di `MainActivity.kt`.
+  3. *Streamed Install & Launch*: Aplikasi berhasil dikompilasi ulang dengan Gradle 8.5 dan di-stream install langsung ke smartphone pengguna dalam hitungan detik.
+- **Hasil Kompilasi & Versi Baru:**
+  - `versionCode = 254`, `versionName = "2.5.4"`.
+  - Output File: `D:\MANAS PROJEK\Raphael_App_v2.5.4_Debug.apk` (Ukuran: 5.67 MB).
+
+
 ### 2.35 Perbaikan Respon Sapaan Murni (*Dedicated Pure Greeting Orchestrator*)
 - **Laporan Masalah Pengguna:**
   - *"Ini kok saya kirim chat 'Halo' atau 'Halo kamu' atau yang sama itu jawabannya malah ngeluarin total saldo dsb, bukan balik jawab sapa"*
