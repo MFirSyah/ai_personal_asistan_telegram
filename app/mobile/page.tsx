@@ -1015,7 +1015,7 @@ const HTML_SOURCE = `<!DOCTYPE html>
 
     <!-- Center Robot Button -->
     <div class="relative flex items-center justify-center select-none" oncontextmenu="return false;">
-      <button id="nav-btn-chat" class="w-10 h-10 rounded-full bg-lime text-black flex items-center justify-center lime-glow border-2 border-background shadow-lg transition-transform active:scale-95 select-none" oncontextmenu="return false;">
+      <button id="nav-btn-chat" onclick="switchTab('chat')" class="w-10 h-10 rounded-full bg-lime text-black flex items-center justify-center lime-glow border-2 border-background shadow-lg transition-transform active:scale-95 select-none" oncontextmenu="return false;">
         <span class="material-symbols-outlined text-[20px]" style="font-variation-settings: 'FILL' 1;">smart_toy</span>
       </button>
     </div>
