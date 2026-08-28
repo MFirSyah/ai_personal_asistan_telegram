@@ -355,40 +355,27 @@ const HTML_SOURCE = `<!DOCTYPE html>
   <!-- ========================================================================= -->
   <!-- 🔝 TOP APP BAR (HEADER RAPHAEL) -->
   <!-- ========================================================================= -->
-  <header class="glass-panel px-3.5 py-2.5 flex justify-between items-center border-b border-border/50 shrink-0 z-40">
-    <div class="flex items-center gap-2">
-      <!-- Interactive Robot Icon -> Opens AI Settings Modal -->
-      <button onclick="openAiSettingsModal()" class="relative active:scale-95 transition-transform">
-        <div class="w-8 h-8 rounded-full bg-surface-elevated flex items-center justify-center border border-primary/40 tosca-bloom">
-          <span class="material-symbols-outlined text-primary text-[18px]">smart_toy</span>
+      <header class="glass-panel px-3.5 py-2.5 flex justify-between items-center border-b border-border/50 shrink-0 z-10 sticky top-0 bg-background/80 backdrop-blur-md">
+      <!-- Left: Logo & Bot Name & Live Location -->
+      <div class="flex items-center gap-2.5">
+        <div class="relative flex items-center justify-center">
+          <div class="w-8 h-8 rounded-full bg-surface border border-primary/40 flex items-center justify-center text-primary shadow">
+            <span class="material-symbols-outlined text-[18px]">smart_toy</span>
+          </div>
+          <span class="absolute -bottom-0.5 -right-0.5 w-2.5 h-2.5 bg-lime rounded-full border-2 border-background animate-pulse"></span>
         </div>
-        <div class="absolute bottom-0 right-0 w-2.5 h-2.5 bg-lime rounded-full border-2 border-background animate-pulse"></div>
-      </button>
-
-      <div>
-        <h1 class="font-headline font-bold text-sm leading-tight flex items-center gap-1 text-text-primary">
-          Raphael
-          <span class="text-[9px] font-mono px-1 rounded bg-primary/20 text-primary border border-primary/30">AI</span>
-        </h1>
-        <p class="text-[10px] font-mono text-lime flex items-center gap-1" id="header-location">
-          <span class="w-1.5 h-1.5 rounded-full bg-lime inline-block"></span> MALANG (26°C)
-        </p>
+        <div>
+          <div class="flex items-center gap-1.5">
+            <h1 class="font-headline font-bold text-sm tracking-wide text-text-primary">Raphael</h1>
+            <span class="text-[8px] font-mono px-1.5 py-0.2 rounded bg-primary/20 text-primary font-bold border border-primary/30">AI</span>
+          </div>
+          <p class="text-[10px] font-mono text-lime flex items-center gap-1" id="header-location">
+            <span class="w-1.5 h-1.5 rounded-full bg-lime"></span>
+            <span id="header-city-text">MALANG</span> <span class="text-text-secondary" id="header-temp-text">(26°C)</span>
+          </p>
+        </div>
       </div>
-    </div>
-
-    <!-- Quick Dynamic Balances Pill -->
-    <div class="glass-panel px-2.5 py-1 rounded-full flex items-center gap-2 border border-border/60" id="header-balance-pill">
-      <div class="flex items-center gap-1">
-        <span class="text-[9px] font-mono text-text-secondary">KAS</span>
-        <span class="text-[11px] font-mono font-bold text-lime" id="header-cash">Rp 152k</span>
-      </div>
-      <span class="w-px h-2.5 bg-border"></span>
-      <div class="flex items-center gap-1">
-        <span class="text-[9px] font-mono text-text-secondary">GOPAY</span>
-        <span class="text-[11px] font-mono font-bold text-tosca" id="header-gopay">Rp 164k</span>
-      </div>
-    </div>
-  </header>
+    </header>
 
   <!-- ========================================================================= -->
   <!-- 📱 MAIN VIEW CANVAS (5 ISOLATED INDEPENDENT TABS) -->
@@ -1035,7 +1022,7 @@ const HTML_SOURCE = `<!DOCTYPE html>
           <span class="text-xs font-headline font-bold text-tosca flex items-center gap-1">
             <span class="material-symbols-outlined text-[16px]">info</span> INFORMASI VERSI & SISTEM
           </span>
-          <span class="text-[9px] font-mono px-2 py-0.5 rounded-full bg-tosca/20 text-tosca font-bold" id="profile-app-version-badge">v2.6.3</span>
+          <span class="text-[9px] font-mono px-2 py-0.5 rounded-full bg-tosca/20 text-tosca font-bold" id="profile-app-version-badge">v2.6.4</span>
         </div>
         
         <div class="space-y-1 text-[10px] font-mono text-text-secondary">

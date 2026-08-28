@@ -427,6 +427,18 @@ Katalog **300 Poin Master Audit** ini menjadi dokumen panduan mutlak (*Ultimate 
 
 
 
+
+
+### 2.43 Pembersihan Header Kanan Atas Saldo Kas & Gopay (Rilis Versi 2.6.4)
+- **Permintaan Pengguna**: Menghapus pill informasi saldo *"KAS Rp 162k | GOPAY Rp 164k"* di pojok kanan atas header aplikasi agar header tampil lebih bersih, minimalis, dan lega.
+- **Tindakan**:
+  - Widget `#header-balances` / `#header-balance-pill` pada `<header>` di `index.html` telah dihapus sepenuhnya.
+  - Header kini hanya memuat Identitas Robot Raphael AI dan Indikator Cuaca/Lokasi Realtime yang elegan.
+- **Hasil Kompilasi & Versi Baru:**
+  - `versionCode = 264`, `versionName = "2.6.4"`.
+  - Output File: `D:\MANAS PROJEK\Raphael_App_v2.6.4_Debug.apk` (Ukuran: 5.67 MB).
+
+
 ### 2.42 Implementasi Kustomisasi Nama Pengguna Dinamis Manual & Otomatis via AI Chat (Rilis Versi 2.6.3)
 - **Akar Masalah**: Fungsi `saveUserProfileIdentity()` sebelumnya mengalami syntax error karena memanggil `await` di dalam fungsi sinkron tanpa deklarasi `async`, sehingga tombol simpan nama gagal mengeksekusi pembaruan DOM dan persistensi memori.
 - **Solusi yang Diterapkan**:
