@@ -827,7 +827,7 @@ const HTML_SOURCE = `<!DOCTYPE html>
           </div>
 
           <div class="flex gap-2 pt-0.5">
-            <button onclick="testBriefingNotification()" class="flex-1 py-1.5 bg-surface-elevated border border-lime/50 text-lime font-bold rounded-lg text-[10px] active:scale-95 flex items-center justify-center gap-1">
+            <button onclick="testMorningBriefing()" class="flex-1 py-1.5 bg-surface-elevated border border-lime/50 text-lime font-bold rounded-lg text-[10px] active:scale-95 flex items-center justify-center gap-1">
               <span class="material-symbols-outlined text-[12px]">send</span> Tes Kirim Briefing
             </button>
             <button onclick="saveBriefingSchedule()" class="flex-1 py-1.5 bg-lime text-black font-bold rounded-lg text-[10px] shadow active:scale-95 flex items-center justify-center gap-1">
@@ -929,7 +929,7 @@ const HTML_SOURCE = `<!DOCTYPE html>
           <span class="text-xs font-headline font-bold text-tosca flex items-center gap-1">
             <span class="material-symbols-outlined text-[16px]">info</span> INFORMASI VERSI & SISTEM
           </span>
-          <span class="text-[9px] font-mono px-2 py-0.5 rounded-full bg-tosca/20 text-tosca font-bold" id="profile-app-version-badge">v2.5.3</span>
+          <span class="text-[9px] font-mono px-2 py-0.5 rounded-full bg-tosca/20 text-tosca font-bold" id="profile-app-version-badge">v2.6.0</span>
         </div>
         
         <div class="space-y-1 text-[10px] font-mono text-text-secondary">
@@ -939,7 +939,7 @@ const HTML_SOURCE = `<!DOCTYPE html>
           </div>
           <div class="flex justify-between">
             <span>Versi Rilis:</span>
-            <span class="text-lime font-bold">v2.5.3 (Extreme Audit Master Fix Patch)</span>
+            <span class="text-lime font-bold">v2.6.0 (Integrated Analytics Cockpit & Detailed Database Cards)</span>
           </div>
           <div class="flex justify-between">
             <span>Build Date:</span>
