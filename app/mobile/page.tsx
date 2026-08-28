@@ -134,9 +134,62 @@ const HTML_SOURCE = `<!DOCTYPE html>
       from { opacity: 0; transform: translate(-50%, -10px); }
       to { opacity: 1; transform: translate(-50%, 0); }
     }
-  </style>
+  
+  /* 🖥️ TABLET & RESPONSIVE MULTI-FORM-FACTOR ADAPTIVE STYLES */
+  html.user-authenticated #onboarding-screen,
+  html.user-authenticated #login-screen {
+    display: none !important;
+  }
+
+  @media (min-width: 768px) {
+    body {
+      background-color: #050709 !important;
+    }
+    #app-container {
+      max-width: 900px !important;
+      margin-left: auto !important;
+      margin-right: auto !important;
+      border-left: 1px solid #1C242C;
+      border-right: 1px solid #1C242C;
+      box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.7);
+    }
+    .modal-overlay > div {
+      max-width: 540px !important;
+    }
+    #bottom-nav {
+      max-width: 600px !important;
+      left: 50% !important;
+      transform: translateX(-50%) !important;
+      border-radius: 24px !important;
+      margin-bottom: 8px !important;
+      border: 1px solid #28323E !important;
+      box-shadow: 0 10px 30px rgba(0, 0, 0, 0.8) !important;
+    }
+  }
+
+</style>
+
+<script>
+  // Immediate Zero-Flicker Session Check
+  (function() {
+    let isLogged = false;
+    try {
+      if (window.Android && typeof window.Android.getItem === 'function') {
+        isLogged = window.Android.getItem('is_logged_in') === 'true';
+      }
+    } catch(e){}
+    if (!isLogged) {
+      try { isLogged = localStorage.getItem('is_logged_in') === 'true'; } catch(e){}
+    }
+    if (isLogged) {
+      document.documentElement.classList.add('user-authenticated');
+    }
+  })();
+</script>
+
 </head>
-<body class="flex flex-col h-full w-full text-xs" oncontextmenu="return false;">
+<body class="flex flex-col h-full w-full text-xs bg-background" oncontextmenu="return false;">
+<div id="app-container" class="flex flex-col h-full w-full relative overflow-hidden">
 
   <!-- 🌟 SCREEN 1: ONBOARDING CAROUSEL SCREEN -->
   <div id="onboarding-screen" class="fixed inset-0 z-[300] bg-background flex flex-col justify-between p-6 select-none transition-opacity duration-300">
@@ -876,7 +929,7 @@ const HTML_SOURCE = `<!DOCTYPE html>
           <span class="text-xs font-headline font-bold text-tosca flex items-center gap-1">
             <span class="material-symbols-outlined text-[16px]">info</span> INFORMASI VERSI & SISTEM
           </span>
-          <span class="text-[9px] font-mono px-2 py-0.5 rounded-full bg-tosca/20 text-tosca font-bold" id="profile-app-version-badge">v2.4.0</span>
+          <span class="text-[9px] font-mono px-2 py-0.5 rounded-full bg-tosca/20 text-tosca font-bold" id="profile-app-version-badge">v2.5.0</span>
         </div>
         
         <div class="space-y-1 text-[10px] font-mono text-text-secondary">
@@ -886,11 +939,11 @@ const HTML_SOURCE = `<!DOCTYPE html>
           </div>
           <div class="flex justify-between">
             <span>Versi Rilis:</span>
-            <span class="text-lime font-bold">v2.4.0 (13-Dimension Research Intelligence)</span>
+            <span class="text-lime font-bold">v2.5.0 (Tablet & Native Persistence Edition)</span>
           </div>
           <div class="flex justify-between">
             <span>Build Date:</span>
-            <span class="text-text-primary">28 Agustus 2026 (Build 240)</span>
+            <span class="text-text-primary">28 Agustus 2026 (Build 250)</span>
           </div>
           <div class="flex justify-between">
             <span>Status Native:</span>
@@ -999,7 +1052,20 @@ const HTML_SOURCE = `<!DOCTYPE html>
       <!-- Changelog Timeline Feed -->
       <div class="space-y-3 text-[10px]" id="changelog-feed-container">
         
-                <!-- v2.4.0 -->
+                        <!-- v2.5.0 -->
+        <div class="p-2.5 bg-surface-elevated rounded-xl border border-tosca/50 space-y-1.5 shadow">
+          <div class="flex justify-between items-center">
+            <span class="font-bold text-tosca text-xs">🚀 Versi 2.5.0 (Tablet & Persistent Store)</span>
+            <span class="text-[8px] text-text-secondary">28 Ags 2026</span>
+          </div>
+          <ul class="text-[9px] text-text-secondary space-y-1 list-disc list-inside">
+            <li><strong class="text-text-primary">Native SharedPreferences Bridge:</strong> Sesi login & status onboarding tersimpan 100% permanen di memori Android, tidak pernah reset saat hapus tab recent apps / tutup aplikasi.</li>
+            <li><strong class="text-text-primary">Zero-Flicker Inline Auth:</strong> Mencegah layar onboarding/login berkedip saat aplikasi dibuka kembali oleh pengguna terverifikasi.</li>
+            <li><strong class="text-text-primary">Dukungan Tablet & Layar Lebar:</strong> Desain responsif adaptif untuk tablet 7" - 12", layar lipat (foldable), dan multi-window dengan container elegan berpusat.</li>
+          </ul>
+        </div>
+
+        <!-- v2.4.0 -->
         <div class="p-2.5 bg-surface-elevated rounded-xl border border-lime/50 space-y-1.5 shadow">
           <div class="flex justify-between items-center">
             <span class="font-bold text-lime text-xs">🚀 Versi 2.4.0 (13-Dimension Research Intelligence)</span>
@@ -1635,6 +1701,7 @@ const HTML_SOURCE = `<!DOCTYPE html>
 
   <!-- ⚡ SCRIPT -->
   <script src="app.js"></script>
+</div>
 </body>
 </html>
 `;
