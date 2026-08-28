@@ -355,15 +355,15 @@ const HTML_SOURCE = `<!DOCTYPE html>
   <!-- ========================================================================= -->
   <!-- 🔝 TOP APP BAR (HEADER RAPHAEL) -->
   <!-- ========================================================================= -->
-      <header class="glass-panel px-3.5 py-2.5 flex justify-between items-center border-b border-border/50 shrink-0 z-10 sticky top-0 bg-background/80 backdrop-blur-md">
+      <header class="px-3.5 py-2.5 flex justify-between items-center border-b border-border/40 shrink-0 z-30 sticky top-0 bg-background/95 backdrop-blur-md">
       <!-- Left: Logo & Bot Name & Live Location -->
       <div class="flex items-center gap-2.5">
-        <div class="relative flex items-center justify-center">
+        <button onclick="openAiSettingsModal()" class="relative flex items-center justify-center active:scale-95 transition-transform" title="Pengaturan AI">
           <div class="w-8 h-8 rounded-full bg-surface border border-primary/40 flex items-center justify-center text-primary shadow">
             <span class="material-symbols-outlined text-[18px]">smart_toy</span>
           </div>
           <span class="absolute -bottom-0.5 -right-0.5 w-2.5 h-2.5 bg-lime rounded-full border-2 border-background animate-pulse"></span>
-        </div>
+        </button>
         <div>
           <div class="flex items-center gap-1.5">
             <h1 class="font-headline font-bold text-sm tracking-wide text-text-primary">Raphael</h1>
@@ -371,10 +371,16 @@ const HTML_SOURCE = `<!DOCTYPE html>
           </div>
           <p class="text-[10px] font-mono text-lime flex items-center gap-1" id="header-location">
             <span class="w-1.5 h-1.5 rounded-full bg-lime"></span>
-            <span id="header-city-text">MALANG</span> <span class="text-text-secondary" id="header-temp-text">(26°C)</span>
+            <span id="header-city-text">SIDOARJO</span> <span class="text-text-secondary" id="header-temp-text">(28°C)</span>
           </p>
         </div>
       </div>
+
+      <!-- Right: Clean Live Sync Status Pill -->
+      <button onclick="openDatabaseSyncModal()" class="flex items-center gap-1.5 px-2.5 py-1 rounded-full bg-surface-elevated border border-border/60 font-mono text-[9px] text-text-secondary active:scale-95 hover:border-tosca/50 transition-all shadow-sm">
+        <span class="w-1.5 h-1.5 rounded-full bg-lime animate-pulse"></span>
+        <span class="font-bold text-text-primary">LIVE SYNC</span>
+      </button>
     </header>
 
   <!-- ========================================================================= -->
@@ -1016,7 +1022,7 @@ const HTML_SOURCE = `<!DOCTYPE html>
             </div>
           </div>
           <div class="flex items-center gap-1.5">
-            <span class="text-[8px] px-1.5 py-0.5 rounded bg-primary/20 text-primary font-bold" id="profile-app-version-badge">v2.7.0</span>
+            <span class="text-[8px] px-1.5 py-0.5 rounded bg-primary/20 text-primary font-bold" id="profile-app-version-badge">v2.7.1</span>
             <span class="material-symbols-outlined text-text-secondary text-[16px]">chevron_right</span>
           </div>
         </div>
