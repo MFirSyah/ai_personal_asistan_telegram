@@ -443,6 +443,20 @@ Katalog **300 Poin Master Audit** ini menjadi dokumen panduan mutlak (*Ultimate 
 
 
 
+
+
+### 2.51 Eliminasi Konflik Nested Scroll & Celah Hitam Tab Analisis (Rilis Versi 2.7.8)
+- **Akar Masalah**: Tampilan hitam/gelap yang memotong card di bagian bawah Tab Analisis disebabkan oleh *double nested scrolling conflict*. CSS class `.tab-pane` memiliki deklarasi `height: 100%; overflow-y: auto; padding-bottom: 68px !important;` di dalam elemen `<main>` yang juga memiliki `overflow-y: auto`. Akibatnya, container dalam terkunci pada ketinggian tetap dan menyisakan ruang kosong hitam yang menghalangi kelancaran scroll kartu ke atas.
+- **Tindakan Perbaikan**:
+  1. Menghapus `height: 100%`, `overflow-y: auto`, dan `padding-bottom !important` dari `.tab-pane` CSS.
+  2. Menjadikan `<main id="main-scroll-container">` sebagai satu-satunya *single unified scrolling container* dengan `-webkit-overflow-scrolling: touch;`.
+  3. Mengatur padding scroll dinamis via JavaScript: `padding-bottom: 90px` untuk tab biasa dan `160px` untuk tab Chat AI.
+  4. Seluruh 6 Card Eksekutif Tematik kini dapat digulir ke atas dengan sangat mulus dan natural tanpa celah hitam atau terpotong bar navigasi.
+- **Hasil Kompilasi & Versi Baru:**
+  - `versionCode = 278`, `versionName = "2.7.8"`.
+  - Output File: `D:\MANAS PROJEK\Raphael_App_v2.7.8_Debug.apk` (Ukuran: 5.67 MB).
+
+
 ### 2.50 Penyempurnaan Isolasi Dock Input Chat & Jarak Scroll Tab Bawah (Rilis Versi 2.7.7)
 - **Akar Masalah**: Pada Tab 1 (Analisis), terdapat elemen mengambang yang menutupi konten tepat di atas bar navigasi bawah. Hal ini disebabkan oleh bilah input chat (`#chat-input-wrapper`) yang secara default belum tersembunyi (`display: none`) saat membuka tab selain Chat, serta padding bawah container yang kurang longgar.
 - **Tindakan Perbaikan**:
