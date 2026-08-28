@@ -1053,7 +1053,7 @@ export function calculateDailyGojekTarget(
   const diffTime = targetDate.getTime() - now.getTime();
   const daysRemaining = Math.max(1, Math.ceil(diffTime / (1000 * 60 * 60 * 24)));
 
-  const dailyTargetRequired = Math.round(netDeficit / daysRemaining);
+  const dailyTargetRequired = Math.round(netDeficit / Math.max(1, daysRemaining));
 
   const summaryString = [
     `🎯 TARGET REALISTIS NARIK GOJEK MENUJU DEADLINE (${targetDateStr}):`,

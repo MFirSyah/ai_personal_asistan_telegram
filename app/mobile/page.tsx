@@ -696,8 +696,8 @@ const HTML_SOURCE = `<!DOCTYPE html>
                   <span class="material-symbols-outlined text-[14px]">two_wheeler</span>
                 </div>
                 <div class="font-mono text-[9px]">
-                  <p class="font-bold text-text-primary" id="widget-vehicle-name">Honda Beat FI (N 4567 XX)</p>
-                  <p class="text-text-secondary" id="widget-vehicle-eff">Konsumsi: ~50.2 KM/L (Pertalite) • Odometer: 32.500 KM</p>
+                  <p class="font-bold text-text-primary" id="widget-vehicle-name">Honda Beat FI (N 4321 ABC)</p>
+                  <p class="text-text-secondary" id="widget-vehicle-eff">Konsumsi: ~50.2 KM/L (Pertalite) • Odometer: 45.200 KM</p>
                 </div>
               </div>
               <button onclick="openDynamicHubModal('vehicles')" class="text-[9px] text-tosca font-mono font-bold hover:underline">Ganti</button>
@@ -929,7 +929,7 @@ const HTML_SOURCE = `<!DOCTYPE html>
           <span class="text-xs font-headline font-bold text-tosca flex items-center gap-1">
             <span class="material-symbols-outlined text-[16px]">info</span> INFORMASI VERSI & SISTEM
           </span>
-          <span class="text-[9px] font-mono px-2 py-0.5 rounded-full bg-tosca/20 text-tosca font-bold" id="profile-app-version-badge">v2.5.1</span>
+          <span class="text-[9px] font-mono px-2 py-0.5 rounded-full bg-tosca/20 text-tosca font-bold" id="profile-app-version-badge">v2.5.3</span>
         </div>
         
         <div class="space-y-1 text-[10px] font-mono text-text-secondary">
@@ -939,11 +939,11 @@ const HTML_SOURCE = `<!DOCTYPE html>
           </div>
           <div class="flex justify-between">
             <span>Versi Rilis:</span>
-            <span class="text-lime font-bold">v2.5.1 (Performance & Chat Retention Patch)</span>
+            <span class="text-lime font-bold">v2.5.3 (Extreme Audit Master Fix Patch)</span>
           </div>
           <div class="flex justify-between">
             <span>Build Date:</span>
-            <span class="text-text-primary">28 Agustus 2026 (Build 251)</span>
+            <span class="text-text-primary">28 Agustus 2026 (Build 253)</span>
           </div>
           <div class="flex justify-between">
             <span>Status Native:</span>
@@ -1052,7 +1052,33 @@ const HTML_SOURCE = `<!DOCTYPE html>
       <!-- Changelog Timeline Feed -->
       <div class="space-y-3 text-[10px]" id="changelog-feed-container">
         
-                                <!-- v2.5.1 -->
+                                                <!-- v2.5.3 -->
+        <div class="p-2.5 bg-surface-elevated rounded-xl border border-emerald/50 space-y-1.5 shadow">
+          <div class="flex justify-between items-center">
+            <span class="font-bold text-emerald text-xs">🛡️ Versi 2.5.3 (Extreme Audit Master Fix)</span>
+            <span class="text-[8px] text-text-secondary">28 Ags 2026</span>
+          </div>
+          <ul class="text-[9px] text-text-secondary space-y-1 list-disc list-inside">
+            <li><strong class="text-text-primary">Perbaikan Matematika Division by Zero:</strong> Mencegah potensi kalkulasi NaN/Infinity pada hari H acara di kalkulator analitik.</li>
+            <li><strong class="text-text-primary">Validasi Query Database:</strong> Seluruh rute API backend kini terlindung dari error uncaught saat koneksi Supabase mengalami delay.</li>
+            <li><strong class="text-text-primary">Penyelarasan Data Riil:</strong> Odometer awal dan plat nomor Honda Beat telah diselaraskan 100% dengan database (N 4321 ABC, 45.200 KM).</li>
+            <li><strong class="text-text-primary">Exception Handling API:</strong> Perlindungan try/catch terstruktur pada seluruh rute backend.</li>
+          </ul>
+        </div>
+
+        <!-- v2.5.2 -->
+        <div class="p-2.5 bg-surface-elevated rounded-xl border border-lime/50 space-y-1.5 shadow">
+          <div class="flex justify-between items-center">
+            <span class="font-bold text-lime text-xs">☀️ Versi 2.5.2 (Morning Briefing & Test Engine Patch)</span>
+            <span class="text-[8px] text-text-secondary">28 Ags 2026</span>
+          </div>
+          <ul class="text-[9px] text-text-secondary space-y-1 list-disc list-inside">
+            <li><strong class="text-text-primary">Perbaikan Morning Briefing:</strong> Memperbaiki pendefinisian fungsi pop-up harian dan memulihkan trigger otomatis saat buka aplikasi.</li>
+            <li><strong class="text-text-primary">Tombol Uji Notifikasi (Test):</strong> Ditambahkan tombol 'Uji Notifikasi' di Tab Notifikasi untuk mencoba pop-up briefing & notifikasi status bar kapan saja.</li>
+          </ul>
+        </div>
+
+        <!-- v2.5.1 -->
         <div class="p-2.5 bg-surface-elevated rounded-xl border border-lime/50 space-y-1.5 shadow">
           <div class="flex justify-between items-center">
             <span class="font-bold text-lime text-xs">⚡ Versi 2.5.1 (Performance & Chat Retention Patch)</span>
@@ -1323,7 +1349,7 @@ const HTML_SOURCE = `<!DOCTYPE html>
         <div class="grid grid-cols-2 gap-2">
           <div>
             <label class="text-[8px] text-text-secondary uppercase">Nomor Plat Polisi</label>
-            <input id="modal-veh-plate" type="text" placeholder="Contoh: N 4567 XX" class="w-full bg-surface-elevated border border-border rounded p-1.5 text-text-primary text-xs outline-none mt-0.5"/>
+            <input id="modal-veh-plate" type="text" placeholder="Contoh: N 4321 ABC" class="w-full bg-surface-elevated border border-border rounded p-1.5 text-text-primary text-xs outline-none mt-0.5"/>
           </div>
           <div>
             <label class="text-[8px] text-text-secondary uppercase">Bahan Bakar</label>

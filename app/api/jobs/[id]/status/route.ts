@@ -1,21 +1,36 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { getJobById } from '@/lib/supabase/queries/jobs';
+import { supabaseAdmin } from '@/lib/supabase/client';
 
-export async function GET(req: NextRequest, { params }: { params: Promise<{ id: string }> }) {
-  const { id: jobId } = await params;
-  const job = await getJobById(jobId);
+export const dynamic = 'force-dynamic';
+export const maxDuration = 60;
 
-  if (!job) {
-    return NextResponse.json({ error: 'Job not found' }, { status: 404 });
+export async function GET(
+  request: NextRequest,
+  context: { params: Promise<{ id: string }> }
+) {
+  try {
+    const { id } = await context.params;
+    if (!id) {
+      return NextResponse.json({ error: 'Job ID diperlukan' }, { status: 400 });
+    }
+
+    const { data: job, error } = await supabaseAdmin
+      .from('receipt_logs')
+      .select('*')
+      .eq('id', id)
+      .single();
+
+    if (error || !job) {
+      return NextResponse.json({ status: 'not_found', message: error?.message || 'Job tidak ditemukan' }, { status: 404 });
+    }
+
+    return NextResponse.json({
+      id: job.id,
+      status: job.status,
+      created_at: job.created_at,
+      metadata: job.metadata
+    });
+  } catch (err: any) {
+    return NextResponse.json({ error: err?.message || 'Internal server error' }, { status: 500 });
   }
-
-  return NextResponse.json({
-    id: job.id,
-    type: job.type,
-    status: job.status,
-    total_items: job.total_items,
-    processed_items: job.processed_items,
-    progress: job.total_items > 0 ? Math.round((job.processed_items / job.total_items) * 100) : 100,
-    error_message: job.error_message,
-  });
 }
