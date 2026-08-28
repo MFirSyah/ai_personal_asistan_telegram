@@ -945,6 +945,75 @@ const HTML_SOURCE = `<!DOCTYPE html>
   <!-- ========================================================================= -->
   <!-- 🚨 EMERGENCY ICE MODAL (PROFIL MEDIS & KONTAK DARURAT) -->
   <!-- ========================================================================= -->
+  
+  <!-- ☀️ MODAL MORNING BRIEFING HARIAN (TOP-LAYER POPUP) -->
+  <div id="modal-morning-briefing" class="modal-overlay emergency-modal">
+    <div class="bg-surface border-2 border-lime rounded-2xl p-4 w-full max-w-sm space-y-3 font-mono max-h-[92vh] overflow-y-auto hide-scrollbar shadow-2xl">
+      <!-- Modal Header -->
+      <div class="flex justify-between items-center border-b border-border/50 pb-2">
+        <div class="flex items-center gap-1.5">
+          <span class="material-symbols-outlined text-lime text-[20px]">wb_sunny</span>
+          <div>
+            <h3 class="font-headline font-bold text-sm text-lime">MORNING BRIEFING HARIAN</h3>
+            <p class="text-[9px] font-mono text-text-secondary" id="briefing-modal-date">Memuat tanggal...</p>
+          </div>
+        </div>
+        <button onclick="closeMorningBriefingModal()" class="text-text-secondary hover:text-text-primary text-base font-bold active:scale-90">✕</button>
+      </div>
+
+      <!-- Greeting & Executive Summary -->
+      <div class="p-3 bg-surface-elevated rounded-xl border border-lime/30 space-y-2">
+        <div class="flex items-center justify-between">
+          <span class="font-headline font-bold text-xs text-text-primary" id="briefing-modal-greeting">Selamat Pagi, Mas Firman! 👑</span>
+          <span class="text-[8px] font-mono px-2 py-0.5 rounded-full bg-lime/20 text-lime font-bold">READY</span>
+        </div>
+        <p class="text-[10px] text-text-secondary leading-relaxed" id="briefing-modal-summary">
+          Berikut ringkasan kondisi keuangan, batas belanja aman, dan agenda prioritas Anda hari ini.
+        </p>
+      </div>
+
+      <!-- 3 Key Metric Highlights -->
+      <div class="grid grid-cols-2 gap-2 text-center text-[10px]">
+        <div class="bg-surface-elevated p-2 rounded-lg border border-border">
+          <span class="text-[8px] text-text-secondary uppercase">Batas Belanja Hari Ini</span>
+          <p class="font-bold text-lime text-xs mt-0.5" id="briefing-modal-daily-budget">Rp 48.500/hr</p>
+        </div>
+        <div class="bg-surface-elevated p-2 rounded-lg border border-border">
+          <span class="text-[8px] text-text-secondary uppercase">Sisa Kas Likuid</span>
+          <p class="font-bold text-primary text-xs mt-0.5" id="briefing-modal-liquid-cash">Rp 265.000</p>
+        </div>
+      </div>
+
+      <!-- Urgent Attention & Bills -->
+      <div class="p-2.5 bg-coral/10 border border-coral/40 rounded-xl space-y-1 text-[10px]">
+        <span class="font-bold text-coral flex items-center gap-1">
+          <span class="material-symbols-outlined text-[13px]">notification_important</span> Perhatian Urgent & Tagihan Terdekat:
+        </span>
+        <p class="text-[9px] text-text-secondary" id="briefing-modal-urgent-text">
+          • Cicilan Bank Jago Rp 67.940 (Jatuh tempo tgl 20)<br>
+          • Hutang ke Rifky Rp 150.000 (Jatuh tempo tgl 5)
+        </p>
+      </div>
+
+      <!-- Today's Schedule -->
+      <div class="p-2.5 bg-surface-elevated border border-border rounded-xl space-y-1.5 text-[10px]">
+        <span class="font-bold text-tosca flex items-center gap-1">
+          <span class="material-symbols-outlined text-[13px]">event_available</span> Agenda & Rencana Hari Ini:
+        </span>
+        <div id="briefing-modal-schedule-list" class="space-y-1 text-[9px] text-text-secondary">
+          <p>• Narik Gojek Harian (Target Rp 70.000 - Rp 85.000)</p>
+          <p>• Bimbingan Draf Skripsi Bab 4-5 dengan Pak Sulthan</p>
+        </div>
+      </div>
+
+      <!-- Action Button -->
+      <button onclick="closeMorningBriefingModal()" class="w-full py-2.5 bg-lime text-black font-headline font-bold text-xs rounded-xl shadow active:scale-95 transition-all flex items-center justify-center gap-1.5">
+        <span class="material-symbols-outlined text-[16px]">rocket_launch</span>
+        <span>Siap Beraktivitas Hari Ini!</span>
+      </button>
+    </div>
+  </div>
+
   <div id="modal-emergency" class="modal-overlay emergency-modal">
     <div class="bg-surface border-2 border-coral rounded-2xl p-4 w-full max-w-sm space-y-3 font-mono">
       <div class="flex justify-between items-center border-b border-border/50 pb-2">
