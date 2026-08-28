@@ -406,7 +406,7 @@ const HTML_SOURCE = `<!DOCTYPE html>
             <h2 class="font-headline font-bold text-sm text-text-primary flex items-center gap-1.5">
               <span class="material-symbols-outlined text-primary text-[18px]">insights</span> Cockpit Analisis Lengkap
             </h2>
-            <p class="text-[9px] font-mono text-text-secondary">20 Model Analisis Realtime & Visualisasi Lengkap</p>
+            <p class="text-[9px] font-mono text-text-secondary">Visualisasi Finansial, Mobilitas & Perencanaan</p>
           </div>
           <span class="text-[9px] font-mono px-2 py-0.5 rounded-full bg-lime/20 text-lime font-bold border border-lime/30">Live Sync</span>
         </div>
@@ -416,193 +416,262 @@ const HTML_SOURCE = `<!DOCTYPE html>
           <button id="tf-btn-today" onclick="changeAnalyticsTimeframe('today')" class="px-2.5 py-1 rounded-lg text-text-secondary shrink-0">Hari Ini</button>
           <button id="tf-btn-7d" onclick="changeAnalyticsTimeframe('7d')" class="px-2.5 py-1 rounded-lg text-text-secondary shrink-0">7 Hari</button>
           <button id="tf-btn-month" onclick="changeAnalyticsTimeframe('month')" class="px-2.5 py-1 rounded-lg bg-primary text-black font-bold shrink-0">Bulan Ini</button>
-          <button id="tf-btn-90d" onclick="changeAnalyticsTimeframe('90d')" class="px-2.5 py-1 rounded-lg text-text-secondary shrink-0">3 Bulan</button>
-          <button id="tf-btn-1y" onclick="changeAnalyticsTimeframe('1y')" class="px-2.5 py-1 rounded-lg text-text-secondary shrink-0">1 Tahun</button>
+          <button id="tf-btn-90d" onclick="changeAnalyticsTimeframe('90d')" class="px-2.5 py-1 rounded-lg text-text-secondary shrink-0">90 Hari</button>
+          <button id="tf-btn-all" onclick="changeAnalyticsTimeframe('all')" class="px-2.5 py-1 rounded-lg text-text-secondary shrink-0">Semua</button>
         </div>
       </div>
 
-      <!-- 1. MORNING BRIEFING & PRODUCTIVITY CARD (FROM WEB APP) -->
-      <div class="bg-surface rounded-xl p-3 border border-border space-y-2 tosca-bloom">
-        <div class="flex justify-between items-center border-b border-border/50 pb-1.5">
-          <span class="font-bold text-xs text-lime flex items-center gap-1">
-            <span class="material-symbols-outlined text-lime text-[15px]">wb_sunny</span> MORNING BRIEFING & PRODUKTIVITAS
-          </span>
-          <span class="text-[9px] font-mono text-text-secondary" id="briefing-time">27 Ags 2026</span>
-        </div>
-
-        <div class="grid grid-cols-2 gap-2 font-mono text-[10px]">
-          <div class="p-2 rounded-lg bg-surface-elevated border border-border space-y-0.5">
-            <span class="text-[8px] text-text-secondary uppercase">Agenda Hari Ini</span>
-            <p class="font-bold text-text-primary text-xs" id="briefing-today-acts">Narik Gojek Sore</p>
-            <span class="text-[8px] text-lime">● Terjadwal Normal</span>
-          </div>
-          <div class="p-2 rounded-lg bg-surface-elevated border border-border space-y-0.5">
-            <span class="text-[8px] text-text-secondary uppercase">Perhatian Urgent</span>
-            <p class="font-bold text-coral text-xs" id="briefing-urgent-acts">Hutang Rifky (Rp 150k)</p>
-            <span class="text-[8px] text-coral">⚠️ Jatuh tempo tgl 5</span>
-          </div>
-        </div>
-
-        <div class="p-2 rounded-lg bg-background border border-border space-y-1 font-mono text-[10px]">
-          <div class="flex justify-between items-center">
-            <span class="text-text-secondary">Produktivitas Agenda:</span>
-            <span class="font-bold text-tosca" id="briefing-act-ratio">14 Selesai / 17 Total (82%)</span>
-          </div>
-          <div class="w-full h-1.5 bg-surface rounded-full overflow-hidden flex">
-            <div class="bg-emerald h-full rounded-full" style="width: 82%"></div>
-          </div>
-        </div>
-      </div>
-
-      <!-- 2. HEALTH SCORE & SAFE DAILY LIMIT ($B_{harian}$) -->
-      <div class="grid grid-cols-2 gap-2 font-mono">
-        <div class="bg-surface rounded-xl p-3 border border-border space-y-1">
-          <div class="flex justify-between items-center">
-            <span class="text-[8px] text-primary uppercase font-bold tracking-wider">Health Score</span>
-            <span class="text-xs font-bold text-lime">A+</span>
-          </div>
-          <p class="text-lg font-black text-text-primary">88<span class="text-[10px] text-text-secondary">/100</span></p>
-          <p class="text-[8px] text-text-secondary">Keuangan Sangat Sehat</p>
-        </div>
-
-        <div class="bg-surface rounded-xl p-3 border border-border space-y-1">
-          <div class="flex justify-between items-center">
-            <span class="text-[8px] text-tosca uppercase font-bold tracking-wider">Batas Belanja Aman</span>
-            <span class="text-[8px] text-lime">B_harian</span>
-          </div>
-          <p class="text-lg font-black text-lime" id="stat-safe-daily">Rp 48.500<span class="text-[8px] text-text-secondary font-normal">/hr</span></p>
-          <p class="text-[8px] text-text-secondary">Burn Rate: Rp 68k/hr</p>
-        </div>
-      </div>
-
-      <!-- 3. 4-METRIC EXECUTIVE CASH FLOW GRID -->
-      <div class="grid grid-cols-2 gap-2 font-mono">
-        <div class="bg-surface rounded-xl p-2.5 border border-border">
-          <span class="text-[8px] text-text-secondary uppercase">Total Pemasukan</span>
-          <p class="text-xs font-bold text-emerald mt-0.5" id="metric-income">Rp 3.450.000</p>
-          <span class="text-[8px] text-emerald">▲ Surplus Bersih</span>
-        </div>
-        <div class="bg-surface rounded-xl p-2.5 border border-border">
-          <span class="text-[8px] text-text-secondary uppercase">Total Pengeluaran</span>
-          <p class="text-xs font-bold text-coral mt-0.5" id="metric-expense">Rp 2.120.000</p>
-          <span class="text-[8px] text-coral">▼ Terkendali Stabil</span>
-        </div>
-        <div class="bg-surface rounded-xl p-2.5 border border-border">
-          <span class="text-[8px] text-text-secondary uppercase">Sisa Kas Likuid</span>
-          <p class="text-xs font-bold text-tosca mt-0.5" id="metric-liquid">Rp 325.500</p>
-          <span class="text-[8px] text-text-secondary">5 Dompet Aktif</span>
-        </div>
-        <div class="bg-surface rounded-xl p-2.5 border border-border">
-          <span class="text-[8px] text-text-secondary uppercase">Net Cash Margin</span>
-          <p class="text-xs font-bold text-lime mt-0.5" id="metric-margin">+38.5%</p>
-          <span class="text-[8px] text-lime">Rp 1.330.000 Bersih</span>
-        </div>
-      </div>
-
-      <!-- 4. INTERACTIVE VISUAL CHARTS GALLERY (LINE, DONUT, BAR) -->
+      <!-- 1. INTERACTIVE CHARTS WITH PERSPECTIVE SWITCHER -->
       <div class="bg-surface rounded-xl p-3 border border-border space-y-2.5 shadow-md">
-        <div class="flex justify-between items-center border-b border-border/50 pb-1.5">
-          <span class="font-bold text-xs text-text-primary flex items-center gap-1">
-            <span class="material-symbols-outlined text-primary text-[15px]">analytics</span> GRAFIK VISUAL INTERAKTIF
-          </span>
-          <div class="flex gap-1 text-[9px] font-mono">
-            <button id="chart-tab-line-btn" onclick="switchAnalyticsChart('line')" class="px-2 py-0.5 rounded bg-primary text-black font-bold">Line</button>
-            <button id="chart-tab-donut-btn" onclick="switchAnalyticsChart('donut')" class="px-2 py-0.5 rounded bg-surface-elevated text-text-secondary">Donut</button>
-            <button id="chart-tab-bar-btn" onclick="switchAnalyticsChart('bar')" class="px-2 py-0.5 rounded bg-surface-elevated text-text-secondary">Bar</button>
+        <div class="flex justify-between items-center border-b border-border/50 pb-2">
+          <div class="flex items-center gap-1.5">
+            <span class="material-symbols-outlined text-primary text-[16px]">monitoring</span>
+            <h3 class="font-headline font-bold text-xs text-text-primary">GRAFIK TREN KEUANGAN</h3>
+          </div>
+          
+          <div class="flex gap-1 font-mono text-[8px]">
+            <button id="chart-tab-line-btn" onclick="switchAnalyticsChart('line')" class="px-2 py-0.5 rounded bg-primary text-black font-bold">Garis</button>
+            <button id="chart-tab-donut-btn" onclick="switchAnalyticsChart('donut')" class="px-2 py-0.5 rounded bg-surface-elevated text-text-secondary">Alokasi</button>
+            <button id="chart-tab-bar-btn" onclick="switchAnalyticsChart('bar')" class="px-2 py-0.5 rounded bg-surface-elevated text-text-secondary">Batang</button>
           </div>
         </div>
 
-        <!-- Chart Container -->
-        <div class="bg-background rounded-lg p-2 border border-border">
-          <div id="analytics-line-wrapper" style="display: block;">
-            <p class="text-[9px] font-mono text-tosca mb-1">📈 Tren Arus Kas 7 Hari (Pemasukan vs Pengeluaran):</p>
-            <canvas id="tab-analytics-line-chart" height="150"></canvas>
-          </div>
-          <div id="analytics-donut-wrapper" style="display: none;">
-            <p class="text-[9px] font-mono text-amber mb-1">🍩 Distribusi Alokasi Pos Pengeluaran:</p>
-            <div class="w-44 h-44 mx-auto">
-              <canvas id="tab-analytics-donut-chart"></canvas>
-            </div>
-          </div>
-          <div id="analytics-bar-wrapper" style="display: none;">
-            <p class="text-[9px] font-mono text-lime mb-1">📊 Komposisi Finansial Eksekutif:</p>
-            <canvas id="tab-analytics-bar-chart" height="150"></canvas>
-          </div>
+        <div id="analytics-line-wrapper" class="w-full h-44">
+          <canvas id="tab-analytics-line-chart"></canvas>
+        </div>
+        <div id="analytics-donut-wrapper" class="w-full h-44 hidden">
+          <canvas id="tab-analytics-donut-chart"></canvas>
+        </div>
+        <div id="analytics-bar-wrapper" class="w-full h-44 hidden">
+          <canvas id="tab-analytics-bar-chart"></canvas>
         </div>
       </div>
 
-      <!-- 5. GANTT TIMELINE ROADMAP 2026 -->
-      <div class="bg-surface rounded-xl p-3 border border-border space-y-2 shadow-md">
-        <div class="flex justify-between items-center text-[10px] font-mono border-b border-border/50 pb-1.5">
-          <span class="font-bold text-text-primary flex items-center gap-1">
-            <span class="material-symbols-outlined text-primary text-[14px]">calendar_view_month</span> TIMELINE GANTT 2026
-          </span>
-          <span class="px-1.5 py-0.5 rounded bg-coral/20 text-coral font-bold text-[9px] flex items-center gap-1">
-            <span class="w-1.5 h-1.5 rounded-full bg-coral inline-block"></span> HARI INI (27 AGS)
-          </span>
+      <!-- 2. CARD-CARD EKSEKUTIF TEMATIK (TERPISAH & RELEVAN SECARA MANDIRI) -->
+      <div class="space-y-3 font-mono">
+
+        <!-- CARD 1: SALDO LIKUID & KESEHATAN DOMPET -->
+        <div class="bg-surface rounded-2xl p-3.5 border-l-4 border-emerald border border-border space-y-2.5 shadow-md">
+          <div class="flex justify-between items-center border-b border-border/50 pb-2">
+            <div class="flex items-center gap-2">
+              <div class="w-7 h-7 rounded-lg bg-emerald/20 text-emerald flex items-center justify-center">
+                <span class="material-symbols-outlined text-[16px]">account_balance_wallet</span>
+              </div>
+              <div>
+                <h4 class="font-bold text-xs text-text-primary">Saldo Likuid & Kas Aktif</h4>
+                <p class="text-[8px] text-text-secondary">Kondisi dompet multi-channel realtime</p>
+              </div>
+            </div>
+            <span class="text-[9px] px-2 py-0.5 rounded bg-emerald/20 text-emerald font-bold">OPTIMAL</span>
+          </div>
+
+          <div class="flex justify-between items-end">
+            <div>
+              <span class="text-[9px] text-text-secondary">TOTAL SALDO TERSEDIA</span>
+              <p class="text-base font-bold text-emerald" id="an-total-liquid">Rp 326.000</p>
+            </div>
+            <div class="text-right text-[9px]">
+              <span class="text-text-secondary">Cash Runway:</span>
+              <p class="font-bold text-lime">~14 Hari Aman</p>
+            </div>
+          </div>
+
+          <div class="grid grid-cols-2 gap-1.5 pt-1 text-[9px]">
+            <div class="p-2 rounded-lg bg-surface-elevated flex justify-between items-center">
+              <span class="text-text-secondary">💵 Kas Kertas:</span>
+              <span class="font-bold text-text-primary">Rp 162.000</span>
+            </div>
+            <div class="p-2 rounded-lg bg-surface-elevated flex justify-between items-center">
+              <span class="text-text-secondary">💳 Gopay Driver:</span>
+              <span class="font-bold text-text-primary">Rp 164.000</span>
+            </div>
+          </div>
         </div>
 
-        <div class="space-y-2 font-mono text-[10px]">
-          <div class="p-2 rounded-lg bg-surface-elevated space-y-1">
-            <div class="flex justify-between items-center">
-              <span class="font-bold text-text-primary flex items-center gap-1">
-                <span class="material-symbols-outlined text-tosca text-[13px]">landscape</span> Trip ke Dieng (29 Ags 17:00 - 30 Ags 23:00)
-              </span>
-              <span class="text-tosca font-bold text-[9px]">50% Prep (Sisa Rp 740k)</span>
+        <!-- CARD 2: BURN RATE & BATAS BELANJA AMAN -->
+        <div class="bg-surface rounded-2xl p-3.5 border-l-4 border-lime border border-border space-y-2.5 shadow-md">
+          <div class="flex justify-between items-center border-b border-border/50 pb-2">
+            <div class="flex items-center gap-2">
+              <div class="w-7 h-7 rounded-lg bg-lime/20 text-lime flex items-center justify-center">
+                <span class="material-symbols-outlined text-[16px]">local_fire_department</span>
+              </div>
+              <div>
+                <h4 class="font-bold text-xs text-text-primary">Burn Rate & Batas Belanja Aman</h4>
+                <p class="text-[8px] text-text-secondary">Alokasi konsumsi harian terkendali</p>
+              </div>
             </div>
-            <div class="w-full h-2 bg-surface rounded-full overflow-hidden">
-              <div class="h-full bg-gradient-to-r from-tosca to-primary rounded-full" style="width: 50%"></div>
+            <span class="text-[9px] px-2 py-0.5 rounded bg-lime/20 text-lime font-bold">STABIL</span>
+          </div>
+
+          <div class="grid grid-cols-2 gap-2">
+            <div class="p-2.5 rounded-xl bg-surface-elevated space-y-0.5">
+              <span class="text-[8px] text-text-secondary">BATAS AMAN HARI INI</span>
+              <p class="text-sm font-bold text-lime" id="an-daily-budget">Rp 48.500 / hr</p>
+            </div>
+            <div class="p-2.5 rounded-xl bg-surface-elevated space-y-0.5">
+              <span class="text-[8px] text-text-secondary">BURN RATE HARIAN</span>
+              <p class="text-sm font-bold text-text-primary">Rp 23.400 / hr</p>
+            </div>
+          </div>
+
+          <div class="p-2 rounded-lg bg-surface-elevated text-[9px] flex justify-between items-center">
+            <span class="text-text-secondary">Rasio Tabungan vs Belanja:</span>
+            <span class="font-bold text-tosca">62% Terjaga Sehat</span>
+          </div>
+        </div>
+
+        <!-- CARD 3: TARGET TRIP KE DIENG -->
+        <div class="bg-surface rounded-2xl p-3.5 border-l-4 border-tosca border border-border space-y-2.5 shadow-md">
+          <div class="flex justify-between items-center border-b border-border/50 pb-2">
+            <div class="flex items-center gap-2">
+              <div class="w-7 h-7 rounded-lg bg-tosca/20 text-tosca flex items-center justify-center">
+                <span class="material-symbols-outlined text-[16px]">landscape</span>
+              </div>
+              <div>
+                <h4 class="font-bold text-xs text-text-primary">Target & Dana Trip Dieng</h4>
+                <p class="text-[8px] text-text-secondary">Jadwal Aktif: 29 - 30 Agustus 2026</p>
+              </div>
+            </div>
+            <span class="text-[9px] px-2 py-0.5 rounded bg-tosca/20 text-tosca font-bold">29-30 AGS</span>
+          </div>
+
+          <div class="flex justify-between items-center text-[10px]">
+            <div>
+              <span class="text-text-secondary text-[8px]">DANA TERKUMPUL (3x)</span>
+              <p class="text-sm font-bold text-tosca" id="an-dieng-collected">Rp 300.000 <span class="text-[9px] text-text-secondary font-normal">/ Rp 1.040.000</span></p>
+            </div>
+            <div class="text-right">
+              <span class="text-text-secondary text-[8px]">SISA KEKURANGAN</span>
+              <p class="text-xs font-bold text-coral">Rp 740.000</p>
+            </div>
+          </div>
+
+          <!-- Interactive Progress Bar -->
+          <div class="space-y-1">
+            <div class="w-full bg-surface-elevated h-2 rounded-full overflow-hidden">
+              <div class="bg-tosca h-full rounded-full transition-all" style="width: 28.8%"></div>
             </div>
             <div class="flex justify-between text-[8px] text-text-secondary">
-              <span>🗓️ 29 Ags (17:00 WIB) - 30 Ags (23:00 WIB)</span>
-              <span>Pagu: Rp 1.040.000</span>
+              <span>Progres Tabungan: 28.8%</span>
+              <span class="text-lime font-bold">Kesiapan Logistik: 85%</span>
             </div>
           </div>
 
-          <div class="p-2 rounded-lg bg-surface-elevated space-y-1">
-            <div class="flex justify-between items-center">
-              <span class="font-bold text-text-primary flex items-center gap-1">
-                <span class="material-symbols-outlined text-amber text-[13px]">two_wheeler</span> Narik Gojek Rutin Malang
-              </span>
-              <span class="text-amber font-bold text-[9px]">Aktif Harian (Rp 150k/hr)</span>
+          <div class="p-2 rounded-lg bg-surface-elevated text-[9px] flex justify-between items-center">
+            <span class="text-text-secondary">Kebutuhan Nabung:</span>
+            <span class="font-bold text-primary">Rp 37.000 / hari</span>
+          </div>
+        </div>
+
+        <!-- CARD 4: OPERASIONAL GOJEK & LOGBOOK BEAT FI -->
+        <div class="bg-surface rounded-2xl p-3.5 border-l-4 border-primary border border-border space-y-2.5 shadow-md">
+          <div class="flex justify-between items-center border-b border-border/50 pb-2">
+            <div class="flex items-center gap-2">
+              <div class="w-7 h-7 rounded-lg bg-primary/20 text-primary flex items-center justify-center">
+                <span class="material-symbols-outlined text-[16px]">two_wheeler</span>
+              </div>
+              <div>
+                <h4 class="font-bold text-xs text-text-primary">Operasional Gojek & Beat FI</h4>
+                <p class="text-[8px] text-text-secondary">Honda Beat FI (N 4321 ABC)</p>
+              </div>
             </div>
-            <div class="w-full h-2 bg-surface rounded-full overflow-hidden">
-              <div class="h-full bg-amber rounded-full" style="width: 75%"></div>
+            <span class="text-[9px] px-2 py-0.5 rounded bg-primary/20 text-primary font-bold">45.200 KM</span>
+          </div>
+
+          <div class="grid grid-cols-2 gap-2 text-[9px]">
+            <div class="p-2 rounded-lg bg-surface-elevated space-y-0.5">
+              <span class="text-text-secondary text-[8px]">KONSUMSI BBM</span>
+              <p class="font-bold text-lime text-xs">~50.2 KM/L</p>
+            </div>
+            <div class="p-2 rounded-lg bg-surface-elevated space-y-0.5">
+              <span class="text-text-secondary text-[8px]">TARGET NARIK / SHIFT</span>
+              <p class="font-bold text-emerald text-xs">Rp 75.000</p>
+            </div>
+          </div>
+
+          <div class="grid grid-cols-2 gap-1.5 text-[9px]">
+            <div class="p-2 rounded-lg bg-surface-elevated flex justify-between items-center">
+              <span class="text-text-secondary">Biaya BBM:</span>
+              <span class="font-bold text-text-primary">Rp 199 / KM</span>
+            </div>
+            <div class="p-2 rounded-lg bg-surface-elevated flex justify-between items-center">
+              <span class="text-text-secondary">Servis CVT:</span>
+              <span class="font-bold text-tosca">47.000 KM</span>
             </div>
           </div>
         </div>
-      </div>
 
-      <!-- 6. 20 MODEL ANALISIS REALTIME CATALOG ACCORDION -->
-      <div class="bg-surface rounded-xl p-3 border border-border space-y-2.5">
-        <div class="flex justify-between items-center border-b border-border/50 pb-1.5">
-          <span class="font-bold text-xs text-lime flex items-center gap-1">
-            <span class="material-symbols-outlined text-lime text-[15px]">view_list</span> 20 MODEL ANALISIS REALTIME
-          </span>
-          <span class="text-[9px] font-mono px-2 py-0.5 rounded bg-primary/20 text-primary font-bold">20 MODEL LENGKAP</span>
+        <!-- CARD 5: ANGSURAN BANK JAGO & MANAJEMEN HUTANG -->
+        <div class="bg-surface rounded-2xl p-3.5 border-l-4 border-coral border border-border space-y-2.5 shadow-md">
+          <div class="flex justify-between items-center border-b border-border/50 pb-2">
+            <div class="flex items-center gap-2">
+              <div class="w-7 h-7 rounded-lg bg-coral/20 text-coral flex items-center justify-center">
+                <span class="material-symbols-outlined text-[16px]">credit_card</span>
+              </div>
+              <div>
+                <h4 class="font-bold text-xs text-text-primary">Angsuran Jago & Hutang</h4>
+                <p class="text-[8px] text-text-secondary">Jatuh tempo setiap tanggal 20</p>
+              </div>
+            </div>
+            <span class="text-[9px] px-2 py-0.5 rounded bg-coral/20 text-coral font-bold">TGL 20</span>
+          </div>
+
+          <div class="flex justify-between items-center text-[10px]">
+            <div>
+              <span class="text-text-secondary text-[8px]">ANGSURAN BULANAN</span>
+              <p class="text-sm font-bold text-coral">Rp 67.940 <span class="text-[8px] text-text-secondary">/ bln</span></p>
+            </div>
+            <div class="text-right">
+              <span class="text-text-secondary text-[8px]">DEBT RATIO (DTI)</span>
+              <p class="text-xs font-bold text-emerald">14.2% (Aman)</p>
+            </div>
+          </div>
+
+          <div class="p-2 rounded-lg bg-surface-elevated text-[9px] flex justify-between items-center">
+            <span class="text-text-secondary">Sisa Pinjaman Pokok:</span>
+            <span class="font-bold text-text-primary">Pinjaman Rp 600rb (2.99%)</span>
+          </div>
         </div>
 
-        <p class="text-[9px] text-text-secondary leading-relaxed font-mono">
-          Katalog lengkap 20 instrumen analisis kecerdasan finansial & produktivitas berbasis data transaksi Mas Firman:
-        </p>
+        <!-- CARD 6: PRODUKTIVITAS SKRIPSI & STATUS KESEHATAN SISTEM -->
+        <div class="bg-surface rounded-2xl p-3.5 border-l-4 border-primary border border-border space-y-2.5 shadow-md">
+          <div class="flex justify-between items-center border-b border-border/50 pb-2">
+            <div class="flex items-center gap-2">
+              <div class="w-7 h-7 rounded-lg bg-primary/20 text-primary flex items-center justify-center">
+                <span class="material-symbols-outlined text-[16px]">school</span>
+              </div>
+              <div>
+                <h4 class="font-bold text-xs text-text-primary">Produktivitas Skripsi & Sistem</h4>
+                <p class="text-[8px] text-text-secondary">Bimbingan Pak Sulthan (Bab 4-5)</p>
+              </div>
+            </div>
+            <span class="text-[9px] px-2 py-0.5 rounded bg-lime/20 text-lime font-bold">94 / 100</span>
+          </div>
 
-        <!-- 20 Models Accordion List -->
-        <div id="analytics-models-container" class="space-y-1.5 font-mono text-[10px]"></div>
-      </div>
+          <div class="grid grid-cols-2 gap-2 text-[9px]">
+            <div class="p-2 rounded-lg bg-surface-elevated space-y-0.5">
+              <span class="text-text-secondary text-[8px]">TRAVEL TIME BUFFER</span>
+              <p class="font-bold text-tosca text-xs">35 Menit</p>
+            </div>
+            <div class="p-2 rounded-lg bg-surface-elevated space-y-0.5">
+              <span class="text-text-secondary text-[8px]">SKOR STRES FINANSIAL</span>
+              <p class="font-bold text-emerald text-xs">18 / 100 (Tenang)</p>
+            </div>
+          </div>
 
-      <!-- DYNAMIC GOALS CARD -->
-      <div class="bg-surface rounded-xl p-3 border border-border space-y-2">
-        <div class="flex justify-between items-center">
-          <h4 class="font-headline font-bold text-[9px] uppercase text-text-secondary tracking-wider">Target & Sinking Funds</h4>
-          <button onclick="openDynamicHubModal('goals')" class="text-lime text-[9px] font-mono font-bold hover:underline">+ Kelola Target</button>
+          <div class="p-2 rounded-lg bg-surface-elevated text-[9px] flex justify-between items-center">
+            <span class="text-text-secondary">Status Sistem & Data:</span>
+            <span class="font-bold text-lime">100% Sinkron & Sehat</span>
+          </div>
         </div>
-        <div id="dynamic-goals-container" class="space-y-1.5 font-mono text-[10px]"></div>
+
       </div>
 
     </div>
 
-    <!-- 🗄️ TAB 2: DATABASE DATA CORE -->
+
     <!-- ======================================================================= -->
+    <!--  TAB 2: DATA & EXPANDED DATABASE -->
     <div id="tab-data" class="tab-pane px-3.5 py-2.5 space-y-2.5">
       
       <div class="flex bg-surface-elevated p-1 rounded-xl border border-border">
@@ -718,7 +787,7 @@ const HTML_SOURCE = `<!DOCTYPE html>
         <button onclick="openDynamicHubModal('bills')" class="text-lime text-[9px] font-mono font-bold hover:underline">+ Kelola Tagihan</button>
       </div>
 
-      <!-- Live GPS Weather Card -->
+      <!-- 1. LIVE GPS WEATHER CARD -->
       <div class="bg-surface rounded-xl p-3 border-l-4 border-tosca border border-border space-y-1.5 shadow-md">
         <div class="flex justify-between items-center">
           <span class="text-[10px] font-mono font-bold text-tosca flex items-center gap-1">
@@ -727,23 +796,69 @@ const HTML_SOURCE = `<!DOCTYPE html>
           <span class="text-[8px] font-mono text-lime font-bold" id="weather-badge">GPS LIVE</span>
         </div>
         <div class="flex items-center gap-3">
-          <span class="text-2xl font-mono font-bold text-text-primary" id="weather-temp">26°C</span>
+          <span class="text-2xl font-mono font-bold text-text-primary" id="weather-temp">28°C</span>
           <div>
-            <h3 class="font-bold text-xs text-text-primary" id="weather-city">Kota Malang, Jawa Timur</h3>
-            <p class="text-[10px] text-text-secondary" id="weather-desc">Cerah Berawan • Angin 9 km/jam</p>
+            <h3 class="font-bold text-xs text-text-primary" id="weather-city">Sidoarjo, Jawa Timur</h3>
+            <p class="text-[10px] text-text-secondary" id="weather-desc">Cerah Berawan • Angin 13 km/jam</p>
           </div>
         </div>
         <div class="p-1.5 rounded bg-surface-elevated font-mono text-[9px] text-lime flex items-center gap-1" id="weather-advice">
-          <span class="material-symbols-outlined text-[13px]">check_circle</span> Kondisi jalanan kering & ideal untuk narik Gojek sore/malam ini.
+          <span class="material-symbols-outlined text-[13px]">check_circle</span> Kondisi jalanan kering & ideal untuk narik Gojek.
         </div>
       </div>
 
+      <!-- 2. CLICKABLE MORNING BRIEFING NOTIFICATION CARD (DEDICATED) -->
+      <div onclick="openTodayMorningBriefing()" class="bg-surface rounded-xl p-3 border-l-4 border-lime border border-border space-y-2.5 shadow-md cursor-pointer hover:border-lime transition-all active:scale-[0.99]">
+        <div class="flex justify-between items-center border-b border-border/50 pb-1.5">
+          <div class="flex items-center gap-1.5">
+            <span class="material-symbols-outlined text-lime text-[16px]">wb_sunny</span>
+            <h3 class="font-headline font-bold text-xs text-lime">MORNING BRIEFING HARI INI</h3>
+          </div>
+          <span class="text-[8px] font-mono px-1.5 py-0.5 rounded bg-lime/20 text-lime font-bold">STATUS BAR AKTIF</span>
+        </div>
+
+        <div class="space-y-1 font-mono text-[10px]">
+          <p class="font-bold text-text-primary text-xs" id="briefing-card-greeting">Pagi Mas Firman! Siap beraktivitas hari ini?</p>
+          <div class="grid grid-cols-2 gap-1.5 pt-1 text-[9px]">
+            <div class="p-1.5 rounded bg-surface-elevated">
+              <span class="text-text-secondary">Batas Belanja Aman:</span>
+              <p class="font-bold text-lime" id="briefing-card-budget">Rp 48.500 / hr</p>
+            </div>
+            <div class="p-1.5 rounded bg-surface-elevated">
+              <span class="text-text-secondary">Saldo Likuid Kas:</span>
+              <p class="font-bold text-emerald" id="briefing-card-liquid">Rp 326.000</p>
+            </div>
+          </div>
+          <div class="p-1.5 rounded bg-surface-elevated text-[9px] text-text-secondary">
+            <span class="text-coral font-bold">⚠️ Tugas Urgent:</span> Hutang Rifky (Rp 150k) • Cicilan Jago (Rp 67.940)
+          </div>
+        </div>
+
+        <div class="flex gap-2 pt-0.5" onclick="event.stopPropagation()">
+          <button onclick="openTodayMorningBriefing()" class="flex-1 py-1.5 px-2 rounded-lg bg-lime text-black font-bold text-[10px] active:scale-95 flex items-center justify-center gap-1 shadow font-mono">
+            <span class="material-symbols-outlined text-[13px]">visibility</span> Buka Ringkasan Lengkap
+          </button>
+          <button onclick="testMorningBriefing()" class="py-1.5 px-2.5 rounded-lg bg-surface-elevated border border-primary/50 text-primary font-bold text-[10px] active:scale-95 flex items-center justify-center gap-1 shadow font-mono">
+            <span class="material-symbols-outlined text-[13px]">notifications_active</span> Uji Notif
+          </button>
+        </div>
+
+        <div class="space-y-1.5 pt-1 border-t border-border/40" onclick="event.stopPropagation()">
+          <p class="text-[9px] font-mono text-text-secondary">Arsip Riwayat Briefing 7 Hari:</p>
+          <div id="briefing-history-list" class="space-y-1.5 font-mono text-[10px]">
+            <!-- Dynamic Briefing List renders here -->
+          </div>
+        </div>
+      </div>
+
+      <!-- 3. BILLS / TAGIHAN CONTAINER -->
       <div id="dynamic-bills-container" class="space-y-2"></div>
 
     </div>
 
+
     <!-- ======================================================================= -->
-    <!-- ⚙️ TAB 5: PROFILE, DYNAMIC HUB, MORNING BRIEFING & INTEGRATION SETTINGS (100% COMPLETE) -->
+    <!--  TAB 5: PROFILE, DYNAMIC HUB, MORNING BRIEFING & INTEGRATION SETTINGS -->
     <div id="tab-profile" class="tab-pane px-3.5 py-2.5 space-y-3">
       
       <div class="flex justify-between items-center">
@@ -781,10 +896,7 @@ const HTML_SOURCE = `<!DOCTYPE html>
             <label class="text-[8px] text-text-secondary uppercase">Nama Panggilan Pengguna (AI Greeting)</label>
             <input id="profile-input-name" type="text" value="Mas Firman" placeholder="Nama panggilan Anda..." class="w-full bg-surface-elevated border border-border rounded-lg p-2 text-text-primary text-xs outline-none mt-0.5"/>
           </div>
-          <div>
-            <label class="text-[8px] text-text-secondary uppercase">Alamat Email Terdaftar (Laporan & Briefing)</label>
-            <input id="profile-input-email" type="email" value="mfirmansyah@gmail.com" placeholder="nama@email.com" class="w-full bg-surface-elevated border border-border rounded-lg p-2 text-text-primary text-xs outline-none mt-0.5"/>
-          </div>
+          
           <button onclick="saveUserProfileIdentity()" class="w-full py-2 bg-primary text-black font-bold rounded-lg text-xs font-mono shadow active:scale-95 flex items-center justify-center gap-1">
             <span class="material-symbols-outlined text-[14px]">save</span> Simpan Identitas Profil
           </button>
@@ -817,13 +929,7 @@ const HTML_SOURCE = `<!DOCTYPE html>
               <label class="text-[8px] text-text-secondary uppercase">Waktu Briefing (WIB)</label>
               <input id="profile-briefing-time" type="time" value="07:00" class="w-full bg-surface-elevated border border-border rounded-lg p-2 text-text-primary text-xs outline-none mt-0.5"/>
             </div>
-            <div>
-              <label class="text-[8px] text-text-secondary uppercase">Kirim Salinan Email</label>
-              <select id="profile-email-briefing-toggle" class="w-full bg-surface-elevated border border-border rounded-lg p-2 text-text-primary text-xs outline-none mt-0.5">
-                <option value="true">Ya, Kirim Email</option>
-                <option value="false">Tidak (Hanya Notif)</option>
-              </select>
-            </div>
+            
           </div>
 
           <div class="flex gap-2 pt-0.5">
@@ -929,7 +1035,7 @@ const HTML_SOURCE = `<!DOCTYPE html>
           <span class="text-xs font-headline font-bold text-tosca flex items-center gap-1">
             <span class="material-symbols-outlined text-[16px]">info</span> INFORMASI VERSI & SISTEM
           </span>
-          <span class="text-[9px] font-mono px-2 py-0.5 rounded-full bg-tosca/20 text-tosca font-bold" id="profile-app-version-badge">v2.6.1</span>
+          <span class="text-[9px] font-mono px-2 py-0.5 rounded-full bg-tosca/20 text-tosca font-bold" id="profile-app-version-badge">v2.6.2</span>
         </div>
         
         <div class="space-y-1 text-[10px] font-mono text-text-secondary">
