@@ -407,6 +407,23 @@ Katalog **300 Poin Master Audit** ini menjadi dokumen panduan mutlak (*Ultimate 
 
 
 
+
+
+### 2.33 Pemulihan Mesin Morning Briefing, Tombol Uji Notifikasi & Rilis Versi 2.5.2
+- **Laporan Masalah Pengguna:**
+  - *"Morning briefing dan test morning briefing tidak berjalan"*
+- **Akar Masalah & Tindakan Korektif:**
+  1. *Akar Masalah*: Fungsi `loadMorningBriefingArchive`, `generateAndShowMorningBriefing`, dan `openTodayMorningBriefing` sebelumnya terhapus dari `app.js` saat pembaruan modul, sehingga tombol briefing memicu *ReferenceError*.
+  2. *Pemulihan Mesin Morning Briefing*: Mengintegrasikan ulang seluruh siklus hidup briefing:
+     - Pop-up otomatis di layer atas (`modal-morning-briefing`) saat buka aplikasi.
+     - Pengiriman notifikasi lokal ke status bar Android via `dispatchLocalNotification()`.
+     - Tombol **[Baca Hari Ini]** dan tombol khusus **[Uji Notifikasi (Test)]** di Tab 4 Notifikasi untuk menguji pop-up dan getaran status bar kapan saja.
+     - Riwayat tersimpan rapi dan otomatis terhapus setelah 7 hari.
+- **Hasil Kompilasi & Versi Baru:**
+  - `versionCode = 252`, `versionName = "2.5.2"`.
+  - Output File: `D:\MANAS PROJEK\Raphael_App_v2.5.2_Debug.apk` (Ukuran: 5.67 MB).
+
+
 ### 2.32 Audit & Perbaikan 4 Masalah Kritis Mobile & Rilis Versi 2.5.1
 - **4 Laporan Masalah dari Pengguna:**
   1. *AI Menjawab Tidak Sesuai*: Jawaban memunculkan ringkasan template usang (saldo Rp 427.500 & hutang talangan Rp 101.000) bukannya merespons pertanyaan secara kontekstual.
