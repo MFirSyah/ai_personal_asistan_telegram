@@ -283,12 +283,19 @@ function cleanAndParseJSON(rawText: string): any {
 function classifyIntent(message: string): 'greeting' | 'data_query' | 'recording' | 'general' {
   const msg = message.toLowerCase().trim();
 
-  const greetingPatterns = /^(halo|hai|hi|hey|hello|pagi|siang|sore|malam|selamat|apa kabar|makasih|terima kasih|thanks|ok|oke|siap|good|morning|mantap|baik|iya|ya|yap|oke deh|ga|gak|tidak|nanti|bye|dah|wkwk|haha|lol|😊|👍|🙏|❤️|😂|🤣)$/;
-  if (greetingPatterns.test(msg) || msg.length <= 5) return 'greeting';
+  // Recognize all greeting variations: "halo", "halo kamu", "halo raphael", "hai", "selamat sore", "pagi", etc.
+  const isGreetingText = /^(halo|hai|hi|hey|hello|pagi|siang|sore|malam|selamat pagi|selamat siang|selamat sore|selamat malam|apa kabar|assalamualaikum|oy|tes|test|ping|p)/i.test(msg) ||
+    /^(halo|hai|hi|hey|hello|selamat pagi|selamat siang|selamat sore|selamat malam)\s*(kamu|raphael|bot|asisten|mas|min|kawan)?\s*[!?.~]*$/i.test(msg);
+
+  const hasNumbersOrCurrency = /\b\d+[.,]?\d*\s*(rb|ribu|jt|juta|k|rbu|rebu)?\b/i.test(msg);
+  const hasSpecificKeywords = /\b(unesa|kampus|yama kotoba|bunga|raflesia|motor|beat|skripsi|resep|hukum|maps|lokasi|alamat|cek|hitung|catat|tambah|kurang|hapus|edit)\b/i.test(msg);
+
+  if (isGreetingText && !hasNumbersOrCurrency && !hasSpecificKeywords) {
+    return 'greeting';
+  }
 
   const recordingPatterns = /\b(beli|bayar|jual|terima|gaji|transfer|kirim|setor|tarik|belanja|makan|kopi|bensin|pulsa|parkir|ojek|grab|gojek|shopee|toko|pasar|warung|sewa|cicilan|angsuran|tabung)\b/i;
-  const amountPatterns = /\b\d+[.,]?\d*\s*(rb|ribu|jt|juta|k|rbu|rebu)?\b/i;
-  if (recordingPatterns.test(msg) && amountPatterns.test(msg)) return 'recording';
+  if (recordingPatterns.test(msg) && hasNumbersOrCurrency) return 'recording';
 
   const queryPatterns = /\b(berapa|total|ringkasan|laporan|statistik|grafik|chart|analisis|kategori|pengeluaran|pemasukan|tabungan|bulan ini|minggu ini|hari ini|rekap|summary|report|tren|trend)\b/i;
   if (queryPatterns.test(msg)) return 'data_query';
@@ -297,17 +304,27 @@ function classifyIntent(message: string): 'greeting' | 'data_query' | 'recording
 }
 
 function buildGreetingPrompt(userName: string, userMessage: string): string {
+  const timeStr = new Date().toLocaleTimeString('id-ID', { timeZone: 'Asia/Jakarta', hour: '2-digit', minute: '2-digit' });
+  const hour = parseInt(timeStr.split(':')[0] || '12', 10);
+  let timeGreeting = 'Selamat pagi';
+  if (hour >= 11 && hour < 15) timeGreeting = 'Selamat siang';
+  else if (hour >= 15 && hour < 18) timeGreeting = 'Selamat sore';
+  else if (hour >= 18 || hour < 4) timeGreeting = 'Selamat malam';
+
   return `
-Kamu adalah Asisten Keuangan Personal yang ramah dan hangat. Nama user: ${userName}.
+Kamu adalah Asisten Pribadi Eksekutif & Royal Butler (Raphael) untuk ${userName}.
 
-User mengirim sapaan: "${userMessage}"
+User mengirim pesan sapaan: "${userMessage}"
 
-Balas dengan sapaan hangat dan singkat (1 bubble pesan), tanyakan apa yang bisa kamu bantu.
+INSTRUKSI WAJIB UNTUK SAPAAN:
+1. Balas sapaan user secara alami, santun, ramah, dan bersahabat (Gunakan sapaan waktu yang tepat: ${timeGreeting}, ${userName}).
+2. DILARANG KERAS mengeluarkan rincian saldo keuangan, total kas likuid, sisa hutang, pagu anggaran, atau data database jika user HANYA MENYAPA!
+3. Cukup sapa balik dan tanyakan apa yang bisa kamu bantu hari ini (misal: "Ada yang bisa saya bantu untuk catatan keuangan, jadwal, riset, atau agenda hari ini, Mas Firman?").
 
 Format JSON (WAJIB MURNI JSON):
 {
-  "messages": ["Balasan singkat dan hangat"],
-  "follow_up_question": "Pertanyaan ringan 1 kalimat",
+  "messages": ["Balasan sapaan ramah dan bersahabat"],
+  "follow_up_question": "Pertanyaan ramah 1 kalimat",
   "extracted_data": null,
   "reasoning": "",
   "chart": null,
@@ -876,9 +893,12 @@ const GEMINI_TIMEOUT_MS = 15_000;
 export async function runChatOrchestration(
   context: ChatOrchestrationContext
 ): Promise<ChatOrchestrationResult> {
-  // Always use buildFullPrompt so that chat history, single-word confirmations,
-  // plans, and ledger calculations are NEVER lost or discarded!
-  const prompt = buildFullPrompt(context);
+  const intent = classifyIntent(context.userMessage);
+  
+  // Use pure greeting prompt for simple greetings so AI greets back cleanly without dumping ledger/balance tables!
+  const prompt = (intent === 'greeting')
+    ? buildGreetingPrompt(context.userName || 'Mas Firman', context.userMessage)
+    : buildFullPrompt(context);
 
   try {
     const { response, usedModel } = await generateContentWithFallback(
