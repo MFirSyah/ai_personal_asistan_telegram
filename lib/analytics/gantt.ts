@@ -7,10 +7,17 @@ export interface GanttItem {
   status: 'scheduled' | 'in_progress' | 'completed' | 'cancelled';
   priority?: string;
   progressPercent: number;
+  isMultiDay: boolean;
 }
 
-export function parseActivitiesToGantt(activities: any[], plans: any[] = []): GanttItem[] {
-  const items: GanttItem[] = [];
+export interface GanttOptions {
+  showCompleted?: boolean;
+  onlyMultiDay?: boolean;
+}
+
+export function parseActivitiesToGantt(activities: any[], plans: any[] = [], options: GanttOptions = {}): { active: GanttItem[]; completed: GanttItem[] } {
+  const activeItems: GanttItem[] = [];
+  const completedItems: GanttItem[] = [];
 
   // Parse Activities
   for (const a of activities) {
@@ -20,23 +27,32 @@ export function parseActivitiesToGantt(activities: any[], plans: any[] = []): Ga
     
     // Check if description or title mentions multi-day duration (e.g. "29-30 Agustus", "3 hari", "2 hari")
     let durationDays = 1;
+    let isMultiDay = false;
     const combined = `${a.title} ${a.description || ''}`.toLowerCase();
     
     if (combined.includes('29-30') || combined.includes('29 sd 30') || combined.includes('2 hari')) {
       durationDays = 2;
+      isMultiDay = true;
     } else if (combined.includes('3 hari')) {
       durationDays = 3;
+      isMultiDay = true;
     } else if (combined.includes('seminggu') || combined.includes('7 hari')) {
       durationDays = 7;
+      isMultiDay = true;
+    }
+
+    if (options.onlyMultiDay && !isMultiDay) {
+      continue;
     }
 
     const endDate = new Date(startDate.getTime() + (durationDays - 1) * 24 * 60 * 60 * 1000);
 
     let progressPercent = 0;
-    if (a.status === 'completed') progressPercent = 100;
+    const isCompleted = a.status === 'completed';
+    if (isCompleted) progressPercent = 100;
     else if (a.status === 'in_progress') progressPercent = 50;
 
-    items.push({
+    const item: GanttItem = {
       id: a.id ? (a.id.startsWith('ACT-') ? a.id : `ACT-${String(a.id).replace(/-/g, '').substring(0, 6).toUpperCase()}`) : 'ACT-1',
       title: a.title || 'Kegiatan',
       startDate: startDate.toISOString().split('T')[0],
@@ -45,10 +61,17 @@ export function parseActivitiesToGantt(activities: any[], plans: any[] = []): Ga
       status: a.status || 'scheduled',
       priority: a.priority || 'medium',
       progressPercent,
-    });
+      isMultiDay,
+    };
+
+    if (isCompleted) {
+      completedItems.push(item);
+    } else {
+      activeItems.push(item);
+    }
   }
 
-  // Parse Plans
+  // Parse Plans (Strategic targets are inherently roadmaps)
   for (const p of plans) {
     if (p.status === 'cancelled') continue;
     const startStr = p.created_at || new Date().toISOString();
@@ -58,54 +81,83 @@ export function parseActivitiesToGantt(activities: any[], plans: any[] = []): Ga
     
     const diffTime = Math.max(0, endDate.getTime() - startDate.getTime());
     const durationDays = Math.max(1, Math.ceil(diffTime / (1000 * 60 * 60 * 24)));
+    const isCompleted = p.status === 'done';
+    let progressPercent = isCompleted ? 100 : (p.status === 'in_progress' ? 50 : 25);
 
-    let progressPercent = p.status === 'done' ? 100 : (p.status === 'in_progress' ? 50 : 25);
-
-    items.push({
+    const item: GanttItem = {
       id: `PLAN-${p.id ? String(p.id).replace(/-/g, '').substring(0, 5).toUpperCase() : '1'}`,
       title: `[Target] ${p.title}`,
       startDate: startDate.toISOString().split('T')[0],
       endDate: endDate.toISOString().split('T')[0],
       durationDays,
-      status: p.status === 'done' ? 'completed' : (p.status || 'scheduled'),
+      status: isCompleted ? 'completed' : (p.status || 'scheduled'),
       priority: 'urgent',
       progressPercent,
-    });
+      isMultiDay: durationDays > 1,
+    };
+
+    if (isCompleted) {
+      completedItems.push(item);
+    } else {
+      activeItems.push(item);
+    }
   }
 
-  // Sort by start date ascending
-  items.sort((a, b) => a.startDate.localeCompare(b.startDate));
-  return items;
+  // Sort each group by start date ascending
+  activeItems.sort((a, b) => a.startDate.localeCompare(b.startDate));
+  completedItems.sort((a, b) => a.startDate.localeCompare(b.startDate));
+
+  return { active: activeItems, completed: completedItems };
 }
 
-export function generateTelegramGanttChart(activities: any[], plans: any[] = []): string {
-  const items = parseActivitiesToGantt(activities, plans);
-  if (items.length === 0) {
-    return 'Belum ada agenda atau kegiatan aktif yang tercatat untuk ditampilkan pada Gantt Chart.';
+export function generateTelegramGanttChart(activities: any[], plans: any[] = [], options: GanttOptions = {}): string {
+  const { active, completed } = parseActivitiesToGantt(activities, plans, options);
+
+  if (active.length === 0 && completed.length === 0) {
+    return 'Belum ada agenda atau target kegiatan yang tercatat untuk ditampilkan pada Gantt Chart.';
   }
 
-  const lines = [
-    '📅 **GANTT CHART TIMELINE KEGIATAN & AGENDA (MAS FIRMAN)**',
-    '==================================================',
-  ];
+  const lines: string[] = [];
 
-  for (const item of items) {
-    const icon = item.status === 'completed' ? '✅' : (item.status === 'in_progress' ? '⏳' : '📌');
-    const badge = item.status === 'completed' ? '[SELESAI]' : (item.status === 'in_progress' ? '[SEDANG BERJALAN]' : '[TERJADWAL]');
-    
-    // Generate ASCII Bar
-    const filledBlocks = Math.round(item.progressPercent / 10);
-    const emptyBlocks = 10 - filledBlocks;
-    const bar = '█'.repeat(filledBlocks) + '░'.repeat(emptyBlocks);
+  // 1. ACTIVE ROADMAP & AGENDA (Primary Focus)
+  lines.push('📅 **GANTT CHART TIMELINE & ROADMAP AKTIF (MAS FIRMAN)**');
+  lines.push('==================================================');
 
-    const dateRange = item.durationDays > 1 ? `${item.startDate} s/d ${item.endDate} (${item.durationDays} hari)` : `${item.startDate}`;
+  if (active.length === 0) {
+    lines.push('• ✨ *Tidak ada agenda aktif yang sedang berjalan. Seluruh target utama telah sukses diselesaikan!*');
+    lines.push('');
+  } else {
+    for (const item of active) {
+      const icon = item.status === 'in_progress' ? '⏳' : '📌';
+      const badge = item.status === 'in_progress' ? '[SEDANG BERJALAN]' : '[TERJADWAL]';
+      const typeBadge = item.isMultiDay ? '🗺️ Multi-Hari' : '⏱️ 1 Hari';
 
-    lines.push(`• ${icon} **${item.title}** ${badge}`);
-    lines.push(`  🗓️ **Rentang**: ${dateRange}`);
-    lines.push(`  📊 **Progres**: [${bar}] ${item.progressPercent}%`);
+      // Generate ASCII Progress Bar
+      const filledBlocks = Math.round(item.progressPercent / 10);
+      const emptyBlocks = 10 - filledBlocks;
+      const bar = '█'.repeat(filledBlocks) + '░'.repeat(emptyBlocks);
+
+      const dateRange = item.durationDays > 1 ? `${item.startDate} s/d ${item.endDate} (${item.durationDays} hari)` : `${item.startDate}`;
+
+      lines.push(`• ${icon} **${item.title}** ${badge} (${typeBadge})`);
+      lines.push(`  🗓️ **Rentang**: ${dateRange}`);
+      lines.push(`  📊 **Progres**: [${bar}] ${item.progressPercent}%`);
+      lines.push('');
+    }
+  }
+
+  // 2. COMPLETED / HISTORICAL ARCHIVE (Separated, not cluttering the active roadmap)
+  if (completed.length > 0) {
+    lines.push('📁 **RIWAYAT AGENDA SELESAI (HISTORI ARSIP)**');
+    lines.push('--------------------------------------------------');
+    for (const item of completed) {
+      const dateRange = item.durationDays > 1 ? `${item.startDate} s/d ${item.endDate}` : `${item.startDate}`;
+      lines.push(`• ✅ **${item.title}** [SELESAI 100%] — 🗓️ ${dateRange}`);
+    }
     lines.push('');
   }
 
-  lines.push('💡 *Seluruh kegiatan berdurasi multi-hari otomatis dipetakan secara horizontal pada timeline ini.*');
+  lines.push('💡 *Catatan: Agenda multi-hari dipetakan horizontal sebagai roadmap, sedangkan riwayat kegiatan selesai (seperti Trip Dieng) diarsipkan tersendiri agar timeline aktif tetap fokus.*');
   return lines.join('\n');
 }
+

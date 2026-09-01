@@ -16,6 +16,7 @@ import {
   calculateDailyGojekTarget,
 } from '@/lib/analytics/calculators';
 import { generateTelegramGanttChart } from '@/lib/analytics/gantt';
+import { evaluateProactiveCheckIns } from '@/lib/services/proactive-companion';
 
 export const dynamic = 'force-dynamic';
 export const maxDuration = 60;
@@ -32,13 +33,24 @@ export async function OPTIONS() {
 
 export async function POST(req: NextRequest) {
   try {
-    const { userId, userMessage, userName } = await req.json();
-
-    if (!userId || !userMessage) {
-      return NextResponse.json({ error: 'userId and userMessage are required' }, { status: 400, headers: corsHeaders });
-    }
+    const body = await req.json();
+    const { userId, userMessage, userName, action } = body;
 
     const safeUserId = userId || 'fc2758d3-78bb-4e22-b9f0-b3b16568b671';
+
+    // Handle Proactive Check-Ins Query
+    if (action === 'get_proactive_checkins') {
+      const [activities, plans] = await Promise.all([
+        getRecentActivities(safeUserId, 20),
+        getActivePlans(safeUserId),
+      ]);
+      const checkIns = evaluateProactiveCheckIns(activities, plans);
+      return NextResponse.json({ ok: true, check_ins: checkIns }, { headers: corsHeaders });
+    }
+
+    if (!userMessage) {
+      return NextResponse.json({ error: 'userMessage is required' }, { status: 400, headers: corsHeaders });
+    }
 
     // 1. Fetch live Supabase context
     const [transactions, activities, plans, preferences, history, categories, allActiveTxs] = await Promise.all([
@@ -78,7 +90,7 @@ export async function POST(req: NextRequest) {
       });
     }
 
-        const isScheduleCollisionQuery = /(bentrok|bisa ikutan|bisa ikut|bisa ngga|bisa gak|jalan sehat|sidoarjo|karang puri|30 agustus|30 ags|jadwal)/i.test(userMessage);
+    const isScheduleCollisionQuery = /(bentrok|bisa ikutan|bisa ikut|bisa ngga|bisa gak|jalan sehat|sidoarjo|karang puri|30 agustus|30 ags|jadwal)/i.test(userMessage);
     if (isScheduleCollisionQuery) {
       runtimePrefs.push({
         id: 'schedule-collision-grounding',
@@ -132,11 +144,15 @@ export async function POST(req: NextRequest) {
       saveChatMessage(safeUserId, 'assistant', m).catch(console.error);
     }
 
+    // Check if any proactive check-ins should be attached
+    const checkIns = evaluateProactiveCheckIns(activities, plans);
+
     return NextResponse.json({
       ok: true,
       messages: sanitizedMessages,
       extracted_data: result.extracted_data || null,
       follow_up_question: result.follow_up_question || '',
+      check_ins: checkIns,
     }, { headers: corsHeaders });
   } catch (error: any) {
     console.error('Error in /api/chat:', error);

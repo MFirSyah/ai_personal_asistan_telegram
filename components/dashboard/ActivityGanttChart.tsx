@@ -1,6 +1,6 @@
 'use client';
 
-import React, { useMemo } from 'react';
+import React, { useMemo, useState } from 'react';
 import { Activity } from './types';
 import { parseActivitiesToGantt, GanttItem } from '@/lib/analytics/gantt';
 
@@ -10,13 +10,19 @@ interface ActivityGanttChartProps {
 }
 
 export default function ActivityGanttChart({ activities, plans = [] }: ActivityGanttChartProps) {
-  const items: GanttItem[] = useMemo(() => {
+  const [showCompleted, setShowCompleted] = useState(false);
+
+  const { active, completed } = useMemo(() => {
     return parseActivitiesToGantt(activities, plans);
   }, [activities, plans]);
 
+  const displayedItems: GanttItem[] = useMemo(() => {
+    return showCompleted ? [...active, ...completed] : active;
+  }, [active, completed, showCompleted]);
+
   const todayStr = useMemo(() => new Date().toISOString().split('T')[0], []);
 
-  if (items.length === 0) {
+  if (active.length === 0 && completed.length === 0) {
     return (
       <div className="bg-surface rounded-2xl p-6 border border-border/40 text-center">
         <p className="text-sm text-text-secondary">Belum ada data kegiatan untuk ditampilkan pada Gantt Chart.</p>
@@ -29,18 +35,23 @@ export default function ActivityGanttChart({ activities, plans = [] }: ActivityG
       <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2 mb-6">
         <div>
           <h3 className="text-lg font-bold text-text-primary flex items-center gap-2">
-            <span>📅</span> Gantt Chart Timeline Kegiatan & Agenda
+            <span>📅</span> Gantt Chart Timeline Kegiatan & Roadmap
           </h3>
           <p className="text-xs text-text-secondary mt-0.5">
-            Visualisasi rentang waktu aktivitas harian dan agenda berdurasi multi-hari secara terstruktur.
+            Visualisasi target berjalan dan agenda multi-hari aktif ({active.length} aktif).
           </p>
         </div>
         <div className="flex items-center gap-2 text-xs">
+          {completed.length > 0 && (
+            <button
+              onClick={() => setShowCompleted(!showCompleted)}
+              className="px-2.5 py-1 rounded-lg border border-border text-text-secondary hover:text-text-primary hover:bg-background/50 font-medium transition-all"
+            >
+              {showCompleted ? 'Sembunyikan Selesai' : `📁 Riwayat Selesai (${completed.length})`}
+            </button>
+          )}
           <span className="flex items-center gap-1">
-            <span className="w-2.5 h-2.5 rounded-full bg-emerald-500 inline-block"></span> Selesai
-          </span>
-          <span className="flex items-center gap-1">
-            <span className="w-2.5 h-2.5 rounded-full bg-amber-500 inline-block"></span> Terjadwal
+            <span className="w-2.5 h-2.5 rounded-full bg-amber-500 inline-block"></span> Aktif
           </span>
           <span className="flex items-center gap-1">
             <span className="w-2.5 h-2.5 rounded-full bg-blue-500 inline-block"></span> Target Plan
@@ -49,7 +60,7 @@ export default function ActivityGanttChart({ activities, plans = [] }: ActivityG
       </div>
 
       <div className="space-y-4">
-        {items.map((item) => {
+        {displayedItems.map((item) => {
           const isCompleted = item.status === 'completed';
           const isPlan = item.id.startsWith('PLAN-');
           const isToday = item.startDate <= todayStr && item.endDate >= todayStr;
