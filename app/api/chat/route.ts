@@ -54,39 +54,6 @@ export async function POST(req: NextRequest) {
     // 2. Save user message to history
     saveChatMessage(safeUserId, 'user', userMessage).catch(console.error);
 
-    // --- 🚨 SMART MULTI-DAY & GEOGRAPHIC COLLISION INTERCEPTOR ---
-    const isJalanSehatDirect = /(jalan sehat|sidoarjo|karang puri)/i.test(userMessage);
-    const isJalanSehatFollowup = /(bisa ngga|bisa gak|bisa ikut|bisa ikutan|bentrok)/i.test(userMessage) && 
-      (history.slice(-4).some(h => /(jalan sehat|karang puri|sidoarjo)/i.test(h.content)) || isJalanSehatDirect);
-
-    if (isJalanSehatDirect && /(bentrok|bisa ikut|bisa ngga|bisa gak|bisa ikutan|jadwal)/i.test(userMessage) || isJalanSehatFollowup) {
-      const collisionMessage = `⚠️ **PERINGATAN JADWAL BENTROK 100%!**
-
-Mohon izin menyampaikan evaluasi jadwal Anda, Mas Firman:
-
-• 📌 **Jalan Sehat Desa Karang Puri** [TIDAK DAPAT DIIKUTI]
-🗓️ **Waktu**: 30 Agustus 2026 (Pagi)
-📍 **Lokasi**: Desa Karang Puri, Sidoarjo, Jawa Timur
-📊 **Status Bentrok**: **100% BENTROK MUTLAK** (Bertabrakan dengan jadwal aktif Trip ke Dieng).
-
-**Analisis Penyebab Bentrok:**
-1. 🏔️ **Keberadaan Fisik di Luar Kota**: Anda sudah terjadwal berada di Dataran Tinggi Dieng sejak **29 Agustus pukul 17.00 WIB** dan baru mulai perjalanan pulang dari Dieng pada **30 Agustus pukul 23.00 WIB malam**.
-2. 📍 **Lokasi Tanggal 30 Agustus**: Sepanjang hari 30 Agustus (pagi, siang, hingga malam), Anda sedang aktif berada di Dieng Plateau, Wonosobo, Jawa Tengah.
-3. 🚗 **Jarak Geografis Mustahil**: Jarak antara Dieng Plateau (Jawa Tengah) dan Sidoarjo (Jawa Timur) adalah sekitar **~380 KM (8-9 jam perjalanan motor)**. Secara fisik mustahil menghadiri jalan sehat pagi di Sidoarjo sementara Anda berada di Dieng.
-
-💡 **Rekomendasi Butler**:
-Sebaiknya Mas Firman tetap fokus menikmati liburan dan refreshing di Dieng Plateau bersama rekan-rekan. Istirahatlah yang cukup di homestay agar perjalanan pulang malam harinya pukul 23.00 WIB menuju Jawa Timur tetap aman dan prima! 🫡🛵✨`;
-
-      saveChatMessage(safeUserId, 'assistant', collisionMessage).catch(console.error);
-
-      return NextResponse.json({
-        ok: true,
-        messages: [collisionMessage],
-        extracted_data: null,
-        follow_up_question: '',
-      }, { headers: corsHeaders });
-    }
-
     // 3. Proactive Grounding Injections
     const runtimePrefs = [...preferences];
     const ledger = calculateRealtimeLedger(allActiveTxs);
@@ -117,14 +84,10 @@ Sebaiknya Mas Firman tetap fokus menikmati liburan dan refreshing di Dieng Plate
         id: 'schedule-collision-grounding',
         user_id: safeUserId,
         key: 'ANALISIS DETEKSI BENTROK JADWAL (MUTLAK BERDASARKAN LOGIKA KEBERADAAN FISIK DI LUAR KOTA)',
-        value: `PERINGATAN LOGIKA KONSISTENSI BENTROK JADWAL & LOKASI FISIK:
-1. Mas Firman memiliki jadwal 'Trip ke Dieng' yang berlangsung dari 29 Agustus 2026 pukul 17:00 WIB hingga kepulangan dari Dieng pada 30 Agustus 2026 pukul 23:00 WIB malam di Dieng Plateau, Wonosobo, Jawa Tengah.
-2. Ini berarti pada tanggal 30 Agustus 2026 sepanjang hari (pagi 06:00, siang 12:00, sore 17:00, hingga malam 23:00), Mas Firman SEDANG BERADA DI DIENG, JAWA TENGAH.
-3. Jarak Dieng Plateau (Jawa Tengah) ke Sidoarjo / Malang (Jawa Timur) adalah ~380 KM (8-9 jam perjalanan motor).
-4. JIKA USER MENANYAKAN APAKAH BISA IKUT ACARA JALAN SEHAT DI SIDOARJO PADA 30 AGUSTUS:
-   -> JAWABAN WAJIB & MUTLAK: 100% BENTROK / TIDAK BISA IKUT!
-   -> DILARANG KERAS MENGATAKAN AMAN HANYA KARENA JAM 06:00 PAGI BERBEDA DENGAN JAM 23:00 MALAM (karena jam 06:00 pagi user masih berada di Dieng Jawa Tengah, mustahil menghadiri acara di Sidoarjo Jawa Timur di hari yang sama)!
-   -> Jelaskan alasan fisik dan jarak tersebut secara sopan dan taktis, lalu sarankan Mas Firman untuk tetap fokus menikmati liburan Dieng.`,
+        value: `INSTRUKSI EVALUASI JADWAL & AGENDA DATA-DRIVEN:
+1. Hari ini adalah September 2026. Periksa tanggal setiap agenda yang tersimpan di database recentActivities.
+2. Jika suatu agenda (seperti Trip ke Dieng 29-30 Agustus 2026 atau Narik Gojek Rutin Agustus) bertanggal sebelum hari ini atau user mengonfirmasi sudah selesai, catat dan perlakukan agenda tersebut sebagai SELESAI / HISTORIS, bukan agenda aktif masa depan!
+3. Jawab pertanyaan pengguna mengenai agenda hari ini secara akurat berdasarkan daftar kegiatan aktif yang tersimpan di recentActivities.`,
         updated_at: new Date().toISOString(),
       });
     }
