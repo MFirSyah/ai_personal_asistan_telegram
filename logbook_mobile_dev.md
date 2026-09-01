@@ -2793,3 +2793,83 @@ Setelah dilakukan audit mendalam pada penyimpanan runtime (`localStorage` dan na
    - Layar chat tetap menampilkan seluruh riwayat pesan, Visual Gantt Chart Roadmap multi-hari, dan Matriks Prioritas Eisenhower secara sempurna tanpa ada yang hilang.
 4. **Verifikasi Nilai Storage DevTools**:
    - Nilai pada `localStorage.getItem('saved_chat_messages_v2')` dan `window.Android.getItem('saved_chat_messages_v2')` terbukti menyimpan 10 rekaman lengkap (pesan pengguna + 5 bubble chart visual).
+
+
+---
+
+## 📌 BAB 2.72: Restorasi Ekstrem 4 Fitur Kritis Mobile (Popup Detail PIP Tab Database, Responsivitas Line Chart Portrait, Penyelesaian & Toggle Agenda Supabase, & Eliminasi Duplikasi Pesan Cepat Bubble AI)
+
+### 1. Keluhan Pengguna & Investigasi Akar Masalah
+Pengguna menyampaikan laporan evaluasi pasca pengujian:
+> *"loh yah, setelah saya test masih ada beberapa problem:
+> 1. data pada tab database tidak dilihat rinciannya dengan berupa klik terus pop up, padahal sebelum nya bisa
+> 2. tampilan line chart pada tampilan vertikal jelek, tidak penuh, padahal sebelumnya penuh
+> 3. fitur untuk menyelesaikan aktifitas tidak bisa, padahal sebelum nya bisa
+> 4. tombol pesan cepat pada bubble chat ai nya masih muncul tiap bubble, padahal saya mintanya itu kan bubble terakhir, padahal sebelum nya sudah benar
+> 5. dsn banyak lagi yang harus dikerjakan, padahal kemarin itu sudah ada, di versi sebelumnya sudah benar, kok malah di versi paling baru ini malah banyak yang amburadul, gimana sih. Ayo lah kerja yang benar"*
+
+Setelah dilakukan pelacakan kode mendalam pada `app.js` dan `index.html` via Android Remote DevTools:
+1. **Akar Masalah Masalah 1 (Popup Detail Tab Database Hilang)**:
+   - Pada `renderTransactions` dan `renderActivities`, elemen pembungkus card (`<div class="glass-card ... cursor-pointer">`) hanya memiliki class CSS penunjuk kursor namun **tidak memiliki handler `onclick`**.
+   - Markup modal `#modal-item-pip` telah tersedia rapi di `index.html`, namun fungsi pengendali `openItemPip(type, id)` dan `closeItemPipModal()` terhapus/belum terdefinisi di `app.js`.
+2. **Akar Masalah Masalah 2 (Line Chart Vertikal / Portrait Mengkerut & Tidak Penuh)**:
+   - Pada konfigurasi Chart.js `tab-analytics-line-chart`, opsi **`maintainAspectRatio: false` tidak disertakan** (berbeda dengan donut chart yang sudah memilikinya). Akibatnya, pada tablet dalam orientasi vertikal/portrait, Chart.js mengunci rasio aspek default sehingga kanvas menyusut kaku dan meninggalkan ruang kosong yang tidak estetis.
+   - Data garis masih mengacu pada data statis bulan Agustus dengan label hardcoded.
+   - Tinggi kontainer pembungkus `#analytics-line-wrapper` dibatasi pada `h-48 md:h-64`.
+3. **Akar Masalah Masalah 3 (Fitur Selesaikan Aktivitas Macet / Silent Error)**:
+   - Tombol pada card agenda memanggil `onclick="markActivityStatus('${a.id}', 'completed')"`.
+   - Namun, fungsi `markActivityStatus` **sama sekali belum didefinisikan** di dalam `app.js` (memicu `Uncaught ReferenceError: markActivityStatus is not defined`), sehingga penekanan tombol tidak memberikan reaksi apa pun.
+4. **Akar Masalah Masalah 4 (Tombol Pesan Cepat / Chips Muncul di Setiap Bubble AI)**:
+   - Fungsi pemulihan riwayat `renderButlerBubbleFromHistory` menyertakan markup `<div class="flex gap-1 ...">` barisan chips pintasan ke seluruh bubble asisten yang dimuat kembali dari memori.
+   - Fungsi `appendButlerBubble` menyuntikkan chips pada setiap jawaban asisten baru tanpa membersihkan barisan chips pada bubble-bubble balasan sebelumnya.
+
+---
+
+### 2. Tindakan Solutif & Implementasi Arsitektur
+1. **Implementasi Lengkap Modul Modal PIP Dinamis (`openItemPip` & `closeItemPipModal`)**:
+   - Menambahkan fungsi `openItemPip(type, id)` di `app.js`:
+     - **Transaksi (`type === 'tx'`)**: Menampilkan modal pop-up elegan berisi kode transaksi (`TX-XXXXXX`), tipe transaksi (*Pemasukan* hijau / *Pengeluaran* merah), nominal berukuran besar dengan pemformatan Rupiah, kategori, tanggal & waktu lokal (WIB), nama dompet/metode pembayaran, badge transaksi rutin/sinking fund/bensin/bisnis, catatan detail, ID sistem, serta tombol aksi **Edit** dan **Hapus**.
+     - **Agenda & Aktivitas (`type === 'act'`)**: Menampilkan kode agenda (`ACT-XXXXXX`), judul kegiatan, status progres (*Selesai 100%* / *Dalam Proses* / *Terjadwal*), tingkat prioritas, rentang waktu & tanggal, kategori/lokasi, tag durasi multi-hari/buffer/milestone, catatan, serta tombol **Selesai / Buka Kembali**, **Edit**, dan **Hapus**.
+   - Menyematkan `onclick="openItemPip('tx', '${t.id}')"` dan `onclick="openItemPip('act', '${a.id}')"` pada container card, serta menambahkan `event.stopPropagation()` pada tombol-tombol aksi internal agar klik tombol aksi tidak memicu modal PIP secara ganda.
+   - Mengekspos fungsi secara global ke `window.openItemPip` dan `window.closeItemPipModal`.
+
+2. **Perbaikan Total Responsivitas & Data-Driven Line Chart (`renderTabAnalyticsCharts`)**:
+   - Menambahkan opsi `responsive: true` dan `maintainAspectRatio: false` pada Chart.js `tab-analytics-line-chart`.
+   - Mengganti data statis dengan kalkulasi dinamis 7 hari terakhir dari transaksi aktual `cachedTransactions` (agregasi pemasukan vs pengeluaran harian).
+   - Memperbesar tinggi kontainer kanvas di `index.html` menjadi `w-full h-56 md:h-72` untuk memberikan visual grafik yang megah dan mengisi penuh layar baik di mode vertikal (portrait) maupun horizontal (landscape).
+
+3. **Implementasi Handler Toggle Status Agenda (`markActivityStatus` & `toggleActivityDone`)**:
+   - Menambahkan fungsi `markActivityStatus(actId, newStatus)` dan alias `toggleActivityDone(actId)`:
+     - Mengubah status agenda secara instan antara `completed` (100% selesai) dan `scheduled` (20% buka kembali).
+     - Menerapkan pembaruan optimistik antarmuka seketika via `renderActivities()` dan `renderAnalyticsGanttBars()`.
+     - Menyimpan perubahan ke `localStorage` (`cached_structured_activities`).
+     - Mengirim sinkronisasi latar belakang ke API backend `/api/mobile/crud` (action `update_activity`).
+     - Memberikan feedback visual toast yang jelas (`✅ Agenda ditandai selesai!` atau `🔄 Agenda dibuka kembali`).
+     - Menutup modal PIP jika status diubah dari dalam modal.
+     - Mengekspos fungsi ke `window.markActivityStatus` dan `window.toggleActivityDone`.
+
+4. **Pembersihan Ketat Tombol Pesan Cepat (Hanya di Bubble Terakhir)**:
+   - Menghapus blok markup tombol pintasan chips dari fungsi pemulihan riwayat `renderButlerBubbleFromHistory`.
+   - Menambahkan pembersihan otomatis sebelum penyuntikan bubble baru di `appendButlerBubble`:
+     ```javascript
+     container.querySelectorAll('.chat-followup-chips').forEach(function(el) {
+       el.remove();
+     });
+     ```
+   - Menyematkan class `chat-followup-chips` pada barisan tombol cepat di bubble terbaru.
+
+---
+
+### 3. Hasil Pengujian & Verifikasi Layar Samsung Galaxy Tab A8 (`R9RT7066XKL`)
+Kompilasi APK `Raphael_v3.20.16.apk` (Build 3216) berhasil dilakukan melalui Gradle (`BUILD SUCCESSFUL in 18s`), dipasang pada tablet fisik, dan diuji langsung:
+1. **Verifikasi Popup Detail Transaksi (`tablet_test1_pip_tx_verified.png`)**:
+   - Mengetuk baris transaksi *Top up reksadana obligasi* membuka modal pop-up `#modal-item-pip` dengan sempurna: nominal `-Rp 200.000`, metode *Cash Kertas*, tanggal *1 Sep 2026, 15.30 WIB*, kategori *Operasional*, dan tombol edit/hapus/tutup responsif.
+2. **Verifikasi Popup Detail Agenda (`tablet_test3_pip_act_verified.png`)**:
+   - Mengetuk agenda *Touring & Family Gathering Dieng 2 Hari* menampilkan modal pop-up lengkap dengan rincian agenda, catatan perjalanan, status *SELESAI (100%)*, dan tombol dinamis `[ ↩ Buka Kembali ]`.
+3. **Verifikasi Fitur Selesaikan & Buka Kembali Agenda (`tablet_test3_toggled_list.png`)**:
+   - Mengetuk tombol `[ ↩ Buka Kembali ]` langsung mengubah status agenda menjadi *TERJADWAL* (badge cyan) dengan progres *20% Progres*, memunculkan toast hijau `✅ 🔄 Agenda dibuka kembali`, dan tombol pada card berganti menjadi `[ ✓ Selesai ]` secara instan.
+4. **Verifikasi Line Chart Mode Vertikal / Portrait (`tablet_portrait_line_chart.png`)**:
+   - Tablet diputar ke orientasi vertikal/portrait (1200x1920).
+   - Grafik Tren Keuangan tampil **penuh dari ujung ke ujung (*full-width edge-to-edge*)**, kurva sinusoidal Chart.js membentang luas tanpa terpotong, menampilkan titik data dinamis 26 Agu - 1 Sep 2026 yang estetis dan proporsional.
+5. **Verifikasi Eliminasi Duplikasi Pesan Cepat (`tablet_test1_pip_tx.png`)**:
+   - Layar chat diperiksa secara seksama: bubble-bubble balasan AI sebelumnya tampil bersih tanpa ada deretan tombol pesan cepat yang menumpuk. Hanya bubble balasan asisten paling akhir yang memiliki bilah tombol pintasan cepat.
