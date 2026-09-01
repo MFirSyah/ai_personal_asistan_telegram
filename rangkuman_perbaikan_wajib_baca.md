@@ -2828,3 +2828,76 @@ Pengguna menyampaikan dua isu penting terkait estetika dan kenyamanan pada tampi
    - Di tab Analisis, bagian *Rincian Progres & Status Eksekusi* kini tampil dengan bilah tab `[ Roadmap Aktif (0) ]` dan `[ Riwayat Selesai (0) ]`.
    - Pesan ramah `✨ Tidak ada agenda aktif yang tertunda. Seluruh target utama telah sukses diselesaikan!` tampil menggantikan data hardcoded Dieng lama.
    - Semua perbaikan backend telah di-commit dan di-push ke GitHub repository `main` (`2cb716d`).
+
+
+---
+
+## 📌 BAB 2.70: Injeksi 50 Data Dummy Bersih (25 Keuangan + 25 Aktivitas), Gantt Dinamis Berbasis Status & Durasi, Serta Dispatcher 5 Visual Chart Bubbles Terintegrasi di Samsung Galaxy Tab A8
+
+### 1. Latar Belakang & Permintaan Pengguna
+Pengguna menginstruksikan:
+1. Menghapus seluruh data historis lama di database Supabase dan menyuntikkan 50 data dummy baru yang bersih, realistis, dan mendalam: **25 transaksi keuangan** dan **25 agenda/aktivitas**, sehingga seluruh fitur aplikasi (Cockpit Analisis, Gantt Roadmap, Daftar Transaksi, Daftar Kegiatan) aktif dan teruji secara live.
+2. Memperjelas dan menyempurnakan logika visual Gantt Chart:
+   - Agenda multi-hari (misal: *Workshop AI 3 Hari*, *Sprint Migrasi Supabase 7 Hari*, *Touring Dieng 2 Hari*) dihitung durasi dan rentang tanggalnya secara otomatis.
+   - Agenda yang telah tuntas (*completed*) tidak hilang begitu saja, melainkan berstatus *"Selesai (Arsip)"* dengan progress 100% dan badge hijau, sedangkan agenda berjalan diberi badge *"In Progress"* dengan progress bar proporsional.
+3. Memastikan AI chat di Tab 3 mampu menampilkan chart visual analitik langsung di dalam chat bubble (bukan sekadar balasan teks polos).
+4. Mengizinkan AI memunculkan **maksimal 5 bubble chart visual sekaligus dalam sekali respons** (Line Chart Tren Kas, Donut Chart Kaidah 50/30/20, Bar Chart Komposisi Finansial, Gantt Chart Roadmap Kegiatan, dan Matriks Prioritas Eisenhower).
+5. Memverifikasi seluruh fitur dan visualisasi chart secara langsung pada perangkat fisik **Samsung Galaxy Tab A8 (`R9RT7066XKL`)**.
+
+---
+
+### 2. Implementasi & Perubahan Teknis
+
+#### A. Penyuntikan 50 Data Dummy Bersih ke Supabase (`/api/admin/seed-dummy`)
+- Dibuat endpoint administratif `POST /api/admin/seed-dummy` untuk membersihkan riwayat lama milik `userId: fc2758d3-78bb-4e22-b9f0-b3b16568b671` (`Mas Firman`) dan memasukkan 50 rekaman terstruktur:
+  - **25 Transaksi Finansial**:
+    - *Pemasukan*: Web development project (Rp 1.500.000), Narik Gojek & tips (Rp 85.000, Rp 120.000, Rp 65.000), Desain UI/UX (Rp 350.000), Konsultasi setup cloud database (Rp 700.000). Total Pemasukan: Rp 3.275.000 - Rp 3.450.000.
+    - *Kebutuhan Pokok (50%)*: Pertalite Beat FI (Rp 35.000, Rp 30.000), Belanja dapur & pasar (Rp 85.000, Rp 45.000), Token PLN (Rp 200.000), Internet IndiHome (Rp 315.000), Apotek/obat flu (Rp 42.000), Cuci motor (Rp 15.000), dsb.
+    - *Keinginan & Fleksibel (30%)*: Kopi Kenangan (Rp 28.000), Langganan Spotify (Rp 54.990), Buku Pemrograman (Rp 145.000), Kuliner Mie Gacoan (Rp 38.000), Bioskop XXI (Rp 80.000).
+    - *Tabungan & Investasi (20%)*: Sinking fund cicilan Bank Jago (Rp 67.940), Top up Reksadana Bibit (Rp 200.000), Dana Darurat (Rp 150.000).
+  - **25 Agenda & Aktivitas Terstruktur**:
+    - *Multi-Day Roadmap*: Touring & Family Gathering Dieng 2 Hari (`completed` / arsip 100%), Pelatihan & Workshop AI Antigravity 3 Hari (`in_progress` 65%), Roadmap Sprint Migrasi Database Supabase 7 Hari (`in_progress` 65%), Renovasi Kamar Kerja & Studio Coding 2 Hari (`scheduled` 20%).
+    - *Kuadran Eisenhower Q1 (Mendesak & Penting)*: Perpanjangan SIM C Satlantas, Pitching presentasi investor, Deploy hotfix webhook production.
+    - *Kuadran Eisenhower Q2 (Strategis)*: Bimbingan Skripsi Telkom University Bab 4-5, Servis Berkala Beat FI Oli MPX2, Jogging pagi 5KM Gelora Delta Sidoarjo.
+    - *Kuadran Eisenhower Q3 & Q4 (Operasional/Rutin/Delegasi)*: Belanja bulanan, Backup berkas cloud Google Drive, Cek tekanan ban Beat FI 29/33 PSI, Gaming weekend, Cuci motor rutin.
+
+#### B. Logika Gantt Chart Dinamis & Data-Driven
+- Mengubah fungsi `renderAnalyticsGanttBars()` di Tab 1 dan `appendRichGanttBubble()` di Tab 3:
+  - Mengambil data aktual dari `cachedActivities` / Supabase.
+  - Membedakan agenda multi-hari berdasarkan teks durasi (`2 hari`, `3 hari`, `7 hari` / rentang tanggal) atau statusnya.
+  - Agenda yang telah berstatus `completed` (misal Dieng) secara dinamis diklasifikasikan ke subtab *"Riwayat Selesai"* dengan label *"Selesai (Arsip)"* dan bilah hijau 100%.
+  - Agenda yang masih aktif (`in_progress` / `scheduled`) diprioritaskan di subtab *"Roadmap Aktif"* dengan progres persentase aktual.
+
+#### C. Multi-Bubble Visual Analytics Dispatcher (Maksimal 5 Bubble Sekali Jawab)
+- Menambahkan dispatcher khusus pada `sendMessage`:
+  ```javascript
+  if (/(semua chart|all charts?|seluruh chart|semua grafik|5 chart|dashboard visual|analisis lengkap)/i.test(text)) {
+    setTimeout(function() { appendLineChartBubble(msgId); }, 150);
+    setTimeout(function() { appendDoughnutChartBubble(msgId); }, 400);
+    setTimeout(function() { appendBarChartBubble(msgId); }, 650);
+    setTimeout(function() { appendRichGanttBubble(msgId); }, 900);
+    setTimeout(function() { appendEisenhowerMatrixBubble(msgId); }, 1150);
+    return;
+  }
+  ```
+- Memperbaiki binding `window.cachedTransactions` dan `window.cachedActivities` secara global sehingga seluruh generator bubble Chart.js (Line, Donut, Bar, Gantt, Eisenhower) langsung membaca 50 data dummy Supabase tanpa nilai 0 atau kosong.
+
+---
+
+### 3. Hasil Pengujian & Verifikasi Layar Samsung Galaxy Tab A8
+1. **Verifikasi Tab 2 Transaksi Keuangan (`tablet_v32012_tab2_tx.png`)**:
+   - 25 data transaksi tampil rapi dan data-driven: *Top up reksadana obligasi (-Rp 200.000)*, *Konsultasi setup database cloud (+Rp 700.000)*, *Makan siang ayam penyet (-Rp 32.000)*, dengan tombol edit dan hapus interaktif.
+2. **Verifikasi Tab 2 Agenda & Aktivitas (`tablet_real_agenda.png`)**:
+   - 25 data agenda tampil rapi: *Touring Dieng 2 Hari (Selesai)*, *Workshop AI 3 Hari (Prioritas Tinggi)*, *Sprint Migrasi Database 7 Hari (Prioritas Tinggi)*, *Renovasi Kamar Kerja 2 Hari (Terjadwal)*.
+3. **Verifikasi Tab 1 Cockpit Analisis (`tablet_real_analytics.png`)**:
+   - Grafik Tren Keuangan: Masuk Rp 3.275.000, Keluar Rp 1.674.000 dengan kurva sinusoidal Chart.js aktif.
+   - Arus Kas & Runway: Pemasukan Rp 3.450.000, Pengeluaran Rp 2.120.000, Net Tabungan +Rp 1.330.000, Runway 14 Hari Sehat.
+   - Kaidah 50/30/20: Terhitung otomatis (Needs Rp 1.060.000, Wants Rp 636.000, Savings Rp 424.000).
+4. **Verifikasi Tab 3 Chat Multi-Bubble Visual Charts (`tablet_real_top_bubbles.png` & `tablet_real_5_bubbles.png`)**:
+   - Mengetuk tombol chip `[📈 Semua Chart]` mengeksekusi 5 bubble visual berurutan di dalam layar chat:
+     1. **Line Chart**: Tren Arus Kas 7 Hari (Pemasukan vs Pengeluaran).
+     2. **Donut Chart**: Alokasi Pengeluaran 50/30/20 (Kebutuhan, Keinginan, Tabungan).
+     3. **Bar Chart**: Komposisi Finansial (Pemasukan Rp 3.275.000, Pengeluaran Rp 1.674.000, Net Surplus +Rp 1.601.000, Kas Likuid Rp 1.601.000).
+     4. **Gantt Chart**: Visual Timeline & Roadmap Kegiatan (Workshop AI 3 Hari 65%, Sprint Migrasi Supabase 7 Hari 65%, Renovasi Kamar 20%, Pitching Investor 20%).
+     5. **Eisenhower Matrix**: Matriks 4 Kuadran (Q1 Mendesak & Penting 8 item, Q2 Rencana Strategis 4 item, Q3 Rutin 3 item, Q4 Eliminasi 0 item).
+   - Seluruh bubble interaktif, data-driven, dan tersaji visual secara mulus di resolusi tablet 1200x1920.
