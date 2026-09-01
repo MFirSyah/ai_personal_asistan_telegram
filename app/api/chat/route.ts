@@ -144,6 +144,24 @@ export async function POST(req: NextRequest) {
       saveChatMessage(safeUserId, 'assistant', m).catch(console.error);
     }
 
+    // Combine charts from AI orchestration and proactive keyword detector (max 5)
+    const detectedCharts: string[] = [];
+    const lowerMsg = userMessage.toLowerCase();
+    if (/gantt|roadmap|peta waktu|timeline/i.test(lowerMsg)) detectedCharts.push('gantt');
+    if (/line\s*chart|grafik garis|tren arus kas|tren kas/i.test(lowerMsg)) detectedCharts.push('line');
+    if (/donut|doughnut|grafik donat|pie\s*chart|alokasi 50/i.test(lowerMsg)) detectedCharts.push('donut');
+    if (/bar\s*chart|grafik batang|diagram batang|komposisi kas/i.test(lowerMsg)) detectedCharts.push('bar');
+    if (/eisenhower|kuadran|prioritas agenda/i.test(lowerMsg)) detectedCharts.push('eisenhower');
+    if (/semua chart|semua grafik|chart analisis|grafik lengkap|analisis lengkap/i.test(lowerMsg)) {
+      detectedCharts.push('gantt', 'line', 'donut', 'bar', 'eisenhower');
+    }
+
+    const combinedCharts = Array.from(new Set([
+      ...(result.charts || []),
+      ...(result.chart ? [result.chart.type] : []),
+      ...detectedCharts,
+    ])).slice(0, 5);
+
     // Check if any proactive check-ins should be attached
     const checkIns = evaluateProactiveCheckIns(activities, plans);
 
@@ -153,6 +171,7 @@ export async function POST(req: NextRequest) {
       extracted_data: result.extracted_data || null,
       follow_up_question: result.follow_up_question || '',
       check_ins: checkIns,
+      charts: combinedCharts,
     }, { headers: corsHeaders });
   } catch (error: any) {
     console.error('Error in /api/chat:', error);

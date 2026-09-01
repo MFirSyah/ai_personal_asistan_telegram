@@ -131,6 +131,7 @@ export interface ChatOrchestrationResult {
     labels: string[];
     datasets: { label: string; data: number[] }[];
   } | null;
+  charts?: Array<'gantt' | 'line' | 'donut' | 'bar' | 'eisenhower'> | null;
   location?: {
     name: string;
     lat: number;
@@ -720,6 +721,33 @@ TUGAS KAMU:
       c) **Konteks Perjalanan / Touring Motor**:
          * Jika pengguna melaporkan situasi di jalan, ingatkan keselamatan, hidrasi, dan istirahat fisik motor/pengendara. Catat pengalaman unik tersebut sebagai preferensi/memori gaya hidup.
 
+57. **ATURAN DATA ATOMIK & ANTI-JAMAK (ATOMIC DATA & ANTI-HALU RULES)**:
+    - **Pemisahan Transaksi Jamak Menjadi Atomik**:
+      * Jika pesan pengguna menyebutkan lebih dari satu transaksi pengeluaran/pemasukan dalam satu kalimat (contoh: *"Beli bensin 30rb gopay dan makan siang 25rb cash"*):
+      * DILARANG KERAS menggabungkannya menjadi 1 transaksi jamak (misal nominal 55rb keterangan gabungan)!
+      * WAJIB dipecah menjadi beberapa objek transaksi terpisah di \`extracted_data.transactions\`:
+        - Objek 1: \`{ "amount": 30000, "type": "expense", "category": "Transportasi", "payment_method": "Gopay", "description": "Beli bensin Beat FI" }\`
+        - Objek 2: \`{ "amount": 25000, "type": "expense", "category": "Makanan & Minuman", "payment_method": "Cash", "description": "Makan siang" }\`
+    - **Pemisahan Agenda Jamak Menjadi Atomik**:
+      * Jika pesan pengguna memuat beberapa agenda (contoh: *"Besok jam 9 meeting lalu jam 1 ke kampus"*):
+      * WAJIB dipecah menjadi beberapa objek agenda terpisah di \`extracted_data.activities\` dengan waktu mulai/selesai yang presisi.
+    - **Prinsip Mutlak Data-Driven (Anti-Halu)**:
+      * Setiap angka, saldo dompet, jumlah pengeluaran, daftar agenda, dan status penyelesaian yang kamu sebutkan dalam narasi percakapan WAJIB 100% berasal dari data resmi Supabase pada konteks prompt. Dilarang mengarang atau menebak-nebak angka!
+
+58. **GENERASI CHART & VISUALISASI DI CHAT (RICH ANALYTICS CHARTS - MAKSIMAL 5 BUBBLE CHART)**:
+    - Ketika pengguna meminta grafik, visualisasi timeline, analisis keuangan visual, matriks, atau chart (contoh: *"tampilkan gantt chart"*, *"tampilkan grafik keuangan"*, *"tampilkan tren arus kas"*, *"tampilkan alokasi 50/30/20"*, *"tampilkan analisis lengkap"*, *"tampilkan semua chart"*):
+    - Sertakan array \`"charts"\` yang memuat jenis-jenis chart yang diminta (maksimal 5 bubble chart):
+      * \`"gantt"\`: Visual Gantt Roadmap Timeline kegiatan & target multi-hari.
+      * \`"line"\`: Grafik garis tren arus kas 7 hari (pemasukan vs pengeluaran).
+      * \`"donut"\`: Grafik donat alokasi pengeluaran (kebutuhan vs keinginan vs tabungan 50/30/20).
+      * \`"bar"\`: Grafik batang perbandingan pemasukan, pengeluaran & net surplus likuid.
+      * \`"eisenhower"\`: Matriks kuadran prioritas agenda (Q1 Mendesak s/d Q4 Eliminasi).
+    - Contoh: Jika pengguna meminta *"tampilkan analisis lengkap"*, kirimkan:
+      \`"charts": ["gantt", "line", "donut", "bar", "eisenhower"]\`
+    - Contoh: Jika pengguna meminta *"tampilkan gantt chart timeline"*, kirimkan:
+      \`"charts": ["gantt"]\`
+    - AI tetap memberikan teks pengantar eksekutif yang ramah dan profesional di dalam \`messages\`.
+
 
 
 0. **ATURAN MUTLAK LOGIKA BENTROK JADWAL & KEBERADAAN FISIK DI LUAR KOTA (CONTINUOUS PRESENCE COLLISION ENGINE)**:
@@ -887,6 +915,7 @@ FORMAT OUTPUT (WAJIB JSON VALID TANPA MARKDOWN BACKTICKS):
       "google_maps_url": "https://www.google.com/maps/search/?api=1&query=-7.8785,112.5186"
     }
   ],
+  "charts": ["gantt", "line", "donut", "bar", "eisenhower"],
   "sources": []
 }
 `;
@@ -955,12 +984,18 @@ export async function runChatOrchestration(
       return str;
     });
 
+    const rawCharts = parsed.charts || (parsed.chart ? [parsed.chart.type] : []);
+    const validCharts = Array.isArray(rawCharts)
+      ? rawCharts.map((c: any) => typeof c === 'string' ? c.toLowerCase() : c?.type?.toLowerCase()).filter(Boolean).slice(0, 5)
+      : [];
+
     return {
       messages: finalMessages,
       follow_up_question: parsed.follow_up_question || '',
       extracted_data: parsed.extracted_data || null,
       reasoning: parsed.reasoning || '',
       chart: parsed.chart || null,
+      charts: validCharts.length > 0 ? validCharts : null,
       location: (parsed.locations && Array.isArray(parsed.locations) && parsed.locations.length > 0) ? null : (parsed.location || null),
       locations: parsed.locations && Array.isArray(parsed.locations) ? parsed.locations : null,
       sources: parsed.sources || [],
