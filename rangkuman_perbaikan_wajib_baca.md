@@ -2595,3 +2595,67 @@ User menyampaikan:
      - Membuka modal PIP pada kartu agenda (*Trip ke Dieng*).
      - Menekan tombol **Buka Kembali**: Status langsung beralih ke `PRIORITAS` dengan notifikasi toast *"🔄 Agenda dibuka kembali."*.
      - Menekan tombol **Selesai**: Status langsung beralih seketika menjadi `SELESAI` dengan notifikasi toast *"✅ Agenda ditandai selesai!"* dan data tersinkronisasi 100% ke database Supabase.
+
+
+---
+
+## Bab 2.67: Extreme Codebase Audit & Eliminasi 7 Kategori Bug Kritis Frontend & Backend (Build v3.20.7 / Code 3207)
+
+### A. Latar Belakang & Tujuan Audit
+Menjawab instruksi audit mendalam (*extreme audit*) untuk menemukan dan membersihkan seluruh potensi bug laten, error runtime JavaScript, fungsi yang dipanggil tanpa deklarasi (*missing functions*), ID DOM yang hilang (*null reference*), serta ketidaksinkronan skema Supabase.
+
+---
+
+### B. Temuan Audit & Solusi Komprehensif (7 Kategori Bug Kritis)
+
+1. **Bug Kritis 1: Deklarasi Hilang loadDynamicState() di Inisialisasi Aplikasi (app.js)**
+   - **Gejala**: Pada initApp() baris 1647, kode memanggil `await loadDynamicState()`, namun fungsi ini tidak pernah didefinisikan di mana pun dalam codebase.
+   - **Dampak Fatal**: Melemparkan `Uncaught (in promise) ReferenceError: loadDynamicState is not defined` yang memutus bootstrap aplikasi dan menghentikan pemuatan data entitas dinamis saat start.
+   - **Solusi**: Mengimplementasikan fungsi `async function loadDynamicState()` lengkap yang melakukan fetch ke endpoint `/api/mobile/dynamic?userId=${USER_ID}`, memetakan entitas dompet, kendaraan, target tabungan, tagihan, obat/rutinitas, dan profil darurat ICE secara otomatis.
+
+2. **Bug Kritis 2: Deklarasi Hilang renderDynamicWalletFilters() (app.js)**
+   - **Gejala**: Dipanggil di 7 lokasi terpisah pada siklus transaksi (saat transaksi ditambah, diubah, dihapus, atau filter dompet dipilih).
+   - **Dampak Fatal**: Melemparkan `ReferenceError: renderDynamicWalletFilters is not defined`.
+   - **Solusi**: Menambahkan fungsi `renderDynamicWalletFilters()` dengan integrasi pill filter interaktif dan penandaan status aktif dompet.
+
+3. **Bug Kritis 3: ID Elemen DOM Hilang pada Modal Dompet (index.html)**
+   - **Gejala**: Pada `#modal-wallet`, atribut `id="modal-wallet-header-title"`, `id="modal-w-idx"`, dan `id="modal-w-account-num"` tidak ada di DOM.
+   - **Dampak Fatal**: Setiap kali pengguna menekan tombol *"Tambah Dompet"* atau *"Edit Dompet"* di Tab Profil, fungsi `openAddWalletModal()` melemparkan `TypeError: Cannot set properties of null (setting 'textContent')`, menyebabkan modal gagal total untuk dibuka.
+   - **Solusi**: Menambahkan atribut ID yang hilang pada elemen judul `<h3>`, input hidden `#modal-w-idx`, dan input nomor rekening/HP `#modal-w-account-num`.
+
+4. **Bug Kritis 4: Fungsi Handler Onclick Hilang (app.js)**
+   - **Gejala**: Tombol di `index.html` memanggil `saveEmergencyProfileFromModal()` dan `closeGanttRoadmapModal()`, namun fungsinya tidak ada di JavaScript.
+   - **Dampak Fatal**: Error runtime saat pengguna menyimpan profil ICE darurat atau menutup modal Gantt.
+   - **Solusi**: Mengimplementasikan fungsi `saveEmergencyProfileFromModal()` dengan validasi field medis/kontak darurat serta `openGanttRoadmapModal()` / `closeGanttRoadmapModal()`.
+
+5. **Bug Kritis 5: Pemanggilan Fungsi Render Zombie pada saveDynamicStateToServer (app.js)**
+   - **Gejala**: Fungsi pembaruan state memanggil nama fungsi usang: `renderDynamicHeaderBalances()`, `renderDynamicGoals()`, `renderDynamicBills()`, `renderDynamicPills()`, dan `renderProfileWalletsList()`.
+   - **Dampak Fatal**: Menghentikan eksekusi pasca penyimpanan state dinamis ke server.
+   - **Solusi**: Menghubungkannya dengan fungsi render aktual (`renderDhWallets`, `renderDhGoals`, `renderDhBills`, `renderDhPills`, `renderDhVehicles`) dan menambahkan safety alias wrapper untuk kompatibilitas mundur.
+
+6. **Bug Kritis 6: Skema Kolom Supabase Ilegal updated_at pada Mutasi Admin (app/api/admin/mutate/route.ts)**
+   - **Gejala**: Mutasi aktivitas pada rute admin mengirim payload `updated_at: new Date().toISOString()`, padahal tabel `activities` di Supabase tidak memiliki kolom tersebut.
+   - **Dampak Fatal**: Mengembalikan HTTP 500 Database Error saat aktivitas diedit melalui portal admin.
+   - **Solusi**: Menghapus field `updated_at` dari query mutasi aktivitas dan menambahkan normalisasi status cerdas (`done`/`selesai` -> `completed`). Perubahan telah di-commit dan di-push ke GitHub main (`8941815`).
+
+7. **Bug Kritis 7: TypeScript Syntax Error pada Template String Prompt (lib/gemini/prompts/chat.ts)**
+   - **Gejala**: Terdapat karakter backtick yang tidak ter-escape pada prompt markdown AI.
+   - **Dampak Fatal**: Kegagalan kompilasi `tsc --noEmit` pada Next.js backend.
+   - **Solusi**: Memperbaiki escape string dan memvalidasi `npx tsc --noEmit` hingga lulus bersih dengan 0 error.
+
+---
+
+### C. Kompilasi APK & Pengujian Nyata pada Samsung Galaxy Tab A8 (R9RT7066XKL)
+
+1. **Gradle Build & Update Versi**:
+   - Versi aplikasi dinaikkan menjadi **v3.20.7 (Build Code 3207)** pada `app.js`, `index.html`, dan `build.gradle.kts`.
+   - APK berhasil dikompilasi (`BUILD SUCCESSFUL in 17s`).
+   - APK disalin ke `D:\MANAS PROJEK\Raphael_v3.20.7.apk` dan `Raphael_Latest.apk`, lalu dipasang ke tablet.
+
+2. **Hasil Pengujian Fisik & Validasi Logcat**:
+   - **Pemeriksaan Konsol Logcat Chromium**:
+     - Dilakukan inspeksi stream logcat `chromium: [INFO:CONSOLE]` pada sesi proses baru (`PID 32748`).
+     - **Hasil: 0 Error**. Seluruh error sebelumnya (*loadDynamicState is not defined*, *async is not defined*, *Cannot set properties of null*) telah bersih 100%.
+   - **Pengujian Tab Profil & Modal Entitas Dinamis (tablet_dynamic_hub_wallets.png & tablet_modal_wallet_real.png)**:
+     - Membuka Tab Profil -> Kartu **Dompet & Kas** -> Modal **Dynamic Entities Hub** terbuka mulus dengan daftar seluruh akun kas (*Cash Kertas*, *Cash Koin*, *Gopay Driver*, *SeaBank*, *Bank Jago*).
+     - Menekan tombol **+ Tambah**: Modal anak **Tambah Dompet Baru** terbuka sempurna dengan input nama dompet, nomor rekening/HP opsional, saldo awal, dan kategori dropdown tanpa ada crash atau exception null.
