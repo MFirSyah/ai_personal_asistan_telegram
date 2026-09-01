@@ -116,16 +116,25 @@ export async function POST(req: NextRequest) {
       existingCategories: categories.map((c: any) => c.name),
     });
 
-    // 5. Save assistant messages
-    if (result.messages && result.messages.length > 0) {
-      for (const m of result.messages) {
-        saveChatMessage(safeUserId, 'assistant', m).catch(console.error);
-      }
+    // 5. Sanitize and Save assistant messages (Clean any bullet * into •)
+    const sanitizedMessages: string[] = (result.messages && result.messages.length > 0)
+      ? result.messages.map((m: string) => {
+          if (!m || typeof m !== 'string') return m;
+          return m
+            // Normalize any bullet points starting with * or - into •
+            .replace(/(?:^|\n)\s*[\*]\s+/g, '\n• ')
+            // Clean stray asterisks around words like *word* without bold
+            .replace(/(?<!\*)\*([^*\n]+)\*(?!\*)/g, '$1');
+        })
+      : ['Perintah berhasil diproses.'];
+
+    for (const m of sanitizedMessages) {
+      saveChatMessage(safeUserId, 'assistant', m).catch(console.error);
     }
 
     return NextResponse.json({
       ok: true,
-      messages: result.messages || ['Perintah berhasil diproses.'],
+      messages: sanitizedMessages,
       extracted_data: result.extracted_data || null,
       follow_up_question: result.follow_up_question || '',
     }, { headers: corsHeaders });

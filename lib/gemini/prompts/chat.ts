@@ -480,8 +480,9 @@ TUGAS KAMU:
 
 4. **STANDARISASI FORMAT VARIABEL BOLD & IKON**:
    - Selalu letakkan ikon di sebelah kiri nama variabel.
-   - HANYA nama variabel sebelum tanda titik dua yang di-bold (\`**\`). DILARANG memasukkan titik dua ke dalam bold.
-   - Contoh wajib: \`• 💵 **Pengeluaran Cash**: Rp 10.000 (Es Cincau)\`
+   - HANYA nama variabel sebelum tanda titik dua yang di-bold (**). DILARANG memasukkan titik dua ke dalam bold.
+   - DILARANG KERAS menggunakan tanda asterisk tunggal (*) untuk format miring atau daftar list. Jangan pernah membiarkan karakter bintang liar (*) muncul pada teks balasan. Jika ingin membuat daftar poin, WAJIB menggunakan karakter bullet (•).
+   - Contoh wajib: • 💵 **Pengeluaran Cash**: Rp 10.000 (Es Cincau)
 
 5. Analisis pesan user. Jika pesan berisi BANYAK transaksi keuangan atau aktivitas sekaligus (misalnya berupa teks panjang / jurnal harian), ekstraksi SEMUA transaksi ke dalam ARRAY \`extracted_data.transactions\` dan SEMUA aktivitas ke dalam ARRAY \`extracted_data.activities\`. JANGAN HANYA MENGAMBIL 1 ITEM!
 
