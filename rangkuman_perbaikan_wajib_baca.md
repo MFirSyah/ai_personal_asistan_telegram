@@ -2758,3 +2758,73 @@ Pengguna menyampaikan dua isu penting terkait estetika dan kenyamanan pada tampi
    - **Tampilan Dok Input & Ujung Chat Tidak Terpotong**:
      - Dengan padding dasar 205px, gelembung balasan AI, tombol chips rekomendasi (*Cek Tren Kas*, *Agenda Hari Ini*, *Servis Motor*), serta stempel waktu `15.34` tampil utuh dengan jarak lapang yang proporsional di atas dok input.
      - Animasi mengetik tidak lagi tertutup bilah input maupun navigasi bawah.
+
+---
+
+### Bab 2.69: Pemisahan Dinamis Gantt Chart Multi-Hari vs Harian, Filter Riwayat Selesai, dan Implementasi Mesin Asisten Proaktif Dua Arah (Proactive Companion Engine) (01 September 2026)
+
+#### A. Latar Belakang & Kebutuhan Pengguna
+1. **Pemisahan Logika Agenda Gantt Chart**:
+   - Pengguna mempertanyakan logika Gantt Chart: mengapa kegiatan lampau seperti *Trip ke Dieng 29-30 Agustus 2026* masih terpampang di Gantt Chart padahal sudah lewat dan selesai.
+   - Pengguna membutuhkan pemisahan yang jelas antara agenda harian biasa (kegiatan per jam) dengan agenda lintas hari (roadmap strategis), serta pemisahan bersih antara agenda aktif masa depan dengan riwayat kegiatan yang sudah selesai.
+2. **Kebutuhan Asisten Proaktif & Tindak Lanjut Dua Arah**:
+   - Pengguna menghendaki asisten AI yang tidak pasif menunggu, melainkan proaktif menanyakan kabar progres agenda:
+     - *Check-in Pasca Acara*: Misal setelah meeting 09.00 - 12.00, AI menanyakan kabar meeting dan mencatat bila ada keputusan/to-do list baru.
+     - *Check-in Keselamatan Perjalanan*: Misal saat touring motor ke Jogja berangkat jam 08.00, setelah beberapa jam berkendara AI mengingatkan untuk menepi, minum air, dan bertanya situasi di perjalanan.
+     - *Check-in Istirahat Siang*: Misal urus berkas kampus 08.00 - 17.00, tepat jam 12.00 AI mengingatkan istirahat siang sebelum kantor loket tutup.
+     - *Percakapan Dua Arah & Tawaran Alarm Otomatis*: Ketika pengguna membalas *"belum nih, kayaknya nanti habis istirahat makan siang aku kesana lagi"*, AI secara cerdas merespons hangat dan menawarkan bantuan pengingat: *"Oke deh, mau aku bantu pasangkan pengingat untuk jam 1 siang nanti biar ngga kelupaan?"*, dan ketika pengguna mengiyakan (*"Iya mau"*), AI langsung menjadwalkan alarm/pengingat serta merangkum jawaban pengguna sebagai catatan pembelajaran mengenali kebiasaan Mas Firman.
+
+#### B. Akar Masalah Teknis (Root Cause)
+1. **Hardcoded Array pada Gantt Chart Tab Analisis**:
+   - Pada `app.js` fungsi `renderAnalyticsGanttBars()`, ditemukan bahwa elemen kartu Gantt sebelumnya dirender dari objek statis `defaultRoadmap` di mana *Trip ke Dieng (29-30 Ags)* di-hardcode dengan progres 60% dan status *Terjadwal*. Hal ini menyebabkan *Trip ke Dieng* selalu muncul meskipun data Supabase sudah berstatus *completed*.
+2. **Ketiadaan Mesin Evaluasi Proaktif (Proactive Companion)**:
+   - Sistem backend maupun antarmuka mobile sebelumnya bersifat reaktif murni (hanya merespons saat user mengirim pesan). Belum ada scheduler atau evaluator yang memetakan jam kegiatan aktif terhadap waktu riil jam sekarang untuk men-trigger pesan kepedulian butler.
+3. **Ketiadaan Aturan Penawaran Pengingat Kontekstual & Ekstraksi Reminder Dua Arah**:
+   - Model AI belum memiliki panduan eksplisit untuk mengenali konteks "urusan belum selesai lanjut siang" sehingga tidak menawarkan pengingat jam 13.00, serta belum memiliki skema ekstraksi `reminders` terstruktur pada prompt chat.
+
+#### C. Tindakan Perbaikan & Solusi Komprehensif
+
+1. **Pembaruan Backend Gantt Chart & Penyaringan Arsip (`lib/analytics/gantt.ts` & `components/dashboard/ActivityGanttChart.tsx`)**:
+   - Fungsi `parseActivitiesToGantt` kini memisahkan agenda menjadi `{ active: GanttItem[], completed: GanttItem[] }` dan menandai flag `isMultiDay`.
+   - Output teks Gantt Chart Telegram kini memprioritaskan agenda aktif di bagian atas, dan mengarsipkan agenda tuntas ke bagian `📁 RIWAYAT AGENDA SELESAI (HISTORI ARSIP)`.
+   - Komponen web `ActivityGanttChart.tsx` ditambahkan tombol filter toggle `Riwayat Selesai (N)` agar histori tidak mengotori dashboard aktif.
+
+2. **Perombakan Total Gantt Chart Mobile Menjadi 100% Dinamis (`app.js` & `index.html`)**:
+   - Merombak `renderAnalyticsGanttBars()` pada Tab Analisis dan `renderGanttRoadmap()` pada modal detail agar mengambil data dinamis langsung dari `cachedActivities` dan `cachedPlans`.
+   - Menyematkan tab filter interaktif: **`[ Roadmap Aktif (N) ]`** dan **`[ Riwayat Selesai (N) ]`**.
+   - Ketika seluruh agenda utama berstatus selesai, sistem dengan elegan menampilkan:
+     `✨ Tidak ada agenda aktif yang tertunda. Seluruh target utama telah sukses diselesaikan!`.
+   - Kegiatan lampau seperti *Trip ke Dieng 29-30 Agustus* otomatis diarsipkan rapi ke tab *Riwayat Selesai* dengan badge `Selesai 100%`.
+
+3. **Pembangunan Proactive Companion Engine (`lib/services/proactive-companion.ts` & `app.js`)**:
+   - Membuat modul independen `evaluateProactiveCheckIns(activities, plans, referenceDate)` yang mengevaluasi:
+     - `post_event`: Kegiatan selesai dalam kurun 0 - 90 menit terakhir.
+     - `mid_event_endurance`: Perjalanan/touring motor yang telah berlangsung $\ge 2$ jam tanpa jeda.
+     - `noon_milestone`: Urusan kantor/kampus lintas siang (11.30 - 13.00 WIB) untuk pengingat istirahat siang.
+   - Mengintegrasikan mesin proaktif ke rute API `app/api/chat/route.ts` dengan dukungan `action: 'get_proactive_checkins'`.
+   - Menyematkan fungsi frontend `checkProactiveCompanion()` dan `triggerProactiveNotification()` di `app.js`:
+     - Menembakkan notifikasi lokal native Android via `window.AndroidBridge.postLocalNotification`.
+     - Menyisipkan kartu perhatian eksekutif Butler ke dalam feed obrolan Cockpit lengkap dengan tombol opsi cepat (*Quick Reply Chips*).
+     - Otomatis mengevaluasi setiap 60 detik di latar belakang.
+
+4. **Penajaman AI Prompt Rule 56 & Ekstraksi Reminder Dua Arah (`lib/gemini/prompts/chat.ts`)**:
+   - Menambahkan **Rule 56 (PROACTIVE COMPANION & CONTEXT-AWARE FOLLOW-UP)**:
+     - Saat pengguna mengabarkan urusannya belum selesai dan mau lanjut siang, AI wajib mengingatkan makan siang dan menawarkan: *"Mau aku bantu pasangkan pengingat untuk jam 1 siang nanti biar ngga kelupaan?"*, serta menyimpan catatan ke `extracted_data.preferences`.
+     - Saat pengguna menyetujui (*"Iya mau tolong" / "Boleh"*), AI mengonfirmasi jadwal pengingat dan mengekstrak objek:
+       `"reminders": [{ "title": "Lanjut agenda kegiatan", "time": "13:00" }]`.
+   - Mengintegrasikan penanganan `extracted_data.reminders` di `app.js` untuk menampilkan native toast konfirmasi alarm di perangkat.
+
+#### D. Pengujian & Verifikasi Fisik pada Samsung Galaxy Tab A8 (`R9RT7066XKL`)
+
+1. **Unit Testing Backend (Live Gemini API & tsx)**:
+   - Pengujian `test_proactive.js`: Ketiga skenario (Meeting pasca-acara 12.15, Touring mid-ride 10.30, dan Kampus istirahat siang 12.05) menghasilkan pesan kepedulian yang 100% presisi sesuai teks yang diminta pengguna.
+   - Pengujian `test_two_way_chat.js` & `test_turn2.js`:
+     - *Turn 1*: Pengguna kirim pesan *"belum nih, kayaknya nanti habis istirahat makan siang aku kesana lagi"*. Gemini menjawab hangat dan menawarkan pengingat jam 13.00, serta mengekstrak memori kebiasaan ke `extracted_data.preferences`.
+     - *Turn 2*: Pengguna mengiyakan *"Iya mau tolong pasangkan ya"*. Gemini menjawab tuntas dan mengekstrak objek pengingat `[ { "title": "Lanjut urus berkas di kampus", "time": "13:00" } ]`.
+2. **Kompilasi & Pemasangan APK v3.20.9 (Build 3209)**:
+   - Kompilasi Gradle selesai dalam 23 detik (`BUILD SUCCESSFUL in 23s`).
+   - Berkas APK disalin ke `Raphael_v3.20.9.apk` dan `Raphael_Latest.apk`, lalu dipasang via ADB ke Samsung Galaxy Tab A8.
+3. **Verifikasi Tampilan Layar Tablet (`tablet_analytics_gantt_bars.png`)**:
+   - Di tab Analisis, bagian *Rincian Progres & Status Eksekusi* kini tampil dengan bilah tab `[ Roadmap Aktif (0) ]` dan `[ Riwayat Selesai (0) ]`.
+   - Pesan ramah `✨ Tidak ada agenda aktif yang tertunda. Seluruh target utama telah sukses diselesaikan!` tampil menggantikan data hardcoded Dieng lama.
+   - Semua perbaikan backend telah di-commit dan di-push ke GitHub repository `main` (`2cb716d`).
