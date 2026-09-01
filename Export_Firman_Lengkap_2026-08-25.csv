@@ -1,0 +1,84 @@
+﻿# LAPORAN DATA EKSPOR PERSONAL
+# Pemilik Akun   : Firman (Telegram ID: 1084842050)
+# User UUID      : fc2758d3-78bb-4e22-b9f0-b3b16568b671
+# Tanggal Ekspor : 25/8/2026, 15.51.33 WIB
+# -------------------------------------------------------------
+
+--- SECTION: CATATAN TRANSAKSI KEUANGAN ---
+ID Transaksi,Tanggal,Tipe,Nominal (Rp),Merchant / Tempat,Metode Bayar,Deskripsi,Tag,Sumber
+93605817-b2b4-41d9-a0fd-68c62b3dbf95,"25/8/2026, 08.36.17",Pengeluaran,20000,"Warung Mie Ayam","Cash Kertas","Beli mie ayam","kuliner, harian",chat_manual
+3ead0254-8961-4ab1-bdc2-592e7832191c,"24/8/2026, 16.25.03",Pengeluaran,50000,"Dieng Trip","Gopay","Cicilan tiket ke Dieng","liburan, dieng, cicilan",chat_manual
+2d309e89-b28f-4cb6-aa73-d2d2c8636396,"24/8/2026, 16.13.21",Pengeluaran,12000,"Penjual Es Degan","Cash Kertas","Beli es degan","harian, konsumsi",chat_manual
+3b72843a-c61c-46fa-b68e-7fdb139e0a98,"24/8/2026, 16.13.21",Pengeluaran,15000,"Penjual Pentol Bakar","Cash Kertas","Beli pentol bakar","harian, konsumsi",chat_manual
+09f8f7c5-5a66-4a60-99e5-a4e7d87ed22c,"24/8/2026, 10.23.42",Pengeluaran,4000,"Tukang Angin Ban","Cash Koin","Isi angin ban","harian, operasional",chat_manual
+8a46e800-af7b-4799-b5ac-73c726eff348,"24/8/2026, 10.23.42",Pengeluaran,5000,"Warung Es Teh","Cash Kertas","Beli es teh","harian, konsumsi",chat_manual
+a47294c3-a57f-42a5-8d85-801382c41ad0,"24/8/2026, 10.22.50",Pengeluaran,156000,"Gopay","Gopay","Talangan dari Gojek","talangan",chat_manual
+1684c3c4-1858-464d-acc7-027bfb69e437,"24/8/2026, 10.22.02",Pemasukan,70000,"Gojek","Cash Kertas","Pemasukan dari narik gojek cash","narik, gojek, cash",chat_manual
+09eaf104-54d1-4f86-b9db-8b7031504271,"23/8/2026, 10.06.11",Pengeluaran,7000,"Indomaret","Cash Kertas","Beli kopi di Indomaret","harian, kopi",chat_manual
+ed04a859-4769-42c2-a979-4e20eca7898e,"22/8/2026, 12.34.00",Pengeluaran,200000,"Dieng Trip","Gopay","Menyicil tiket ke Dieng","liburan, dieng, cicilan",chat_manual
+c72b1807-e57c-41a4-b7d6-4f4d9543c644,"22/8/2026, 10.11.05",Pengeluaran,5000,"Kotak Amal","Cash","Infaq cash","infaq, cash",chat_manual
+a0e7258b-0ec7-40ae-ae99-226b1a2f7657,"22/8/2026, 10.10.00",Pengeluaran,5000,"Warung","Cash","Beli es jeruk cash","harian",chat_manual
+4d6e4211-d1bc-4215-965b-da7bb40b203e,"22/8/2026, 10.09.00",Pemasukan,414559,"Gopay","Gopay","Penerimaan transfer pindah saldo dari Bank Jago","transfer",chat_manual
+a28508b6-3627-4aaa-b961-03b10c762d9b,"22/8/2026, 10.09.00",Pengeluaran,414559,"Gopay","Bank Jago","Pindah seluruh saldo dari Bank Jago ke Gopay","transfer",chat_manual
+4b446cc3-5591-4178-9cd1-eae115c27bdf,"22/8/2026, 10.07.00",Pemasukan,47700,"Gopay","Gopay","Penghasilan narik gojek hari ini","gojek, pendapatan",chat_manual
+f9855792-245d-4a07-8319-30b442e49fa2,"22/8/2026, 10.06.00",Pemasukan,516500,"Bank Jago","Bank Jago","Penerimaan pindah saldo dari SeaBank","transfer, konsolidasi",chat_manual
+9d15a0f2-d8ac-43f6-90ab-918110248918,"22/8/2026, 10.06.00",Pengeluaran,516500,"SeaBank","SeaBank","Pindah seluruh saldo dari SeaBank ke Bank Jago","transfer, konsolidasi",chat_manual
+1e43bce3-1837-4a4b-a797-15bad9c16112,"22/8/2026, 10.06.00",Pengeluaran,52000,"Gopay","Bank Jago","Transfer dari Bank Jago ke Gopay sekaligus melunasi talangan Gopay","talangan, gopay",chat_manual
+fc2c9777-6a7e-4033-a616-ab35c98105fd,"21/8/2026, 13.38.00",Pengeluaran,6000,"Teh Rico","Cash Kertas","Beli teh rico varian coklat oreo","jajan",chat_manual
+26086348-060e-462d-8796-b25afded0122,"21/8/2026, 13.37.00",Pengeluaran,550000,"Bank Jago","Bank Jago","Transfer pindah saldo dari Bank Jago ke SeaBank","transfer",chat_manual
+ece3b7d0-bcf1-40c1-ab48-267dbe8e4fb4,"21/8/2026, 13.37.00",Pemasukan,550000,"SeaBank","SeaBank","Penerimaan transfer dari Bank Jago","transfer",chat_manual
+8e39e5e2-31af-4a8d-9501-72ac14c309c5,"21/8/2026, 13.36.00",Pemasukan,50000,"Cash Kertas","Cash","Penerimaan tarik tunai cash dari Bank Jago","tarik-tunai",chat_manual
+69b605d2-9821-4431-a03a-6e680f7c1f41,"21/8/2026, 13.36.00",Pengeluaran,50000,"Bank Jago","Bank Jago","Tarik tunai dari Bank Jago untuk dijadikan cash kertas","tarik-tunai",chat_manual
+d4370edf-58c5-42a8-ba47-3d3c8330de20,"21/8/2026, 13.35.00",Pemasukan,600000,"Bank Jago","Bank Jago","Pinjaman bank baru dengan bunga flat 3% per bulan","pinjaman, utang",chat_manual
+93b26022-710a-4533-bb3e-7d8bfc983036,"21/8/2026, 13.33.00",Pengeluaran,49000,"SPBU / Bensin","Cash Kertas","Beli bensin motor PCX","bensin, pcx, transportasi",chat_manual
+c31ebe46-1bed-403e-b74c-f70918f06efa,"21/8/2026, 06.38.00",Pemasukan,1500,"Cash Koin","Cash Koin","Pemasukan uang cash koin","cash, koin",chat_manual
+2f758c1b-bdf6-4e10-b8d6-1f95a7e237e1,"21/8/2026, 06.38.00",Pengeluaran,35500,"SeaBank","SeaBank","Beli kuota untuk ibu","kuota, ibu",chat_manual
+32e42df4-afa5-4add-8daa-a28195055420,"20/8/2026, 11.00.00",Pengeluaran,67941,"Bank Jago","Bank Jago","Bayar Tagihan Bulanan menggunakan Bank Jago","tagihan",chat_manual
+96251f22-9af9-46f2-8393-e0cb02b44ccc,"20/8/2026, 06.28.00",Pengeluaran,10000,"Pop Ice Coklat","Cash Kertas","Beli pop ice coklat secara cash","jajan",chat_manual
+90cba964-ee64-44f6-bb85-df3e7767a9ca,"20/8/2026, 06.28.00",Pengeluaran,70000,"Bank Jago","Cash Kertas","Top up pindah uang cash ke Bank Jago untuk cicilan","transfer, cicilan",chat_manual
+98e9ca38-8fa3-46dd-a8b2-4be4ae8694da,"19/8/2026, 13.23.00",Pemasukan,134000,"Cash Kertas","Cash Kertas","Penerimaan cash kertas saat ini","cash, koreksi",chat_manual
+74a67cb8-2ff6-4c5c-bae2-68a777e06a23,"19/8/2026, 13.23.00",Pemasukan,2000,"Cash Kertas","Cash","Pemasukan saldo cash kertas","cash_kertas, pemasukan",chat_manual
+4c343a64-1771-4345-ae9d-03a17cbb7113,"18/8/2026, 13.23.00",Pengeluaran,52000,"Gopay","Gopay","Talangan order kurang dibayar via Gopay","talangan, gopay",chat_manual
+4378cea3-e3a7-40b9-b37b-f29134eb3c8f,"17/8/2026, 13.54.31",Pemasukan,5000,"Cash","Cash","Pembatalan bayar parkir tunai koin","koreksi",chat_manual
+9adaedeb-2bec-45a0-ab3f-7f812e5ddbd6,"17/8/2026, 13.53.00",Pengeluaran,5000,"Parkir","Cash","Bayar parkir","parkir, cash_koin",chat_manual
+fbe13264-fc03-4b54-ae06-5f6a7e6c3908,"17/8/2026, 06.55.00",Pengeluaran,5000,"Parkir","Cash Kertas","Bayar parkir pakai cash kertas","parkir, koreksi",chat_manual
+254045f9-8190-4b64-9bef-fe5793384941,"15/8/2026, 16.22.39",Pengeluaran,6000,"Kodam","SeaBank","Beli pentol","jajan",chat_manual
+1b357b57-f0ac-4a08-a1af-861fd2825d23,"15/8/2026, 16.22.03",Pengeluaran,30000,"Pasar Kodam Brawijaya","Cash","Beli bensin","bensin",chat_manual
+e784d023-dc54-4df1-abd8-30a281a0291c,"15/8/2026, 16.22.01",Pengeluaran,15000,"Pasar Kodam Brawijaya","Cash","Beli case hp","aksesoris",chat_manual
+caa46ca5-1d75-43a8-93e4-7783c22a95f7,"15/8/2026, 16.22.00",Pengeluaran,5000,"Pasar Kodam Brawijaya","Cash","Parkir","parkir",chat_manual
+4b88c293-d01a-4175-8ff0-8c5623acf6b0,"15/8/2026, 16.20.53",Pengeluaran,20000,"Alun-alun Batu","Cash Kertas","Jajan di Alun-alun Batu","jajan, jalan-jalan",chat_manual
+6de996d0-2361-48e3-a164-34af254cae36,"15/8/2026, 16.20.45",Pengeluaran,4000,"Parkir","Cash","Parkir","parkir",chat_manual
+9ebc40f0-c436-4c9d-9f66-55ca218ea6c4,"15/8/2026, 16.20.39",Pengeluaran,20000,"Pacet","Cash","Makan soto dan kopi","makan, soto, kopi",chat_manual
+afb88a57-1233-4409-915a-e669b35cc9bb,"15/8/2026, 16.20.17",Pengeluaran,50000,"Mojosari","Cash","Beli bensin motor pcx","bensin, motor",chat_manual
+84279346-39ce-4e65-80d0-61330bc26024,"15/8/2026, 16.20.02",Pemasukan,100000,"Cash","Cash","Pindah uang SeaBank ke cash","transfer, cash",chat_manual
+1dfc646e-47c4-4540-97da-fbfd04c753b8,"15/8/2026, 16.20.00",Pengeluaran,100000,"SeaBank","SeaBank","Pindah uang SeaBank ke cash","transfer, cash",chat_manual
+b94d8ce8-be34-4d7d-9f4d-5e251bd3ca04,"14/8/2026, 16.56.49",Pengeluaran,21000,"Gopay","Gopay","Beli kuota","kuota, internet",chat_manual
+554f251d-41cb-43e9-8753-c0213cbb3093,"14/8/2026, 11.01.39",Pemasukan,10000,"Gopay","Gopay","Pindah uang cash ke Gopay","transfer",chat_manual
+901e019b-1b1f-43b6-b281-99214fc08209,"14/8/2026, 11.01.38",Pengeluaran,10000,"Cash","Cash","Pindah uang cash ke Gopay","transfer",chat_manual
+e24adbe2-842d-493b-b5d8-72bd785c7ccc,"13/8/2026, 11.21.48",Pemasukan,26000,"Cash","Cash","Penyesuaian selisih cash kertas","penyesuaian",chat_manual
+c8a32701-68d8-4f65-bd97-7c58d9ac795b,"13/8/2026, 11.12.28",Pengeluaran,4000,"Cash","-","Bayar nambang kapal PP","",chat_manual
+58be817a-11dc-4d28-aeba-b84320c23e3f,"13/8/2026, 11.01.26",Pemasukan,6000,"Cash Koin","Cash","Cash Koin","koin",chat_manual
+1b987559-c5a2-4100-b168-f3046e34df75,"13/8/2026, 11.01.25",Pemasukan,24000,"Cash Kertas","Cash","Cash Kertas","kertas",chat_manual
+f8a85a40-e46d-4206-b028-99dcfb7a8909,"13/8/2026, 10.45.36",Pemasukan,21000,"Gopay","Gopay","Pemasukan dari Gopay","gopay",chat_manual
+5ce9b78a-b5b3-46c7-b725-7e3a75e17faa,"13/8/2026, 04.07.04",Pengeluaran,4000,"Cash","Cash","Beli es tebu","jajan",chat_manual
+ccfe48e1-ca4a-42ef-ad32-7f5fb1bf7693,"12/8/2026, 15.27.19",Pengeluaran,67941,"Tagihan Bulanan","Cash","Tagihan rutin bulanan (Cicilan 1 dari 12)","tagihan, rutin",chat_manual
+de4e8ed7-b8fe-4412-a95b-64d5445ea5f3,"12/8/2026, 13.37.17",Pengeluaran,10000,"Cash","Cash","Beli es cincau","jajan",chat_manual
+564355bb-b05a-4409-8c7e-ceac77afe562,"12/8/2026, 13.37.11",Pengeluaran,25000,"Cash","Cash","Pembelian kabel HDMI","elektronik",chat_manual
+1310f020-782c-430b-b3e4-3ce6b920e356,"12/8/2026, 12.29.42",Pemasukan,100000,"Cash","Cash","Ambil uang dari SeaBank untuk dijadikan cash","tarik_tunai",chat_manual
+fe82dc31-6ab8-4b2c-bcb5-91ca9304a807,"12/8/2026, 12.29.40",Pengeluaran,100000,"SeaBank","SeaBank","Ambil uang dari SeaBank untuk dijadikan cash","tarik_tunai",chat_manual
+7cbecbe5-f652-4a51-927e-2cd6fe217bdb,"12/8/2026, 12.28.46",Pengeluaran,20000,"Cash","Cash","Beli adaptor HDMI splitter","peralatan",chat_manual
+c818dc40-c2d3-40ee-bdce-5d4e1255093f,"12/8/2026, 09.15.56",Pengeluaran,5500,"Teh Rico Ketawang","SeaBank","Beli teh Rico di Ketawang","jajan, minuman",chat_manual
+7a03ea68-0e6d-4fa1-a9ad-75780df150d8,"12/8/2026, 05.44.25",Pemasukan,208000,"SeaBank","SeaBank","Saldo SeaBank","saldo",chat_manual
+
+--- SECTION: CATATAN AGENDA & AKTIVITAS ---
+ID Aktivitas,Judul Aktivitas,Deskripsi,Status,Prioritas,Tag,Tanggal Execution
+3459ce18-26f6-48da-bbbe-59b5be665aca,"Trip ke Dieng","Rencana perjalanan ke Dieng tanggal 29-30 Agustus dengan total anggaran Rp 1.040.000",scheduled,urgent,"dieng, liburan","29/8/2026, 00.00.00"
+dc95c22b-1799-4539-8090-f1a06c1b098e,"Kenaikan tiket plan ke Dieng","Kenaikan harga tiket untuk plan ke Dieng sebesar 50.000",scheduled,urgent,"dieng, liburan","22/8/2026, 10.12.00"
+1766618a-5302-4c13-9733-b9ac3f145b93,"Narik gojek","Narik gojek dari jam 7 pagi sampai jam 5 sore",scheduled,urgent,"gojek, cuan","20/8/2026, 00.00.00"
+486088b0-209f-472e-b19f-21ed17f97a9b,"Cari cuan gojek","Cari cuan gojek pagi hari",completed,urgent,"gojek, cuan","12/8/2026, 17.01.58"
+52bcec42-1a64-4584-8790-347acb452126,"Bayar Tagihan Bulanan (Rp 67.941)","Tagihan rutin bulanan tiap tanggal 20",scheduled,urgent,"tagihan, rutin","12/8/2026, 15.27.20"
+0eecbb46-b399-413e-800d-642241011714,"Cek status pendaftaran yudisium dan ikuti morning briefing","",completed,urgent,"","12/8/2026, 05.30.33"
+e1d583b8-8086-40a4-ae9f-c7ed9ffacbbf,"Wisuda di kampus Telkom University Surabaya","",completed,urgent,"","12/8/2026, 05.30.32"
+8fc5f744-4478-4244-9a72-2c3f98a4e9f9,"Mengambil Surat Bebas Tunggakan dan Seminar Hasil 3 Teman","Surat bebas tunggakan dan seminar teman",completed,urgent,"akademik","12/8/2026, 05.29.40"
+ff241c44-cb03-4153-9ac8-0643f13da425,"Seminar Hasil","Seminar Hasil (Selesai)",completed,urgent,"seminar","12/8/2026, 05.29.40"
+c42f18d8-b280-4d6f-9bd2-61913ab24684,"Bayar hutang ke Rifky","Bayar hutang",scheduled,urgent,"hutang","12/8/2026, 05.29.38"

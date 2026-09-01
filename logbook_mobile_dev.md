@@ -2873,3 +2873,36 @@ Kompilasi APK `Raphael_v3.20.16.apk` (Build 3216) berhasil dilakukan melalui Gra
    - Grafik Tren Keuangan tampil **penuh dari ujung ke ujung (*full-width edge-to-edge*)**, kurva sinusoidal Chart.js membentang luas tanpa terpotong, menampilkan titik data dinamis 26 Agu - 1 Sep 2026 yang estetis dan proporsional.
 5. **Verifikasi Eliminasi Duplikasi Pesan Cepat (`tablet_test1_pip_tx.png`)**:
    - Layar chat diperiksa secara seksama: bubble-bubble balasan AI sebelumnya tampil bersih tanpa ada deretan tombol pesan cepat yang menumpuk. Hanya bubble balasan asisten paling akhir yang memiliki bilah tombol pintasan cepat.
+
+## Bab 2.73: Implementasi Penuh Spesifikasi Pie Chart (Maks 6 + Panah & Nominal/Persentase), Bar Chart (Top 10 + Nominal/Persentase), dan Line Chart (Kustom Sehari, Seminggu, Sebulan, Setahun)
+
+- **Tanggal & Waktu**: 1 September 2026
+- **Status**: SELESAI & TERVERIFIKASI FISIK PADA SAMSUNG GALAXY TAB A8 (BUILD v3.20.19)
+- **Komponen Terdampak**:
+  - `data_core_mobile/app/src/main/assets/www/app.js` (`renderTabAnalyticsCharts`, `changeAnalyticsTimeframe`, `appendDoughnutChartBubble`, `appendBarChartBubble`)
+  - `data_core_mobile/app/src/main/assets/www/index.html` (Struktur wrapper donut dan bar chart breakdown)
+- **Rincian Implementasi**:
+  1. **Pie / Donut Chart (Maksimal 6 Potong + Panah/Garis Penunjuk + Nominal & Persentase)**:
+     - Diterapkan pada **Tab 1 Cockpit Analisis** (`#tab-analytics-donut-chart`) dan **Tab 3 Chat Bubble** (`appendDoughnutChartBubble`).
+     - Mengagregasi pengeluaran per kategori dari `cachedTransactions`. Jika kategori lebih dari 6, sistem secara otomatis mengambil Top 5 tertinggi dan menggabungkan sisanya menjadi potongan ke-6 bertuliskan "Lain-lain".
+     - Setiap potongan dilengkapi garis/panah penunjuk visual (`──►`), nominal Rupiah lengkap (`Rp xxx.xxx`), dan persentase proporsional (`xx.x%`).
+  2. **Bar Chart (Maksimal 10 Teratas + Nominal & Persentase)**:
+     - Diterapkan pada **Tab 1 Cockpit Analisis** (`#tab-analytics-bar-chart`) dan **Tab 3 Chat Bubble** (`appendBarChartBubble`).
+     - Membatasi bar chart secara tegas hanya menampilkan **Top 10 pengeluaran tertinggi** agar tampilan grafik tetap rapi, lega, dan estetis.
+     - Setiap bar menampilkan gradasi warna premium, sumbu Y dinamis dalam Rupiah (`Rp 50rb`, `Rp 100rb`, dst.), serta kartu/daftar peringkat 1 hingga 10 berisikan nama pengeluaran/kategori, panah penunjuk visual (`──►`), nilai nominal (`Rp xxx.xxx`), dan persentase (`xx.x%`).
+  3. **Line Chart Rentang Waktu Kustom (Sehari, Seminggu, Sebulan, Setahun)**:
+     - Menghubungkan 4 tombol filter periode di Tab 1: `#tf-btn-sehari`, `#tf-btn-seminggu`, `#tf-btn-sebulan`, `#tf-btn-setahun`.
+     - Menyaring data transaksi real dari `cachedTransactions` sesuai periode:
+       - **Sehari**: Pembagian waktu per 3 jam (`06:00, 09:00, 12:00, 15:00, 18:00, 21:00`) untuk hari ini.
+       - **Seminggu**: 7 hari terakhir (harian).
+       - **Sebulan**: 4 rentang mingguan dalam sebulan berjalan.
+       - **Setahun**: 12 bulan kalender (`Jan - Des`).
+     - Secara dinamis memperbarui label statistik headline hero (`Masuk: Rp ...` dan `Keluar: Rp ...`).
+  4. **Pembersihan Redundansi & Duplikasi Fungsi**:
+     - Menghapus deklarasi fungsi usang yang redundan pada `app.js` baris ~121500 agar pemanggilan `appendBarChartBubble` dan `appendDoughnutChartBubble` selalu merujuk ke engine visual terbaru.
+- **Verifikasi Fisik (Screenshot Tablet)**:
+  - `tablet_test_donut_tab1.png`: Menampilkan Donut Chart Tab 1 dengan kartu breakdown Top 6 berpanah penunjuk, persentase, dan nominal.
+  - `tablet_test_bar_tab1.png`: Menampilkan Bar Chart Tab 1 dengan tepat 10 batang teratas bergradasi warna dan label nominal.
+  - `tablet_tf_sehari.png` & `tablet_tf_seminggu.png`: Menampilkan Line Chart dinamis dengan filter periode Sehari dan Seminggu yang memperbarui kurva serta nominal Masuk/Keluar.
+  - `tablet_scroll_to_donut_bubble.png`: Menampilkan bubble chat Pie Chart dengan badge *Maks 6 Potong*, grafik donat, dan rincian panah penunjuk nominal/persentase.
+  - `tablet_top10_bar_bubble.png`: Menampilkan bubble chat Bar Chart dengan badge *Maks 10 Batang*, grafik batang Top 10, dan rincian peringkat 1 s/d 10 berpanah penunjuk nominal/persentase.
