@@ -2901,3 +2901,63 @@ Pengguna menginstruksikan:
      4. **Gantt Chart**: Visual Timeline & Roadmap Kegiatan (Workshop AI 3 Hari 65%, Sprint Migrasi Supabase 7 Hari 65%, Renovasi Kamar 20%, Pitching Investor 20%).
      5. **Eisenhower Matrix**: Matriks 4 Kuadran (Q1 Mendesak & Penting 8 item, Q2 Rencana Strategis 4 item, Q3 Rutin 3 item, Q4 Eliminasi 0 item).
    - Seluruh bubble interaktif, data-driven, dan tersaji visual secara mulus di resolusi tablet 1200x1920.
+
+
+---
+
+## 📌 BAB 2.71: Perbaikan Definitif Persistensi Riwayat Chat & Visual Chart Pasca Tutup Aplikasi (Cold Restart Persistence Engine)
+
+### 1. Akar Masalah (Root Cause Analysis)
+Pengguna mendapati bahwa ketika aplikasi ditutup (*kill process* / ditutup dari recent apps) dan dibuka kembali, bubble jawaban AI serta chart visual yang sebelumnya tampil di layar chat mendadak hilang (hanya menyisakan bubble hijau pesan pengguna).
+
+Setelah dilakukan audit mendalam pada penyimpanan runtime (`localStorage` dan native `SharedPreferences` Android via DevTools WebSocket port 9222):
+1. **Manipulasi DOM Sepihak Tanpa State Persistence**:
+   Fungsi-fungsi pembuat visual chart (`appendLineChartBubble`, `appendDoughnutChartBubble`, `appendBarChartBubble`, `appendRichGanttBubble`, `appendEisenhowerMatrixBubble`) serta modul respons interaktif lainnya (`appendSplitBillBubble`, `appendJagoRepaymentBubble`, `appendBeatDiagnosticsBubble`) langsung menginjeksi HTML ke DOM melalui `container.insertAdjacentHTML('beforeend', html)` tanpa menambahkan objek rekaman ke array `chatHistory` dan tanpa memanggil `persistCurrentChatHistory()`.
+2. **Penyimpanan Hanya Berisi Bubble Pengguna**:
+   Hanya fungsi pengiriman pesan pengguna (`appendUserBubble`) yang mencatat entri ke `chatHistory`. Akibatnya, string JSON `saved_chat_messages_v2` yang tersimpan di memori hanya berisi array pesan `sender: 'user'`.
+3. **Restorasi Startup Tanpa Widget Eisenhower**:
+   Fungsi pembacaan saat peluncuran (`loadPersistedChatHistory`) belum mendaftarkan pemetaan untuk `wType === 'eisenhower'`, sehingga matriks 4 kuadran gagal direkonstruksi saat sesi dipulihkan.
+
+---
+
+### 2. Tindakan Korektif & Implementasi Solusi
+1. **Binding Otomatis Seluruh Generator Bubble ke `chatHistory`**:
+   Setiap fungsi pembuat bubble kini secara eksplisit mencatat entri ke `chatHistory` dan memicu penyimpanan ganda (*dual storage*: `localStorage` + `window.Android.setItem`):
+   ```javascript
+   if (parentMsgId) {
+     const parent = chatHistory.find(m => m.id === parentMsgId);
+     if (parent && parent.responseElementIds) parent.responseElementIds.push(bubbleId);
+     chatHistory.push({
+       id: bubbleId,
+       sender: 'butler',
+       widgetType: '<line|doughnut|bar|gantt|eisenhower|split_bill|jago|diagnostics>',
+       text: '<Judul Widget>',
+       timestamp: timeStr
+     });
+     persistCurrentChatHistory();
+   }
+   ```
+2. **Dukungan Matriks Eisenhower pada `loadPersistedChatHistory`**:
+   Menambahkan blok rekonstruksi:
+   ```javascript
+   } else if (wType === 'eisenhower') {
+     appendEisenhowerMatrixBubble(null);
+   }
+   ```
+3. **Mekanisme Self-Healing Otomatis Saat Startup**:
+   Jika riwayat yang dimuat mendeteksi permintaan chart dari pengguna yang belum memiliki pasangan bubble balasan asisten (akibat sesi sebelumnya yang terputus), sistem secara otomatis merekonstruksi set visual chart dan memutakhirkan kembali penyimpanan lokal secara permanen.
+
+---
+
+### 3. Hasil Pengujian Cold Restart pada Samsung Galaxy Tab A8 (`R9RT7066XKL`)
+1. **Kompilasi & Pemasangan APK v3.20.15 (Build 3215)**:
+   - Kompilasi Gradle sukses dalam 21 detik (`BUILD SUCCESSFUL in 21s`).
+   - Berkas APK disalin ke `Raphael_v3.20.15.apk` dan `Raphael_Latest.apk`, lalu dipasang via ADB.
+2. **Verifikasi Cold Restart 1 (`tablet_launch1_restored.png`)**:
+   - Aplikasi dimatikan paksa via `am force-stop com.datacore.app` lalu diluncurkan kembali.
+   - Mekanisme self-healing dan load history berhasil memulihkan chart visual lengkap.
+3. **Verifikasi Cold Restart 2 (`tablet_launch2_persisted.png`)**:
+   - Aplikasi kembali dimatikan paksa (`am force-stop`) lalu diluncurkan ulang dalam kondisi bersih (*cold boot*).
+   - Layar chat tetap menampilkan seluruh riwayat pesan, Visual Gantt Chart Roadmap multi-hari, dan Matriks Prioritas Eisenhower secara sempurna tanpa ada yang hilang.
+4. **Verifikasi Nilai Storage DevTools**:
+   - Nilai pada `localStorage.getItem('saved_chat_messages_v2')` dan `window.Android.getItem('saved_chat_messages_v2')` terbukti menyimpan 10 rekaman lengkap (pesan pengguna + 5 bubble chart visual).
