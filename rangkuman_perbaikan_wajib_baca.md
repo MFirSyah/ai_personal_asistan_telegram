@@ -2659,3 +2659,102 @@ Menjawab instruksi audit mendalam (*extreme audit*) untuk menemukan dan membersi
    - **Pengujian Tab Profil & Modal Entitas Dinamis (tablet_dynamic_hub_wallets.png & tablet_modal_wallet_real.png)**:
      - Membuka Tab Profil -> Kartu **Dompet & Kas** -> Modal **Dynamic Entities Hub** terbuka mulus dengan daftar seluruh akun kas (*Cash Kertas*, *Cash Koin*, *Gopay Driver*, *SeaBank*, *Bank Jago*).
      - Menekan tombol **+ Tambah**: Modal anak **Tambah Dompet Baru** terbuka sempurna dengan input nama dompet, nomor rekening/HP opsional, saldo awal, dan kategori dropdown tanpa ada crash atau exception null.
+
+
+---
+
+## Bab 2.68: Eliminasi Karakter Asterisk (*) Pada Seluruh Balasan AI & Perbaikan Layout Animasi Mengetik Mode Vertikal/Smartphone (Build v3.20.8 / Code 3208)
+
+### A. Latar Belakang & Keluhan Pengguna
+Pengguna menyampaikan dua isu penting terkait estetika dan kenyamanan pada tampilan chat:
+1. *"masih ada '*' pada jwaban dari ai nya"*
+   - Terdapat karakter bintang liar/asterisk (seperti `*burn rate*` atau bullet poin `* `) yang masih lolos tanpa terformat pada gelembung balasan AI di layar chat.
+2. *"ketika mode vertikal atau pada tampilan smartphone, animasi ai nya mengetik kek kepotong gitu, padahal kalo di horizontal tidak"*
+   - Pada orientasi vertikal tablet maupun smartphone, indikator animasi *"Raphael sedang mengetik..."* dan ujung bawah gelembung balasan terakhir tampak terpotong (*clipped*) atau tenggelam di balik bilah dok input mengambang (*floating chat input wrapper*), sedangkan pada mode horizontal hal ini tidak terjadi.
+
+---
+
+### B. Investigasi Akar Masalah (Root Cause Analysis)
+
+1. **Akar Masalah Isu 1 (Karakter Asterisk Lolos ke Tampilan)**:
+   - Pada fungsi `appendButlerBubble(text, parentMsgId)` di `app.js` (baris 4192), teks balasan AI yang baru tiba hanya diproses menggunakan regex primitif:
+     `const formatted = text.replace(/\n/g, '<br/>').replace(/\*\*(.*?)\*\*/g, '<b>$1</b>');`
+   - Regex tersebut **HANYA** memproses tanda tebal ganda (`**`), sedangkan tanda bintang tunggal (`*burn rate*`), tanda bintang tiga (`***`), bullet list (`* `), maupun karakter asterisk bebas **sama sekali tidak diparse dan tidak dibersihkan**, sehingga tercetak mentah di layar chat.
+   - Fungsi parser markdown lengkap `renderMarkdownText()` yang ada di awal berkas `app.js` tidak pernah dipanggil pada gelembung balasan AI baru.
+
+2. **Akar Masalah Isu 2 (Animasi Mengetik Terpotong pada Mode Vertikal/Smartphone)**:
+   - **Perbedaan Mekanisme Layout Horizontal vs Vertikal**:
+     - Pada **mode horizontal**, CSS tablet sidebar aktif: dok input chat (`#chat-input-wrapper`) diposisikan sebagai `position: sticky !important; bottom: 0 !important;` di dalam aliran flex body. Konten pesan mengalir alami di atasnya tanpa saling tumpuk, sehingga `padding-bottom: 12px` sudah cukup.
+     - Pada **mode vertikal (portrait)** dan **smartphone**, tata letak mobile satu kolom aktif: bilah navigasi bawah (`#app-bottom-nav`, tinggi 56px) dan dok input (`#chat-input-wrapper`, tinggi ~125px) melayang secara mengambang (`position: fixed`) di atas area konten. Total rintangan mengambang di dasar layar mencapai **~181px**.
+   - **Defisit Padding Scroll Kontainer**:
+     - Pada `switchTab` di `app.js`, `mainScroll.style.paddingBottom` untuk mode mobile hanya di-set ke `133px` (defisit 48px), dan pada tablet vertikal sempat ter-set ke `12px`.
+     - Akibatnya, saat fungsi `scrollChatToBottom()` mengeksekusi `scrollTop = scrollHeight`, elemen terbawah (indikator pengetikan `typingId` dan chips aksi balasan terakhir) terdorong tepat ke balik dok input yang melayang, sehingga terpotong dari pandangan pengguna.
+   - **Desain Indikator Pengetikan yang Kurang Representatif**:
+     - Indikator sebelumnya hanya berupa satu baris teks sederhana `<div class="animate-pulse">Raphael sedang mengetik ...</div>` tanpa gelembung berbingkai, tanpa margin vertikal yang proporsional, serta pemanggilan scroll yang tidak mengunci target elemen secara presisi.
+
+---
+
+### C. Solusi Teknis Komprehensif yang Diterapkan
+
+1. **Eliminasi Asterisk (*) Total pada Frontend (`app.js`)**:
+   - Memperbarui fungsi `renderMarkdownText(raw)`:
+     - Menambahkan dukungan format tebal miring tiga asterisk: `replace(/\*\*\*(.*?)\*\*\*/g, '<strong><em class="italic">$1</em></strong>')`.
+     - Menambahkan pemrosesan bullet list otomatis untuk awalan `*`, `-`, atau `•`.
+     - Menambahkan pemrosesan teks miring tanda bintang tunggal (`*burn rate*` -> `<em class="italic text-teal-900 font-medium">burn rate</em>`).
+     - **Pembersihan Sapu Bersih Terakhir**: Menghapus seluruh karakter asterisk liar yang tersisa tanpa merusak teks: `str = str.replace(/\*/g, '');`.
+   - Mengubah fungsi `appendButlerBubble` agar memanggil `renderMarkdownText(text)` secara konsisten, sehingga setiap balasan baru terformat rapi dan bebas bintang 100%.
+   - Menghubungkan `formatRichChatMessage` ke parser markdown yang sama.
+
+2. **Sanitasi Tambahan pada Backend (`lib/gemini/prompts/chat.ts` & `app/api/chat/route.ts`)**:
+   - Memperketat *system prompt* AI pada aturan No. 4: melarang keras model menghasilkan karakter bintang tunggal (`*`) untuk penekanan atau daftar poin, mewajibkan karakter bullet (`•`) murni.
+   - Menambahkan lapisan sanitasi pada rute API `/api/chat` untuk menormalkan list `* ` menjadi `• ` dan membersihkan tanda asterisk liar sebelum disimpan ke Supabase dan dikembalikan ke klien.
+   - Menjalankan `npx tsc --noEmit` (0 error) dan melakukan commit/push ke GitHub `main` (`b07083e`) untuk deploy instan ke Vercel production.
+
+3. **Perbaikan Padding Aman & Isolasi Media Query (`index.html` & `app.js`)**:
+   - Memperbarui media query desktop/sidebar di `index.html` menjadi:
+     `@media (min-width: 768px) and (orientation: landscape) { ... }`
+     sehingga aturan layout horizontal tidak lagi menginterferensi atau mengunci padding pada orientasi vertikal tablet.
+   - Menyesuaikan kalkulasi padding pada `switchTab` di `app.js`:
+     ```javascript
+     const isTabletHorizontal = (window.innerWidth >= 768 && window.innerWidth > window.innerHeight);
+     const chatPad = isTabletHorizontal ? '16px' : '205px';
+     mainScroll.style.paddingBottom = (tabId === 'chat') ? chatPad : (isTabletHorizontal ? '16px' : '76px');
+     ```
+     Memberikan ruang aman ekstra sebesar **205px** pada mode vertikal/smartphone, menjamin seluruh gelembung obrolan dan indikator mengetik berada sepenuhnya di atas dok input.
+   - Menaikkan tinggi jangkar dasar `#chat-bottom-anchor` dari `h-1` menjadi `h-6` (24px).
+
+4. **Redesain Indikator Animasi Mengetik Eksekutif**:
+   - Mengganti teks biasa dengan gelembung bertema Raphael Butler lengkap dengan avatar smart toy, latar kartu kaca (*glass-card*), dan 3 titik memantul dinamis (*animated bouncing dots*):
+     ```html
+     <div id="${typingId}" class="flex items-start gap-2 chat-typing-bubble my-2 transition-all">
+       <div class="w-7 h-7 rounded-full bg-teal-600/15 flex items-center justify-center border border-teal-600/30 text-teal-700 shrink-0 mt-0.5 animate-pulse">
+         <span class="material-symbols-outlined text-[16px]">smart_toy</span>
+       </div>
+       <div class="glass-card rounded-tl-sm px-3.5 py-2.5 shadow-md flex items-center gap-2.5 text-teal-900 text-xs font-sans">
+         <span class="font-medium">Raphael sedang merespons</span>
+         <span class="inline-flex gap-1 items-center">
+           <span class="w-1.5 h-1.5 rounded-full bg-teal-600 animate-bounce" style="animation-delay: 0ms"></span>
+           <span class="w-1.5 h-1.5 rounded-full bg-teal-600 animate-bounce" style="animation-delay: 150ms"></span>
+           <span class="w-1.5 h-1.5 rounded-full bg-teal-600 animate-bounce" style="animation-delay: 300ms"></span>
+         </span>
+       </div>
+     </div>
+     ```
+   - Memperbaiki `scrollChatToBottom(targetElementId)` agar memicu `el.scrollIntoView({ behavior: 'smooth', block: 'nearest' })` saat `typingId` disisipkan.
+
+---
+
+### D. Kompilasi APK & Verifikasi Fisik pada Samsung Galaxy Tab A8 (`R9RT7066XKL`)
+
+1. **Gradle Build & Update Versi**:
+   - Versi aplikasi dinaikkan menjadi **v3.20.8 (Build Code 3208)** pada `app.js`, `index.html`, dan `build.gradle.kts`.
+   - Kompilasi APK sukses dalam 27 detik (`BUILD SUCCESSFUL in 27s`).
+   - Berkas APK disalin ke `D:\MANAS PROJEK\Raphael_v3.20.8.apk` dan `Raphael_Latest.apk`, lalu dipasang ke tablet via ADB.
+
+2. **Bukti Pengujian Fisik di Layar Tablet (Vertikal / Portrait)**:
+   - **Pemberantasan Asterisk (*) Terbukti Bersih (`tablet_response_no_asterisk.png`)**:
+     - Kata `*burn rate*` pada ringkasan arus kas kini tampil sempurna sebagai teks miring elegan tanpa karakter bintang: `burn rate`.
+     - Seluruh poin laporan (*Total Pemasukan*, *Total Pengeluaran*, *Net Cashflow*, *Rata-rata Burn Rate Harian*, *Total Saldo Likuid*) tampil dengan bullet point hijau tosca rapi tanpa tanda bintang liar.
+   - **Tampilan Dok Input & Ujung Chat Tidak Terpotong**:
+     - Dengan padding dasar 205px, gelembung balasan AI, tombol chips rekomendasi (*Cek Tren Kas*, *Agenda Hari Ini*, *Servis Motor*), serta stempel waktu `15.34` tampil utuh dengan jarak lapang yang proporsional di atas dok input.
+     - Animasi mengetik tidak lagi tertutup bilah input maupun navigasi bawah.
