@@ -77,14 +77,17 @@ export async function POST(req: NextRequest) {
 
     if (action === 'update_activity') {
       const { id, title, status, priority } = payload;
+      const updateData: any = {};
+      if (title !== undefined) updateData.title = title;
+      if (status !== undefined) {
+        const s = String(status).toLowerCase();
+        updateData.status = (s === 'done' || s === 'completed' || s === 'selesai') ? 'completed' : (s === 'in_progress' ? 'in_progress' : 'scheduled');
+      }
+      if (priority !== undefined) updateData.priority = priority;
+
       const { data, error } = await supabaseAdmin
         .from('activities')
-        .update({
-          title,
-          status,
-          priority,
-          updated_at: new Date().toISOString(),
-        })
+        .update(updateData)
         .eq('id', id)
         .select()
         .single();
