@@ -16,6 +16,59 @@ export const PRIMARY_MODEL = MODEL_FALLBACK_CHAIN[0];
 export const DEFAULT_MODEL = PRIMARY_MODEL;
 export const EMBEDDING_MODEL = 'text-embedding-004';
 
+// In-memory request log for RPM & RPD tracking
+const requestTimestamps: number[] = [];
+
+export interface ModelQuotaInfo {
+  model: string;
+  displayName: string;
+  rpmLimit: number;
+  rpdLimit: number;
+  rpmUsed: number;
+  rpdUsed: number;
+  rpmRemaining: number;
+  rpdRemaining: number;
+}
+
+export function recordApiRequest(): void {
+  const now = Date.now();
+  requestTimestamps.push(now);
+  // Clean logs older than 24 hours (86,400,000 ms)
+  const cutoff = now - 24 * 60 * 60 * 1000;
+  while (requestTimestamps.length > 0 && requestTimestamps[0] < cutoff) {
+    requestTimestamps.shift();
+  }
+}
+
+export function getModelQuotaStatus(modelName = PRIMARY_MODEL): ModelQuotaInfo {
+  const now = Date.now();
+  const oneMinuteAgo = now - 60 * 1000;
+  const startOfDay = new Date().setHours(0, 0, 0, 0);
+
+  const rpmUsed = requestTimestamps.filter(t => t >= oneMinuteAgo).length;
+  const rpdUsed = requestTimestamps.filter(t => t >= startOfDay).length;
+
+  const rpmLimit = 15;
+  const rpdLimit = 500;
+
+  let displayName = modelName;
+  if (modelName.includes('3.5-flash-lite')) displayName = 'Gemini 3.5 Flash-Lite';
+  else if (modelName.includes('3.1-flash-lite')) displayName = 'Gemini 3.1 Flash-Lite';
+  else if (modelName.includes('3.6-flash')) displayName = 'Gemini 3.6 Flash (Flagship)';
+  else if (modelName.includes('3.5-flash')) displayName = 'Gemini 3.5 Flash';
+
+  return {
+    model: modelName,
+    displayName,
+    rpmLimit,
+    rpdLimit,
+    rpmUsed,
+    rpdUsed,
+    rpmRemaining: Math.max(0, rpmLimit - rpmUsed),
+    rpdRemaining: Math.max(0, rpdLimit - rpdUsed),
+  };
+}
+
 /**
  * Memanggil Gemini API dengan Multi-Model Fallback otomatis.
  * Jika model utama sibuk (503/429/Timeout), sistem langsung berganti ke model berikutnya dalam rantai.
@@ -41,6 +94,7 @@ export async function generateContentWithFallback(
       });
 
       const response: any = await Promise.race([apiCall, timeoutPromise]);
+      recordApiRequest();
       return { response, usedModel: model };
     } catch (err: any) {
       lastError = err;

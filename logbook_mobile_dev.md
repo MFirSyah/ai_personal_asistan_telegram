@@ -2204,8 +2204,29 @@ Hal ini dipicu karena sebelumnya ketika user menanyakan *"Apa saja agenda dan ke
 - Mengubah fungsi `appendRichGanttBubble` agar memetakan data riil dari array `cachedActivities` / Supabase (judul agenda, tanggal pelaksanaan, persentase progres, dan status tuntas), bukan lagi teks Dieng statis.
 
 #### 3. Pembaruan Grounding Tanggal & Status di Backend (`app/api/chat/route.ts`)
-- Menghapus interceptor statis `isJalanSehatDirect` pada server.
-- Menginjeksi instruksi evaluasi jadwal tanggal riil (*September 2026*) ke prompt Gemini agar seluruh agenda masa lalu (seperti Dieng 29-30 Agustus) diakui sebagai berstatus **Selesai & Diarsipkan**, bukan agenda aktif masa depan.
+# Logbook Pengembangan Data Core Mobile & Integrasi AI (Raphael)
+
+## 📌 Status Terakhir (Update: 5 September 2026)
+- **Versi Build Aktif**: `Raphael_v3.20.24.apk` (`Raphael_Latest.apk`)
+- **Status Device**: Ter-install & Berjalan di Samsung Galaxy Tab A8 (`R9RT7066XKL`)
+- **Pembersihan Interceptor Lokal Kritis**:
+  1. **Akar Masalah Ditemukan & Dihapus**: Di dalam `app.js` sebelumnya terdapat interceptor regex lokal `/(map|peta|rute|lokasi|dieng plateau|arah)/` yang langsung membajak input chat pengguna dan menampilkan widget statis Dieng tanpa memanggil server/Gemini AI sama sekali.
+  2. **100% Dynamic Backend Dispatching**: Seluruh pesan bahasa alami navigasi/rute (ke Monas, Surabaya, Bromo, dll) kini 100% diproses langsung oleh Gemini AI dan Supabase melalui `/api/chat`.
+  3. **Jawaban 6 Pilar Lengkap**: Jawaban mencakup estimasi jarak KM, kendaraan aktif Honda Beat FI, konsumsi liter bensin, biaya rupiah Pertalite/Pertamax, tips berkendara, rekomendasi aktivitas di tujuan, dan tombol Buka Google Maps langsung.
+- **Dataset Terinjeksi**: 500 Data Benchmark Extreme (250 Transaksi Keuangan + 250 Agenda/Aktivitas)
+- **Dokumen Skenario Uji**: [benchmark_50_test_scenarios.md](file:///D:/MANAS%20PROJEK/telegram/benchmark_50_test_scenarios.md)
+- **Ringkasan Keuangan Baseline**:
+  - Pemasukan (Total In): **Rp 505.782.000** (26 transaksi)
+  - Pengeluaran (Total Out): **Rp 383.823.200** (224 transaksi)
+  - Saldo Bersih (Net Cash Flow): **+Rp 121.958.800**
+- **Ringkasan Agenda Baseline**:
+  - Total Kegiatan: **250 item** (Q1 Urgent-Important: 45, Q2 Plan/Dev: 80, Q3 Delegable: 65, Q4 Minor: 60)
+  - Status: 40 selesai, 20 overdue, 190 aktif / terjadwal.
+- **Pembaruan Engine AI (Anti-Truncation & Output Full Length)**:
+  1. `maxOutputTokens` ditingkatkan menjadi **8.192 token** pada [lib/gemini/prompts/chat.ts](file:///D:/MANAS%20PROJEK/telegram/lib/gemini/prompts/chat.ts) agar jawaban panjang/riset mendalam tidak terpotong kuota.
+  2. Implementasi **Auto-Repair JSON Truncation**: Menyeimbangkan tanda kutip ganda dan kurung kurawal/siku secara otomatis bila respons panjang LLM terputus.
+  3. Peningkatan **Enhanced Regex Fallback**: Memastikan seluruh paragraf dan array pesan tetap terekstraksi utuh ke bubble chat meskipun mengandung karakter khusus/unescaped quotes.
+  4. Timeout diperpanjang hingga **25 detik** untuk mengantisipasi deep reasoning multi-dimensi.
 
 ---
 
@@ -2906,3 +2927,23 @@ Kompilasi APK `Raphael_v3.20.16.apk` (Build 3216) berhasil dilakukan melalui Gra
   - `tablet_tf_sehari.png` & `tablet_tf_seminggu.png`: Menampilkan Line Chart dinamis dengan filter periode Sehari dan Seminggu yang memperbarui kurva serta nominal Masuk/Keluar.
   - `tablet_scroll_to_donut_bubble.png`: Menampilkan bubble chat Pie Chart dengan badge *Maks 6 Potong*, grafik donat, dan rincian panah penunjuk nominal/persentase.
   - `tablet_top10_bar_bubble.png`: Menampilkan bubble chat Bar Chart dengan badge *Maks 10 Batang*, grafik batang Top 10, dan rincian peringkat 1 s/d 10 berpanah penunjuk nominal/persentase.
+
+## Bab 2.74: Perbaikan Tombol Interaktif Google Maps & Dinamisasi Tombol Opsi Cepat (v3.20.25)
+
+- **Tanggal & Waktu**: 5 September 2026, 22:20 WIB
+- **Status**: SELESAI & TERVERIFIKASI LIVE PADA SAMSUNG GALAXY TAB A8 (BUILD v3.20.25)
+- **Komponen Terdampak**:
+  - `telegram/lib/gemini/prompts/chat.ts` (Aturan No. 9 - Mandat 6 Poin Navigasi Rute Maps Lengkap)
+  - `telegram/app/api/chat/route.ts` (Penyaluran `route`, `locations`, `location`, dan `quick_actions`)
+  - `data_core_mobile/app/src/main/assets/www/app.js` (`formatRichChatMessage`, `appendButlerBubble`, `renderButlerBubbleFromHistory`, `sendMessage`)
+- **Akar Masalah**:
+  1. Link markdown `[🗺️ Buka Google Maps](...)` tercetak teks biasa karena parser belum memproses tautan maps ke tombol interaktif.
+  2. Terjadi error runtime `bubbleId is not defined` pada akhir fungsi `appendButlerBubble`, yang memicu blok `catch(err)` di `sendMessage` sehingga memunculkan gelembung kedua statis (*"Siap, Mas Firman... Peta Dieng, Servis Motor"*).
+- **Hasil Perbaikan**:
+  1. Tombol Google Maps otomatis terkonversi menjadi tombol modern bergradien biru-indigo dengan ikon navigasi Material Symbols yang langsung membuka aplikasi Google Maps di smartphone/tablet.
+  2. Tombol opsi cepat (*quick action chips*) di bawah bubble balasan AI kini 100% dinamis mengikuti konteks topik chat (`Tips Berkendara`, `Estimasi BBM`, `Cek Saldo`, `Gantt Chart`, dll).
+  3. Eliminasi gelembung fallback statis Dieng.
+- **Verifikasi**:
+  - Build sukses via Gradle 8.5 `assembleDebug` (21s).
+  - Dipasang langsung via ADB ke device `R9RT7066XKL` (Samsung Galaxy Tab A8).
+  - Screenshot live memverifikasi tombol `[ ↗ 🗺️ Buka Google Maps ↗ ]` tampil sempurna dan siap digunakan.

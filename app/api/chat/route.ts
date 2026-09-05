@@ -18,6 +18,8 @@ import {
 import { generateTelegramGanttChart } from '@/lib/analytics/gantt';
 import { evaluateProactiveCheckIns } from '@/lib/services/proactive-companion';
 
+import { getModelQuotaStatus } from '@/lib/gemini/client';
+
 export const dynamic = 'force-dynamic';
 export const maxDuration = 60;
 
@@ -31,12 +33,23 @@ export async function OPTIONS() {
   return new NextResponse(null, { status: 200, headers: corsHeaders });
 }
 
+export async function GET() {
+  const quota = getModelQuotaStatus();
+  return NextResponse.json({ ok: true, model_info: quota }, { headers: corsHeaders });
+}
+
 export async function POST(req: NextRequest) {
   try {
     const body = await req.json();
     const { userId, userMessage, userName, action } = body;
 
     const safeUserId = userId || 'fc2758d3-78bb-4e22-b9f0-b3b16568b671';
+
+    // Handle Model Quota Status Query
+    if (action === 'get_model_quota') {
+      const quota = getModelQuotaStatus();
+      return NextResponse.json({ ok: true, model_info: quota }, { headers: corsHeaders });
+    }
 
     // Handle Proactive Check-Ins Query
     if (action === 'get_proactive_checkins') {
@@ -77,7 +90,7 @@ export async function POST(req: NextRequest) {
       updated_at: new Date().toISOString(),
     });
 
-    const isPlanOrTripQuery = /(dieng|trip|wisata|liburan|tiket|cicil|nyicil|sisa bayar|kurang bayar|sudah bayar|rencana|target)/i.test(userMessage);
+    const isPlanOrTripQuery = /(dieng|tiket dieng|cicil tiket|nyicil tiket|sisa bayar tiket|kurang bayar tiket|sudah bayar tiket|pagu dieng)/i.test(userMessage);
     if (isPlanOrTripQuery) {
       const diengProgress = calculatePlanProgress('dieng', allActiveTxs, 1040000);
       const dailyTarget = calculateDailyGojekTarget(1040000, diengProgress.totalPaid, ledger.totalLiquidCash, '2026-08-29');
@@ -164,6 +177,55 @@ export async function POST(req: NextRequest) {
 
     // Check if any proactive check-ins should be attached
     const checkIns = evaluateProactiveCheckIns(activities, plans);
+    const modelInfo = getModelQuotaStatus(result.usedModel);
+
+    // Build dynamic context-aware quick actions
+    const quickActions: Array<{ label: string; icon: string; action: string; payload?: string }> = [];
+
+    // Route-specific actions
+    if (result.route && (result.route.origin || result.route.destination)) {
+      quickActions.push({ label: 'Buka Rute Maps', icon: '🗺️', action: 'open_url', payload: result.route.google_maps_directions_url });
+    }
+
+    // Location-specific actions
+    if (result.locations && result.locations.length > 0) {
+      quickActions.push({ label: 'Lihat Semua di Maps', icon: '📍', action: 'open_url', payload: result.locations[0]?.google_maps_url || '' });
+    }
+
+    // Finance-specific actions
+    if (/saldo|uang|dompet|kas|wallet|cek saldo/i.test(lowerMsg)) {
+      quickActions.push({ label: 'Cek Saldo', icon: '💵', action: 'send_message', payload: 'Cek saldo semua dompet' });
+      quickActions.push({ label: 'Laporan Hari Ini', icon: '📊', action: 'send_message', payload: 'Tampilkan laporan keuangan hari ini' });
+    }
+
+    if (/gantt|timeline|jadwal|agenda/i.test(lowerMsg)) {
+      quickActions.push({ label: 'Gantt Chart', icon: '📅', action: 'send_message', payload: 'Tampilkan gantt chart timeline' });
+    }
+
+    if (/grafik|chart|analisis|tren/i.test(lowerMsg)) {
+      quickActions.push({ label: 'Analisis Lengkap', icon: '📈', action: 'send_message', payload: 'Tampilkan semua chart analisis lengkap' });
+    }
+
+    // Navigation-specific actions
+    if (/maps|rute|navigasi|jalan ke|arah ke|pergi ke/i.test(lowerMsg)) {
+      quickActions.push({ label: 'Tips Berkendara', icon: '🛣️', action: 'send_message', payload: 'Berikan tips berkendara aman ke tujuan tersebut' });
+      quickActions.push({ label: 'Estimasi BBM', icon: '⛽', action: 'send_message', payload: 'Hitung estimasi BBM dan biaya bensin perjalanan' });
+    }
+
+    // Exploration / recommendation actions
+    if (/rekomendasi|wisata|kuliner|tempat|makan|nongkrong|kafe|cafe/i.test(lowerMsg)) {
+      quickActions.push({ label: 'Cari Kuliner', icon: '🍜', action: 'send_message', payload: 'Rekomendasi sentra kuliner terdekat' });
+      quickActions.push({ label: 'Wisata Populer', icon: '🏞️', action: 'send_message', payload: 'Rekomendasi wisata populer di sekitar' });
+    }
+
+    // Default fallback actions (always show at least some useful actions)
+    if (quickActions.length === 0) {
+      quickActions.push(
+        { label: 'Cek Saldo', icon: '💵', action: 'send_message', payload: 'Cek saldo semua dompet' },
+        { label: 'Agenda Hari Ini', icon: '📋', action: 'send_message', payload: 'Tampilkan agenda hari ini' },
+        { label: 'Analisis Keuangan', icon: '📊', action: 'send_message', payload: 'Tampilkan analisis keuangan lengkap' },
+      );
+    }
 
     return NextResponse.json({
       ok: true,
@@ -172,6 +234,13 @@ export async function POST(req: NextRequest) {
       follow_up_question: result.follow_up_question || '',
       check_ins: checkIns,
       charts: combinedCharts,
+      model_info: modelInfo,
+      // Structured data for rich UI rendering
+      route: result.route || null,
+      locations: result.locations || null,
+      location: result.location || null,
+      // Dynamic context-aware quick action buttons
+      quick_actions: quickActions.slice(0, 5),
     }, { headers: corsHeaders });
   } catch (error: any) {
     console.error('Error in /api/chat:', error);

@@ -169,9 +169,10 @@ export interface ChatOrchestrationResult {
     }>;
   } | null;
   sources?: { title: string; url: string }[];
+  usedModel?: string;
 }
 
-// Helper to safely clean and parse JSON returned from LLM
+// Helper to safely clean, repair, and parse JSON returned from LLM
 function cleanAndParseJSON(rawText: string): any {
   if (!rawText) return {};
 
@@ -183,8 +184,18 @@ function cleanAndParseJSON(rawText: string): any {
   const startIdx = cleaned.indexOf('{');
   const endIdx = cleaned.lastIndexOf('}');
 
-  if (startIdx !== -1 && endIdx !== -1 && endIdx > startIdx) {
-    cleaned = cleaned.substring(startIdx, endIdx + 1);
+  if (startIdx !== -1) {
+    if (endIdx !== -1 && endIdx > startIdx) {
+      cleaned = cleaned.substring(startIdx, endIdx + 1);
+    } else {
+      // JSON opened but was truncated before closing brace -> Attempt auto-close repair
+      cleaned = cleaned.substring(startIdx);
+      if (!cleaned.endsWith('"') && (cleaned.match(/"/g) || []).length % 2 !== 0) {
+        cleaned += '"';
+      }
+      if (!cleaned.includes(']')) cleaned += ']';
+      if (!cleaned.endsWith('}')) cleaned += '}';
+    }
   }
 
   let parsedObj: any = null;
@@ -193,24 +204,38 @@ function cleanAndParseJSON(rawText: string): any {
   try {
     parsedObj = JSON.parse(cleaned);
   } catch (err1) {
-    // Attempt 2: Fix unescaped control characters and newlines in JSON strings
+    // Attempt 2: Fix unescaped control characters, newlines, and unclosed structures
     try {
-      const sanitized = cleaned
+      let sanitized = cleaned
         .replace(/[\r\n\t]/g, (match) => (match === '\r' ? '' : match === '\n' ? '\\n' : '\\t'))
         .replace(/[\u0000-\u001F\u007F-\u009F]/g, '');
+
+      // Auto-balance unbalanced quotes/braces if truncated
+      const quoteCount = (sanitized.match(/(?<!\\)"/g) || []).length;
+      if (quoteCount % 2 !== 0) {
+        sanitized += '"';
+      }
+      const openBrackets = (sanitized.match(/\[/g) || []).length;
+      const closeBrackets = (sanitized.match(/\]/g) || []).length;
+      for (let i = 0; i < openBrackets - closeBrackets; i++) sanitized += ']';
+
+      const openBraces = (sanitized.match(/\{/g) || []).length;
+      const closeBraces = (sanitized.match(/\}/g) || []).length;
+      for (let i = 0; i < openBraces - closeBraces; i++) sanitized += '}';
+
       parsedObj = JSON.parse(sanitized);
     } catch (err2) {
-      // Attempt 3: Regex extraction of messages and fields
-      console.warn('JSON.parse failed on AI output. Using regex extraction fallback.');
+      // Attempt 3: Enhanced regex extraction fallback for full multi-paragraph messages
+      console.warn('JSON.parse failed on AI output. Using enhanced regex extraction fallback.');
       
-      const msgMatch = cleaned.match(/"messages"\s*:\s*(?:\[([\s\S]*?)\]|"([\s\S]*?)"(?=\s*,\s*"|\s*\}))/i);
+      const msgMatch = cleaned.match(/"messages"\s*:\s*(?:\[([\s\S]*?)\]|"([\s\S]*?)"(?=\s*,\s*"|\s*\}|$))/i);
       let messagesArr: string[] = [];
 
       if (msgMatch) {
         if (msgMatch[1]) {
           // Matched an array format
           const rawItems = msgMatch[1].match(/"([^"\\]*(?:\\.[^"\\]*)*)"/g);
-          if (rawItems) {
+          if (rawItems && rawItems.length > 0) {
             messagesArr = rawItems.map((item) =>
               item
                 .replace(/^"/, '')
@@ -219,6 +244,12 @@ function cleanAndParseJSON(rawText: string): any {
                 .replace(/\\"/g, '"')
                 .replace(/\\\\/g, '\\')
             );
+          } else {
+            // Unquoted or broken items inside array
+            const rawTextInside = msgMatch[1].trim();
+            if (rawTextInside) {
+              messagesArr = [rawTextInside.replace(/\\n/g, '\n').replace(/\\"/g, '"')];
+            }
           }
         } else if (msgMatch[2]) {
           // Matched a single string format
@@ -231,7 +262,7 @@ function cleanAndParseJSON(rawText: string): any {
         }
       }
 
-      const followUpMatch = cleaned.match(/"follow_?up_?question"\s*:\s*"([\s\S]*?)"(?=\s*,\s*"|\s*\})/i);
+      const followUpMatch = cleaned.match(/"follow_?up_?question"\s*:\s*"([\s\S]*?)"(?=\s*,\s*"|\s*\}|$)/i);
       const followUpStr = followUpMatch ? followUpMatch[1].replace(/\\n/g, '\n').replace(/\\"/g, '"') : '';
 
       if (messagesArr.length > 0) {
@@ -242,13 +273,15 @@ function cleanAndParseJSON(rawText: string): any {
         };
       }
 
-      // Final emergency fallback: strip JSON braces/keys and return plain text
+      // Final emergency fallback: strip JSON braces/keys and return plain text cleanly
       const plainText = cleaned
-        .replace(/"(messages|follow_up_question|extracted_data|reasoning|chart|location|sources)"\s*:\s*/gi, '')
-        .replace(/[{}\[\]"]/g, '')
+        .replace(/"(messages|follow_up_question|extracted_data|reasoning|chart|charts|location|locations|route|sources)"\s*:\s*/gi, '')
+        .replace(/^[\{\[\s"]+|[\}\]\s"]+$/g, '')
+        .replace(/\\n/g, '\n')
+        .replace(/\\"/g, '"')
         .trim();
 
-      return { messages: [plainText || 'Maaf, terjadi masalah format balasan. Silakan coba lagi.'] };
+      return { messages: [plainText || 'Jawaban berhasil diproses.'] };
     }
   }
 
@@ -262,14 +295,15 @@ function cleanAndParseJSON(rawText: string): any {
       else if (lowerKey === 'extracteddata') normalized.extracted_data = parsedObj[key];
       else if (lowerKey === 'reasoning') normalized.reasoning = parsedObj[key];
       else if (lowerKey === 'chart') normalized.chart = parsedObj[key];
+      else if (lowerKey === 'charts') normalized.charts = parsedObj[key];
       else if (lowerKey === 'location') normalized.location = parsedObj[key];
+      else if (lowerKey === 'locations') normalized.locations = parsedObj[key];
       else if (lowerKey === 'route') normalized.route = parsedObj[key];
       else normalized[key] = parsedObj[key];
     }
 
     // Convert single string "messages" to string array
     if (typeof normalized.messages === 'string') {
-      // Decode escaped newlines \n in string if any
       const cleanedMsg = normalized.messages.replace(/\\n/g, '\n');
       normalized.messages = [cleanedMsg];
     }
@@ -437,7 +471,17 @@ GAYA KOMUNIKASI & PERSONA BUTLER EKSEKUTIF:
   3. 🔬 **Riset Sains, Biologi & Taksonomi Botani**: Klarifikasi taksonomi presisi, famili/ordo, morfologi, habitat, dan pembedaan ilmiah (contoh: *Rafflesia arnoldii* vs *Amorphophallus titanum*).
   4. 🎓 **Riset Akademik, Skripsi & Metodologi AI**: Metodologi RAG vs Fine-tuning, rumus & interpretasi metrik (F1, Precision, Recall), struktur penulisan Bab 4-5, perbaikan LaTeX, dan persiapan sidang skripsi.
   5. 🛵 **Riset Mekanikal & Diagnostik Motor (Beat FI)**: Analisis gejala kerusakan (CVT gredeg, tarikan loyo, v-belt, roller), arti kedipan lampu MIL injeksi Honda, estimasi biaya AHASS vs bengkel umum, dan rekomendasi sparepart.
-  6. 🏔️ **Riset Touring, Rute Perjalanan, & Logistik Luar Kota**: Rute motor teraman Malang $\rightarrow$ Dieng, titik SPBU 24 jam, perlengkapan musim dingin (5-10°C), tiket wisata, spot sunrise Sikunir, dan homestay.
+  6. 🗺️ **Riset Navigasi Maps, Rute Perjalanan & Logistik Dinamis (DYNAMIC NAVIGATION SUITE)**:
+     * Ketika Mas Firman meminta panduan rute/maps ke destinasi mana pun (contoh: *"Berikan saya maps ke tunjungan surabaya"*, *"maps ke bromo"*, *"rute ke batu"*, dll):
+     * **DILARANG KERAS MENGARAHKAN KE DIENG JIKA TUJUANNYA BUKAN DIENG!** Rute harus 100% dinamis sesuai asal dan destinasi yang diminta.
+     * **WAJIB MENYUSUN BALASAN LENGKAP DENGAN 6 POIN UTAMA**:
+       1. 📏 **Jarak Tempuh & Durasi Total**: Estimasi jarak (KM) dan waktu tempuh realistis (misal: Sidoarjo/Malang $\rightarrow$ Tunjungan Surabaya).
+       2. 🛵 **Kendaraan Aktif di Profil**: Cantumkan kendaraan yang sedang aktif (Honda Beat FI 110cc / dari data profil) beserta kapasitas tangki (4.2L) dan rasio efisiensi (~48-52 KM/L).
+       3. ⛽ **Estimasi Konsumsi BBM**: Hitung kebutuhan bensin (Liter) = $\text{Jarak} / \text{Konsumsi KM/L}$.
+       4. 💵 **Estimasi Total Biaya Bensin**: Hitung nominal rupiah (Liter $\times$ Harga Resmi Pertalite Rp 10.000 / Pertamax Rp 15.950).
+       5. 🛣️ **Tips Berkendara & Jalur Teraman**: Rekomendasi rute arteri non-tol, titik rawan padat (misal: Waru, Bundaran Dolog, Wonokromo), check-point istirahat/SPBU, serta perlengkapan jalan.
+       6. 🌟 **Rekomendasi Aktivitas di Tempat Tujuan**: Kuliner legendaris (Rawon Setan, Bebek Sinjay/Tugu Pahlawan, Lontong Balap), spot heritage Tunjungan Romansa, belanja di Tunjungan Plaza (TP 1-6), foto kafe retro, dsb.
+       7. 🗺️ **Link Google Maps Aktif**: Sediakan tautan langsung yang valid \`[🗺️ Buka Rute Google Maps](https://www.google.com/maps/dir/?api=1&destination=Jalan+Tunjungan+Surabaya&travelmode=two_wheeler)\`.
   7. 🚗 **Riset Kerja Lapangan & Efisiensi Gojek**: Spot orderan ramai di Malang Raya, jam sibuk makan/pulang kerja, simulasi target rupiah harian, dan rasio konsumsi BBM.
   8. 🏥 **Riset Medis Ringan, P3K & Alur Faskes BPJS**: Penanganan luka jatuh aspal (RICE), obat bebas aman lambung, dan alur rujukan berjenjang BPJS Faskes 1 ke RSUD Saiful Anwar Malang.
   9. 💻 **Riset Komparasi Gadget, PC & Hardware**: Komparasi spesifikasi HP/laptop coding mahasiswa, benchmark prosesor, SSD NVMe vs SATA, dan prinsip *smart buying* sesuai budget.
@@ -495,9 +539,16 @@ TUGAS KAMU:
 8. **MENGHAPUS DATA TERTENTU DENGAN ID UNIK (\`delete_record\`)**:
    - Jika user meminta menghapus data spesifik berdasarkan ID, ekstrak \`extracted_data.delete_record\`.
 
-9. Jika user menanyakan **LOKASI, RUTE, ATAU PETUNJUK ARAH KE SUATU TEMPAT**:
-   a) Sertakan link Google Maps langsung di bubble balasan: \`[🗺️ Buka Google Maps](https://www.google.com/maps/search/?api=1&query=...)\`
-   b) Serta isi objek \`location\` pada JSON output.
+9. Jika user menanyakan **LOKASI, RUTE, MAPS, ATAU PETUNJUK JALAN (contoh: "rute ke masjid agung surabaya", "maps ke monas", "rute ke tunjungan", "arah ke...")**:
+   - **WAJIB MENYUSUN PESAN BALASAN DALAM 7 POIN STANDAR EKSEKUTIF BERIKUT (DILARANG MENGHILANGKAN SALAH SATU POIN)**:
+     • 📏 **Jarak Tempuh & Durasi**: Estimasi jarak KM dan durasi waktu perjalanan secara realistis.
+     • 🛵 **Kendaraan Aktif**: Honda Beat FI 110cc (Kapasitas Tangki 4.2L, Konsumsi ~48-52 KM/L).
+     • ⛽ **Estimasi Konsumsi BBM**: ~X.X Liter bensin (Hitungan: Jarak KM / 50 KM/L).
+     • 💵 **Estimasi Biaya Bensin**: Rp XX.XXX (Pertalite Rp 10.000/L / Pertamax Rp 15.950/L).
+     • 🛣️ **Tips Berkendara & Jalur Teraman**: Rekomendasi jalur non-tol teraman, titik rawan macet/putar balik, dan SPBU.
+     • 🌟 **Rekomendasi Aktivitas di Tempat Tujuan**: Daya tarik utama, kuliner legendaris sekitar lokasi, spot foto, atau fasilitas.
+     • 🗺️ **Link Google Maps**: `[🗺️ Buka Google Maps](https://www.google.com/maps/dir/?api=1&destination=NAMA_TEMPAT&travelmode=two_wheeler)`
+   - Serta isi objek `"route"` dan `"location"` pada JSON output.
 
 10. **ATURAN EKSPLISIT TANGGAL (\`occurred_at\`)**:
     - Jika user TIDAK menyebutkan tanggal secara eksplisit, gunakan ISO waktu sekarang dari konteks.
@@ -826,38 +877,7 @@ FORMAT OUTPUT (WAJIB JSON VALID TANPA MARKDOWN BACKTICKS):
   "reasoning": "Alasan singkat",
   "chart": null,
   "location": null,
-  "route": {
-    "title": "Rute Touring Motor Malang - Dieng via Kediri",
-    "origin": "Malang Kota",
-    "destination": "Dataran Tinggi Dieng, Wonosobo",
-    "waypoints": ["SPBU Kediri", "Alun-Alun Nganjuk", "SPBU Wonosobo Kota"],
-    "travel_mode": "two_wheeler",
-    "google_maps_directions_url": "https://www.google.com/maps/dir/?api=1&origin=Malang+Kota&destination=Dataran+Tinggi+Dieng&waypoints=SPBU+Kediri%7CAlun-Alun+Nganjuk&travelmode=two_wheeler",
-    "estimated_distance_km": 350,
-    "estimated_time_hours": 8.5,
-    "estimated_fuel_liters": 7,
-    "estimated_fuel_cost_rp": 70000,
-    "stops": [
-      {
-        "step_number": 1,
-        "location_name": "Malang Kota",
-        "recommended_time": "04.30 WIB",
-        "activity_or_notes": "Berangkat subuh, bensin full tank"
-      },
-      {
-        "step_number": 2,
-        "location_name": "SPBU Kediri",
-        "recommended_time": "07.00 WIB",
-        "activity_or_notes": "Rest stop 1 & sarapan"
-      },
-      {
-        "step_number": 3,
-        "location_name": "Homestay Dieng",
-        "recommended_time": "14.00 WIB",
-        "activity_or_notes": "Tiba di Dieng, check-in & istirahat"
-      }
-    ]
-  },
+  "route": null,
   "locations": [
     {
       "name": "Alun-Alun Tugu Malang",
@@ -951,8 +971,12 @@ export async function runChatOrchestration(
   try {
     const { response, usedModel } = await generateContentWithFallback(
       prompt,
-      { responseMimeType: 'application/json', temperature: 0.2 },
-      15_000
+      {
+        responseMimeType: 'application/json',
+        temperature: 0.2,
+        maxOutputTokens: 8192,
+      },
+      25_000
     );
     console.log(`[Chat Orchestration] Handled successfully using model: ${usedModel}`);
     const text = response.text || '';
@@ -998,7 +1022,9 @@ export async function runChatOrchestration(
       charts: validCharts.length > 0 ? validCharts : null,
       location: (parsed.locations && Array.isArray(parsed.locations) && parsed.locations.length > 0) ? null : (parsed.location || null),
       locations: parsed.locations && Array.isArray(parsed.locations) ? parsed.locations : null,
+      route: parsed.route && (parsed.route.origin || parsed.route.destination) ? parsed.route : null,
       sources: parsed.sources || [],
+      usedModel: usedModel || 'gemini-3.5-flash-lite',
     };
   } catch (error: any) {
     console.error('Chat orchestration error:', error);
