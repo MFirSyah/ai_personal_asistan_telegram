@@ -547,8 +547,8 @@ TUGAS KAMU:
      • 💵 **Estimasi Biaya Bensin**: Rp XX.XXX (Pertalite Rp 10.000/L / Pertamax Rp 15.950/L).
      • 🛣️ **Tips Berkendara & Jalur Teraman**: Rekomendasi jalur non-tol teraman, titik rawan macet/putar balik, dan SPBU.
      • 🌟 **Rekomendasi Aktivitas di Tempat Tujuan**: Daya tarik utama, kuliner legendaris sekitar lokasi, spot foto, atau fasilitas.
-     • 🗺️ **Link Google Maps**: `[🗺️ Buka Google Maps](https://www.google.com/maps/dir/?api=1&destination=NAMA_TEMPAT&travelmode=two_wheeler)`
-   - Serta isi objek `"route"` dan `"location"` pada JSON output.
+     • 🗺️ **Link Google Maps**: \`[🗺️ Buka Google Maps](https://www.google.com/maps/dir/?api=1&destination=NAMA_TEMPAT&travelmode=two_wheeler)\`
+   - Serta isi objek \`"route"\` dan \`"location"\` pada JSON output.
 
 10. **ATURAN EKSPLISIT TANGGAL (\`occurred_at\`)**:
     - Jika user TIDAK menyebutkan tanggal secara eksplisit, gunakan ISO waktu sekarang dari konteks.
